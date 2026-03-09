@@ -1,0 +1,77 @@
+/** Level loader and camera system */
+
+import { GRID, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
+import { createObstacle } from './obstacles.js';
+import level1 from './levels/level1.js';
+import level2 from './levels/level2.js';
+import level3 from './levels/level3.js';
+
+const LEVEL_DATA = { 1: level1, 2: level2, 3: level3 };
+
+export class Level {
+  constructor(levelId) {
+    this.id = levelId;
+    this.data = LEVEL_DATA[levelId];
+    this.name = this.data.name;
+    this.speedMult = this.data.speed;
+    this.obstacles = [];
+    this.endX = 0;
+    this._load();
+  }
+
+  _load() {
+    this.obstacles = [];
+    for (const obj of this.data.objects) {
+      const obstacle = createObstacle(obj);
+      if (obstacle) {
+        this.obstacles.push(obstacle);
+        if (obstacle.type === 'end') {
+          this.endX = obstacle.x;
+        }
+      }
+    }
+  }
+
+  reset() {
+    // Reset portals and checkpoints
+    for (const obs of this.obstacles) {
+      if (obs.reset) obs.reset();
+    }
+  }
+
+  getVisible(cameraX) {
+    const left = cameraX - PLAYER_X_OFFSET - 100;
+    const right = cameraX + SCREEN_WIDTH + 100;
+    return this.obstacles.filter(o => {
+      const ox = o.x;
+      const ow = o.w || GRID;
+      return ox + ow > left && ox < right;
+    });
+  }
+
+  getProgress(playerX) {
+    if (this.endX <= 0) return 0;
+    return Math.min(1, Math.max(0, playerX / this.endX));
+  }
+
+  update() {
+    // Update moving platforms
+    for (const obs of this.obstacles) {
+      if (obs.type === 'moving' && obs.update) obs.update();
+    }
+  }
+}
+
+export class Camera {
+  constructor() {
+    this.x = 0;
+  }
+
+  update(playerX) {
+    this.x = playerX;
+  }
+}
+
+export function getLevelCount() {
+  return Object.keys(LEVEL_DATA).length;
+}

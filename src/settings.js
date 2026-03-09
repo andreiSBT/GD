@@ -1,0 +1,65 @@
+/** Game constants and configuration */
+
+export const SCREEN_WIDTH = 1200;
+export const SCREEN_HEIGHT = 700;
+export const FPS = 60;
+
+// Grid
+export const GRID = 50; // pixels per grid unit
+
+// Player
+export const PLAYER_SIZE = 44;
+export const SCROLL_SPEED = 8;
+export const GRAVITY = 0.8;
+export const JUMP_VEL = -14;
+export const PLAYER_X_OFFSET = 300; // fixed screen x
+
+// Ground
+export const GROUND_H = 100;
+export const GROUND_Y = SCREEN_HEIGHT - GROUND_H;
+
+// Particles
+export const MAX_PARTICLES = 200;
+
+// Level themes
+export const THEMES = {
+  1: {
+    name: 'Stereo Madness',
+    bgTop: '#001444',
+    bgBot: '#003C78',
+    ground: '#005099',
+    groundLine: '#0078C8',
+    accent: '#00C8FF',
+    player: '#00FF64',
+    spike: '#FFFFFF',
+    platform: '#0064C8',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+  2: {
+    name: 'Back on Track',
+    bgTop: '#3C0028',
+    bgBot: '#780050',
+    ground: '#960064',
+    groundLine: '#C80078',
+    accent: '#FF3296',
+    player: '#FF64C8',
+    spike: '#FFDCFF',
+    platform: '#B40064',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+  3: {
+    name: 'Polargeist',
+    bgTop: '#0A2800',
+    bgBot: '#1E6400',
+    ground: '#288200',
+    groundLine: '#3CB400',
+    accent: '#64FF32',
+    player: '#C8FF00',
+    spike: '#DCFFDC',
+    platform: '#329600',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+};
