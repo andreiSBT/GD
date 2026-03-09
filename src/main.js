@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
 import { Level, Camera, getLevelCount } from './level.js';
 import { ParticleSystem } from './particles.js';
@@ -11,6 +11,7 @@ import * as Sound from './sound.js';
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
+const CUSTOMIZE = 'customize';
 const PLAYING = 'playing';
 const DEAD = 'dead';
 const COMPLETE = 'complete';
@@ -39,6 +40,10 @@ class Game {
     this.shakeIntensity = 0;
     this.deathTimer = 0;
     this.pendingOrbHit = null; // orb waiting for click activation
+
+    // Load customization from localStorage
+    this.customization = this._loadCustomization();
+    this._applyCustomization();
 
     this._bindEvents();
     this._startLoop();

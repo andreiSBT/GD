@@ -21,6 +21,30 @@ export const GROUND_Y = SCREEN_HEIGHT - GROUND_H;
 // Particles
 export const MAX_PARTICLES = 200;
 
+// Player customization options
+export const PLAYER_COLORS = [
+  '#00FF64', '#00C8FF', '#FF3296', '#FFD700', '#FF6600',
+  '#FF0000', '#AA00FF', '#00FFAA', '#FF69B4', '#FFFFFF',
+];
+
+export const PLAYER_TRAIL_COLORS = [
+  null,       // same as player color
+  '#00C8FF', '#FF3296', '#FFD700', '#FF6600',
+  '#FF0000', '#AA00FF', '#00FFAA', '#FF69B4', '#FFFFFF',
+];
+
+// Icon IDs for cube face designs
+export const CUBE_ICONS = [
+  'default',    // classic two eyes
+  'cyclops',    // one big eye
+  'angry',      // angry eyes
+  'robot',      // square visor
+  'star',       // star face
+  'x_eyes',     // X eyes (dead look)
+  'shades',     // sunglasses
+  'smile',      // simple smile
+];
+
 // Level themes
 export const THEMES = {
   1: {

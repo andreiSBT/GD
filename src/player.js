@@ -2,7 +2,8 @@
 
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
-  GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT
+  GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
+  PLAYER_COLORS
 } from './settings.js';
 
 // Game modes
@@ -24,6 +25,9 @@ const PAD_JUMP_VEL = -18;     // jump pad (stronger than orb)
 export class Player {
   constructor() {
     this.trail = [];  // position history for glow trail
+    this.customColor = null;     // custom player color (null = use theme)
+    this.customTrailColor = null; // custom trail color (null = use accent)
+    this.cubeIcon = 'default';   // cube face icon id
     this.reset(0);
   }
 
@@ -258,7 +262,7 @@ export class Player {
     const size = PLAYER_SIZE;
     const cx = sx + size / 2;
     const cy = sy + size / 2;
-    const color = theme.player;
+    const color = this.customColor || theme.player;
 
     // --- GLOW TRAIL ---
     this._drawTrail(ctx, cameraX, theme);
@@ -283,6 +287,7 @@ export class Player {
 
   _drawTrail(ctx, cameraX, theme) {
     if (this.trail.length < 2) return;
+    const trailColor = this.customTrailColor || theme.accent;
     ctx.save();
     for (let i = 0; i < this.trail.length; i++) {
       const t = this.trail[i];
@@ -292,11 +297,11 @@ export class Player {
       const tsy = t.y - sz / 2;
 
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = theme.accent;
+      ctx.fillStyle = trailColor;
       ctx.fillRect(tsx, tsy, sz, sz);
 
       // Neon glow on trail
-      ctx.shadowColor = theme.accent;
+      ctx.shadowColor = trailColor;
       ctx.shadowBlur = 8;
       ctx.fillRect(tsx, tsy, sz, sz);
       ctx.shadowBlur = 0;
@@ -325,17 +330,8 @@ export class Player {
     ctx.fillStyle = lighten(color, 50);
     ctx.fillRect(-hs + m, -hs + m, size - m * 2, size - m * 2);
 
-    // Face/icon - simple eye design
-    ctx.fillStyle = '#FFF';
-    ctx.beginPath();
-    ctx.arc(-4, -2, 5, 0, Math.PI * 2);
-    ctx.arc(8, -2, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
-    ctx.arc(9, -2, 2.5, 0, Math.PI * 2);
-    ctx.fill();
+    // Face/icon based on cubeIcon
+    this._drawCubeIcon(ctx);
 
     // Border with neon glow feel
     ctx.strokeStyle = '#FFF';
@@ -349,6 +345,147 @@ export class Player {
     ctx.moveTo(-hs, -hs);
     ctx.lineTo(hs, -hs);
     ctx.stroke();
+  }
+
+  _drawCubeIcon(ctx) {
+    const icon = this.cubeIcon || 'default';
+    switch (icon) {
+      case 'default':
+        // Classic two eyes
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(-4, -2, 5, 0, Math.PI * 2);
+        ctx.arc(8, -2, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
+        ctx.arc(9, -2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
+      case 'cyclops':
+        // One big eye
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(2, -2, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(3, -2, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(1, -4, 2, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
+      case 'angry':
+        // Angry eyes with eyebrows
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(-4, 0, 5, 0, Math.PI * 2);
+        ctx.arc(8, 0, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-3, 0, 2.5, 0, Math.PI * 2);
+        ctx.arc(9, 0, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Eyebrows
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-9, -6);
+        ctx.lineTo(-1, -3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(13, -6);
+        ctx.lineTo(5, -3);
+        ctx.stroke();
+        break;
+
+      case 'robot':
+        // Square visor
+        ctx.fillStyle = '#0FF';
+        ctx.fillRect(-8, -6, 20, 8);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(-6, -5, 6, 6);
+        ctx.fillRect(4, -5, 6, 6);
+        ctx.fillStyle = '#0FF';
+        ctx.fillRect(-5, -4, 4, 4);
+        ctx.fillRect(5, -4, 4, 4);
+        break;
+
+      case 'star':
+        // Star face
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const angle = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+          const innerAngle = angle + Math.PI / 5;
+          ctx.lineTo(2 + Math.cos(angle) * 8, -1 + Math.sin(angle) * 8);
+          ctx.lineTo(2 + Math.cos(innerAngle) * 4, -1 + Math.sin(innerAngle) * 4);
+        }
+        ctx.closePath();
+        ctx.fill();
+        break;
+
+      case 'x_eyes':
+        // X eyes
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, -6); ctx.lineTo(-1, 1);
+        ctx.moveTo(-1, -6); ctx.lineTo(-8, 1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(5, -6); ctx.lineTo(12, 1);
+        ctx.moveTo(12, -6); ctx.lineTo(5, 1);
+        ctx.stroke();
+        break;
+
+      case 'shades':
+        // Sunglasses
+        ctx.fillStyle = '#111';
+        ctx.fillRect(-10, -5, 10, 7);
+        ctx.fillRect(3, -5, 10, 7);
+        ctx.fillStyle = '#333';
+        ctx.fillRect(-9, -4, 8, 5);
+        ctx.fillRect(4, -4, 8, 5);
+        // Bridge
+        ctx.strokeStyle = '#111';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -2);
+        ctx.lineTo(3, -2);
+        ctx.stroke();
+        // Shine
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(-8, -4, 3, 2);
+        ctx.fillRect(5, -4, 3, 2);
+        break;
+
+      case 'smile':
+        // Simple smile
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+        ctx.arc(7, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-2, -3, 1.5, 0, Math.PI * 2);
+        ctx.arc(8, -3, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Smile curve
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(2, 2, 7, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+        break;
+    }
   }
 
   _drawShip(ctx, size, color) {
