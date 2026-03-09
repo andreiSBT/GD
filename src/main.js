@@ -1,7 +1,7 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, SCROLL_SPEED } from './settings.js';
-import { Player } from './player.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES } from './settings.js';
+import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
 import { Level, Camera, getLevelCount } from './level.js';
 import { ParticleSystem } from './particles.js';
 import { Renderer } from './renderer.js';
@@ -9,7 +9,6 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress } from './progress.js';
 import * as Sound from './sound.js';
 
-// Game states
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
 const PLAYING = 'playing';
@@ -39,23 +38,45 @@ class Game {
     this.lastCheckpoint = null;
     this.shakeIntensity = 0;
     this.deathTimer = 0;
+    this.pendingOrbHit = null; // orb waiting for click activation
 
     this._bindEvents();
     this._startLoop();
   }
 
   _bindEvents() {
-    const doJump = () => {
+    const doPress = () => {
       Sound.resumeAudio();
       if (this.state === PLAYING) {
-        if (this.player.jump()) {
+        this.player.pressJump();
+
+        // Check if we're touching an orb (orbs need click while overlapping)
+        if (this.pendingOrbHit) {
           Sound.playJump();
-          this.particles.emitJump(
-            this.player.x,
-            this.player.y + PLAYER_SIZE,
-            this.theme.accent
-          );
+          this.player.orbBounce(this.pendingOrbHit.orbType);
+          this.pendingOrbHit.obs.markActivated();
+          this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, this.theme.accent);
+          this.pendingOrbHit = null;
+          return;
         }
+
+        // Normal jump (cube mode)
+        if (this.player.mode === MODE_CUBE) {
+          if (this.player.jump()) {
+            Sound.playJump();
+            this.particles.emitJump(
+              this.player.x,
+              this.player.y + PLAYER_SIZE,
+              this.theme.accent
+            );
+          }
+        }
+      }
+    };
+
+    const doRelease = () => {
+      if (this.state === PLAYING) {
+        this.player.releaseJump();
       }
     };
 
@@ -67,13 +88,19 @@ class Game {
           this._restart();
           return;
         }
-        doJump();
+        doPress();
       }
       if (e.code === 'Escape') {
         if (this.state === PLAYING || this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.state = MENU;
         }
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        doRelease();
       }
     });
 
@@ -93,7 +120,7 @@ class Game {
       }
 
       if (this.state === PLAYING) {
-        doJump();
+        doPress();
       }
 
       if (this.state === DEAD && this.deathTimer > 0.3) {
@@ -101,12 +128,14 @@ class Game {
       }
     });
 
+    this.canvas.addEventListener('mouseup', () => doRelease());
+
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       Sound.resumeAudio();
 
       if (this.state === PLAYING) {
-        doJump();
+        doPress();
       } else if (this.state === DEAD && this.deathTimer > 0.3) {
         this._restart();
       } else {
@@ -120,6 +149,11 @@ class Game {
           this._handleAction(action);
         }
       }
+    }, { passive: false });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      doRelease();
     }, { passive: false });
   }
 
@@ -165,12 +199,14 @@ class Game {
     this.particles.clear();
     this.shakeIntensity = 0;
     this.deathTimer = 0;
+    this.pendingOrbHit = null;
 
     if (this.practiceMode && this.lastCheckpoint) {
       this.player.reset(this.lastCheckpoint.x);
       this.player.y = this.lastCheckpoint.y;
       this.player.gravityMult = this.lastCheckpoint.gravityMult;
       this.player.speedMult = this.lastCheckpoint.speedMult;
+      this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
     } else {
       this.player.reset(0);
       this.level.reset();
@@ -182,7 +218,7 @@ class Game {
 
   _die() {
     this.player.alive = false;
-    this.shakeIntensity = 8;
+    this.shakeIntensity = 10;
     Sound.playDeath();
     this.particles.emitDeath(
       this.player.x,
@@ -210,10 +246,8 @@ class Game {
     const loop = (now) => {
       const dt = Math.min((now - lastTime) / 1000, 0.05);
       lastTime = now;
-
       this._update(dt);
       this._draw();
-
       requestAnimationFrame(loop);
     };
 
@@ -232,12 +266,19 @@ class Game {
 
     if (this.state !== PLAYING) return;
 
-    // Update level (moving platforms)
     this.level.update();
-
-    // Update player
     this.player.update();
     this.camera.update(this.player.x);
+
+    // Hold-to-jump: emit effects when auto-jumping from hold
+    if (this.player.holdJumped) {
+      Sound.playJump();
+      this.particles.emitJump(
+        this.player.x,
+        this.player.y + PLAYER_SIZE,
+        this.theme.accent
+      );
+    }
 
     // Trail particles
     this.particles.emitTrail(
@@ -246,9 +287,10 @@ class Game {
       this.theme.accent
     );
     this.particles.update(dt);
-
-    // Screen shake decay
     this.shakeIntensity *= 0.9;
+
+    // Reset pending orb each frame
+    this.pendingOrbHit = null;
 
     // Collision detection
     const playerRect = this.player.getRect();
@@ -256,8 +298,7 @@ class Game {
 
     for (const obs of visible) {
       if (obs.type === 'spike') {
-        const result = obs.checkCollision(playerRect);
-        if (result === 'death') {
+        if (obs.checkCollision(playerRect) === 'death') {
           this._die();
           return;
         }
@@ -284,21 +325,42 @@ class Game {
           this.player.speedMult = 1.4;
         } else if (result === 'portal_speed_down') {
           this.player.speedMult = 1.0;
+        } else if (result === 'portal_ship') {
+          this.player.setMode(MODE_SHIP);
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF00FF', 8);
+        } else if (result === 'portal_wave') {
+          this.player.setMode(MODE_WAVE);
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00FFAA', 8);
+        } else if (result === 'portal_cube') {
+          this.player.setMode(MODE_CUBE);
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00C8FF', 8);
+        }
+      } else if (obs.type === 'orb') {
+        const orbType = obs.checkCollision(playerRect);
+        if (orbType) {
+          // Orb: player must be clicking to activate
+          this.pendingOrbHit = { obs, orbType };
+        }
+      } else if (obs.type === 'pad') {
+        const padType = obs.checkCollision(playerRect);
+        if (padType) {
+          Sound.playJump();
+          this.player.orbBounce(padType);
+          this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700');
         }
       } else if (obs.type === 'checkpoint') {
-        const result = obs.checkCollision(playerRect);
-        if (result === 'checkpoint') {
+        if (obs.checkCollision(playerRect) === 'checkpoint') {
           Sound.playCheckpoint();
           this.lastCheckpoint = {
             x: this.player.x,
             y: this.player.y,
             gravityMult: this.player.gravityMult,
             speedMult: this.player.speedMult,
+            mode: this.player.mode,
           };
         }
       } else if (obs.type === 'end') {
-        const result = obs.checkCollision(playerRect);
-        if (result === 'complete') {
+        if (obs.checkCollision(playerRect) === 'complete') {
           this.state = COMPLETE;
           Sound.stopMusic();
           Sound.playComplete();
@@ -308,7 +370,7 @@ class Game {
       }
     }
 
-    // Check if player walked off a platform
+    // Check platform fall-off
     if (this.player.onPlatform && this.player.grounded) {
       let stillOn = false;
       for (const obs of visible) {
@@ -331,6 +393,11 @@ class Game {
         this.player.grounded = false;
       }
     }
+
+    // Player death check (wave hitting boundaries, etc.)
+    if (!this.player.alive) {
+      this._die();
+    }
   }
 
   _draw() {
@@ -346,31 +413,23 @@ class Game {
     } else if (this.state === LEVEL_SELECT) {
       this.ui.drawLevelSelect(ctx, this.progress);
     } else {
-      // Game view
       this.renderer.drawBackground(ctx, this.camera.x, this.theme);
 
-      // Obstacles
       const visible = this.level.getVisible(this.camera.x);
       for (const obs of visible) {
         obs.draw(ctx, this.camera.x, this.theme);
       }
 
-      // Ground
       this.renderer.drawGround(ctx, this.camera.x, this.theme);
-
-      // Particles
       this.particles.draw(ctx, this.camera.x - PLAYER_X_OFFSET);
 
-      // Player
       if (this.player.alive) {
         this.player.draw(ctx, this.camera.x, this.theme);
       }
 
-      // HUD
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name);
 
-      // Overlays
       if (this.state === DEAD && this.deathTimer > 0.3) {
         this.ui.drawDeathScreen(ctx, this.currentProgress, this.attempts);
       } else if (this.state === COMPLETE) {
@@ -382,5 +441,4 @@ class Game {
   }
 }
 
-// Start the game
 new Game();

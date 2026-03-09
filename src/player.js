@@ -1,12 +1,29 @@
-/** Player cube with physics, rotation, and rendering */
+/** Player with game modes (cube, ship, wave), improved physics, and neon visuals */
 
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT
 } from './settings.js';
 
+// Game modes
+export const MODE_CUBE = 'cube';
+export const MODE_SHIP = 'ship';
+export const MODE_WAVE = 'wave';
+
+// Physics tuning
+const COYOTE_TIME = 6;        // frames of grace after leaving ground
+const JUMP_BUFFER = 8;        // frames to buffer a jump press
+const SHIP_GRAVITY = 0.4;     // lighter gravity for ship
+const SHIP_LIFT = -0.7;       // per-frame lift when holding in ship mode
+const WAVE_SPEED = 6;         // wave diagonal speed
+const ORB_JUMP_VEL = -16;     // yellow orb bounce
+const PINK_ORB_VEL = -12;     // pink orb (shorter bounce)
+const DASH_ORB_VEL = -10;     // dash orb (horizontal dash feel)
+const PAD_JUMP_VEL = -18;     // jump pad (stronger than orb)
+
 export class Player {
   constructor() {
+    this.trail = [];  // position history for glow trail
     this.reset(0);
   }
 
@@ -18,19 +35,72 @@ export class Player {
     this.alive = true;
     this.grounded = true;
     this.rotation = 0;
-    this.gravityMult = 1; // 1 normal, -1 flipped
+    this.gravityMult = 1;
     this.speedMult = 1;
     this.onPlatform = false;
+    this.mode = MODE_CUBE;
+    this.holding = false;       // is jump/click held down
+    this.coyoteCounter = 0;     // frames since leaving ground
+    this.jumpBufferCounter = 0; // frames since jump was pressed
+    this.trail = [];
+    this.dashTimer = 0;         // frames of horizontal dash remaining
+    this.iconIndex = 0;         // visual icon variant
+    this.holdJumped = false;    // flag: did auto-jump from hold this frame
+  }
+
+  // Called on key/click DOWN
+  pressJump() {
+    this.holding = true;
+    this.jumpBufferCounter = JUMP_BUFFER;
+  }
+
+  // Called on key/click UP
+  releaseJump() {
+    this.holding = false;
   }
 
   jump() {
-    if (this.grounded && this.alive) {
-      this.vy = JUMP_VEL * this.gravityMult;
-      this.grounded = false;
-      this.onPlatform = false;
-      return true;
+    if (!this.alive) return false;
+
+    if (this.mode === MODE_CUBE) {
+      // Cube: single jump with coyote time + buffer
+      if (this.grounded || this.coyoteCounter > 0) {
+        this.vy = JUMP_VEL * this.gravityMult;
+        this.grounded = false;
+        this.onPlatform = false;
+        this.coyoteCounter = 0;
+        this.jumpBufferCounter = 0;
+        return true;
+      }
+      return false;
     }
+    // Ship and wave are handled in update() via this.holding
     return false;
+  }
+
+  // Triggered by orbs/pads
+  orbBounce(type) {
+    if (type === 'yellow_orb') {
+      this.vy = ORB_JUMP_VEL * this.gravityMult;
+    } else if (type === 'pink_orb') {
+      this.vy = PINK_ORB_VEL * this.gravityMult;
+    } else if (type === 'dash_orb') {
+      this.vy = DASH_ORB_VEL * this.gravityMult * 0.3;
+      this.dashTimer = 15;
+    } else if (type === 'yellow_pad') {
+      this.vy = PAD_JUMP_VEL * this.gravityMult;
+    } else if (type === 'pink_pad') {
+      this.vy = PINK_ORB_VEL * this.gravityMult * 1.2;
+    }
+    this.grounded = false;
+    this.onPlatform = false;
+  }
+
+  setMode(mode) {
+    this.mode = mode;
+    if (mode === MODE_SHIP) {
+      this.vy = 0;
+    }
   }
 
   flipGravity() {
@@ -42,14 +112,59 @@ export class Player {
     if (!this.alive) return;
 
     this.prevY = this.y;
-    this.x += SCROLL_SPEED * this.speedMult;
+
+    // Horizontal
+    const speed = SCROLL_SPEED * this.speedMult * (this.dashTimer > 0 ? 1.5 : 1.0);
+    this.x += speed;
+    if (this.dashTimer > 0) this.dashTimer--;
+
+    // Store trail position
+    this.trail.push({ x: this.x, y: this.y + PLAYER_SIZE / 2 });
+    if (this.trail.length > 20) this.trail.shift();
+
+    // Mode-specific physics
+    if (this.mode === MODE_CUBE) {
+      this._updateCube();
+    } else if (this.mode === MODE_SHIP) {
+      this._updateShip();
+    } else if (this.mode === MODE_WAVE) {
+      this._updateWave();
+    }
+
+    // Coyote time counter
+    if (!this.grounded) {
+      if (this.coyoteCounter > 0) this.coyoteCounter--;
+    }
+
+    // Jump buffer - try to jump if buffered
+    if (this.jumpBufferCounter > 0) {
+      this.jumpBufferCounter--;
+      if (this.grounded || this.coyoteCounter > 0) {
+        this.jump();
+      }
+    }
+
+    // Hold-to-jump: in cube mode, auto-jump on landing while holding
+    if (this.mode === MODE_CUBE && this.holding && this.grounded) {
+      this.holdJumped = this.jump();
+    } else {
+      this.holdJumped = false;
+    }
+
+    // Off screen = dead
+    if (this.y > SCREEN_HEIGHT + 100 || this.y < -200) {
+      this.alive = false;
+    }
+  }
+
+  _updateCube() {
     this.vy += GRAVITY * this.gravityMult;
     this.y += this.vy;
 
-    // Ground/ceiling
+    const groundY = GROUND_Y - PLAYER_SIZE;
     if (this.gravityMult > 0) {
-      if (this.y >= GROUND_Y - PLAYER_SIZE) {
-        this.y = GROUND_Y - PLAYER_SIZE;
+      if (this.y >= groundY) {
+        this.y = groundY;
         this.vy = 0;
         this.grounded = true;
         this._snapRotation();
@@ -68,15 +183,63 @@ export class Player {
       const dir = this.gravityMult > 0 ? -1 : 1;
       this.rotation += dir * SCROLL_SPEED * 2.5;
     }
+  }
 
-    // Off screen = dead
-    if (this.y > SCREEN_HEIGHT + 100 || this.y < -200) {
+  _updateShip() {
+    // Ship: holding = fly up, releasing = fall down
+    if (this.holding) {
+      this.vy += SHIP_LIFT * this.gravityMult;
+    }
+    this.vy += SHIP_GRAVITY * this.gravityMult;
+
+    // Clamp vertical speed
+    this.vy = Math.max(-8, Math.min(8, this.vy));
+    this.y += this.vy;
+
+    // Boundaries
+    const groundY = GROUND_Y - PLAYER_SIZE;
+    if (this.y >= groundY) {
+      this.y = groundY;
+      this.vy = 0;
+      this.grounded = true;
+    } else if (this.y <= 0) {
+      this.y = 0;
+      this.vy = 0;
+      this.grounded = true;
+    } else {
+      this.grounded = false;
+    }
+
+    // Ship tilts based on vy
+    this.rotation = this.vy * -3;
+  }
+
+  _updateWave() {
+    // Wave: holding = diagonal up, releasing = diagonal down
+    if (this.holding) {
+      this.vy = -WAVE_SPEED * this.gravityMult;
+    } else {
+      this.vy = WAVE_SPEED * this.gravityMult;
+    }
+    this.y += this.vy;
+
+    // Boundaries
+    const groundY = GROUND_Y - PLAYER_SIZE;
+    if (this.y >= groundY) {
+      this.y = groundY;
+      this.alive = false; // wave dies on ground/ceiling
+    } else if (this.y <= 0) {
+      this.y = 0;
       this.alive = false;
     }
+
+    this.rotation += 8;
   }
 
   _snapRotation() {
     this.rotation = Math.round(this.rotation / 90) * 90;
+    // Enable coyote time when landing
+    this.coyoteCounter = COYOTE_TIME;
   }
 
   getRect() {
@@ -95,33 +258,225 @@ export class Player {
     const size = PLAYER_SIZE;
     const cx = sx + size / 2;
     const cy = sy + size / 2;
+    const color = theme.player;
+
+    // --- GLOW TRAIL ---
+    this._drawTrail(ctx, cameraX, theme);
 
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate((this.rotation * Math.PI) / 180);
 
-    // Main cube
-    const color = theme.player;
-    ctx.fillStyle = color;
-    ctx.fillRect(-size / 2, -size / 2, size, size);
+    if (this.mode === MODE_CUBE) {
+      this._drawCube(ctx, size, color);
+    } else if (this.mode === MODE_SHIP) {
+      this._drawShip(ctx, size, color);
+    } else if (this.mode === MODE_WAVE) {
+      this._drawWave(ctx, size, color);
+    }
 
-    // Inner detail
+    ctx.restore();
+
+    // Outer glow
+    this._drawGlow(ctx, cx, cy, size, color);
+  }
+
+  _drawTrail(ctx, cameraX, theme) {
+    if (this.trail.length < 2) return;
+    ctx.save();
+    for (let i = 0; i < this.trail.length; i++) {
+      const t = this.trail[i];
+      const alpha = (i / this.trail.length) * 0.4;
+      const sz = 3 + (i / this.trail.length) * 6;
+      const tsx = t.x - cameraX + PLAYER_X_OFFSET;
+      const tsy = t.y - sz / 2;
+
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = theme.accent;
+      ctx.fillRect(tsx, tsy, sz, sz);
+
+      // Neon glow on trail
+      ctx.shadowColor = theme.accent;
+      ctx.shadowBlur = 8;
+      ctx.fillRect(tsx, tsy, sz, sz);
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  _drawCube(ctx, size, color) {
+    const hs = size / 2;
+
+    // Main body
+    ctx.fillStyle = color;
+    ctx.fillRect(-hs, -hs, size, size);
+
+    // Gradient overlay (top lighter, bottom darker)
+    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(-hs, -hs, size, size);
+
+    // Inner square with icon
     const m = 8;
-    ctx.fillStyle = lighten(color, 30);
-    ctx.fillRect(-size / 2 + m, -size / 2 + m, size - m * 2, size - m * 2);
+    ctx.fillStyle = lighten(color, 50);
+    ctx.fillRect(-hs + m, -hs + m, size - m * 2, size - m * 2);
+
+    // Face/icon - simple eye design
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath();
+    ctx.arc(-4, -2, 5, 0, Math.PI * 2);
+    ctx.arc(8, -2, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
+    ctx.arc(9, -2, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Border with neon glow feel
+    ctx.strokeStyle = '#FFF';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(-hs, -hs, size, size);
+
+    // Bright edge highlight
+    ctx.strokeStyle = lighten(color, 80);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-hs, -hs);
+    ctx.lineTo(hs, -hs);
+    ctx.stroke();
+  }
+
+  _drawShip(ctx, size, color) {
+    const hs = size / 2;
+
+    // Ship body - triangle/arrow shape
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(hs, 0);
+    ctx.lineTo(-hs, -hs + 4);
+    ctx.lineTo(-hs + 10, 0);
+    ctx.lineTo(-hs, hs - 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Gradient overlay
+    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.25)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.15)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Cockpit
+    ctx.fillStyle = lighten(color, 60);
+    ctx.beginPath();
+    ctx.arc(5, 0, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye in cockpit
+    ctx.fillStyle = '#FFF';
+    ctx.beginPath();
+    ctx.arc(6, -1, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(7, -1, 2, 0, Math.PI * 2);
+    ctx.fill();
 
     // Border
     ctx.strokeStyle = '#FFF';
     ctx.lineWidth = 2;
-    ctx.strokeRect(-size / 2, -size / 2, size, size);
+    ctx.beginPath();
+    ctx.moveTo(hs, 0);
+    ctx.lineTo(-hs, -hs + 4);
+    ctx.lineTo(-hs + 10, 0);
+    ctx.lineTo(-hs, hs - 4);
+    ctx.closePath();
+    ctx.stroke();
 
+    // Engine flame
+    ctx.fillStyle = this.holding ? '#FF6600' : '#FF3300';
+    ctx.globalAlpha = 0.8 + Math.random() * 0.2;
+    const flameLen = this.holding ? 12 + Math.random() * 6 : 6 + Math.random() * 3;
+    ctx.beginPath();
+    ctx.moveTo(-hs + 10, -4);
+    ctx.lineTo(-hs - flameLen, 0);
+    ctx.lineTo(-hs + 10, 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  _drawWave(ctx, size, color) {
+    const hs = size / 2;
+
+    // Wave - diamond shape
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, -hs);
+    ctx.lineTo(hs, 0);
+    ctx.lineTo(0, hs);
+    ctx.lineTo(-hs, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Gradient
+    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Inner diamond
+    const m = 10;
+    ctx.fillStyle = lighten(color, 50);
+    ctx.beginPath();
+    ctx.moveTo(0, -hs + m);
+    ctx.lineTo(hs - m, 0);
+    ctx.lineTo(0, hs - m);
+    ctx.lineTo(-hs + m, 0);
+    ctx.closePath();
+    ctx.fill();
+
+    // Border
+    ctx.strokeStyle = '#FFF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -hs);
+    ctx.lineTo(hs, 0);
+    ctx.lineTo(0, hs);
+    ctx.lineTo(-hs, 0);
+    ctx.closePath();
+    ctx.stroke();
+  }
+
+  _drawGlow(ctx, cx, cy, size, color) {
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = color;
+    ctx.fillRect(cx - size / 2, cy - size / 2, size, size);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 }
 
-function lighten(hex, amount) {
+export function lighten(hex, amount) {
   const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
   const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
   const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
+  return `rgb(${r},${g},${b})`;
+}
+
+export function darken(hex, amount) {
+  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount);
+  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount);
+  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);
   return `rgb(${r},${g},${b})`;
 }
