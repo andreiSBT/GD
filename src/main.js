@@ -463,6 +463,31 @@ class Game {
 
     ctx.restore();
   }
+
+  _loadCustomization() {
+    try {
+      const data = localStorage.getItem('gd_customization');
+      if (data) return JSON.parse(data);
+    } catch (e) {
+      console.warn('Failed to load customization:', e);
+    }
+    return { colorIndex: 0, trailIndex: 0, iconIndex: 0 };
+  }
+
+  _saveCustomization() {
+    try {
+      localStorage.setItem('gd_customization', JSON.stringify(this.customization));
+    } catch (e) {
+      console.warn('Failed to save customization:', e);
+    }
+  }
+
+  _applyCustomization() {
+    const { colorIndex, trailIndex, iconIndex } = this.customization;
+    this.player.customColor = PLAYER_COLORS[colorIndex] || null;
+    this.player.customTrailColor = PLAYER_TRAIL_COLORS[trailIndex] || null;
+    this.player.cubeIcon = CUBE_ICONS[iconIndex] || 'default';
+  }
 }
 
 new Game();
