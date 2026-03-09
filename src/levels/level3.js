@@ -1,104 +1,108 @@
-/** Level 3 - Polargeist (Hard) */
+/** Level 3 - Polargeist (Hard) - Wave mode, all mechanics combined */
 export default {
   id: 3,
   name: 'Polargeist',
   speed: 1.0,
   objects: [
-    // Immediate pressure
+    // Immediate pressure - triples
     { type: 'spike', x: 5, y: 0 },
     { type: 'spike', x: 6, y: 0 },
     { type: 'spike', x: 7, y: 0 },
-    { type: 'platform', x: 9, y: 2, w: 2, h: 1 },
+    { type: 'orb', x: 9, y: 3, orbType: 'yellow_orb' },
     { type: 'spike', x: 10, y: 0 },
-    { type: 'spike', x: 10, y: 3 },
+    { type: 'spike', x: 11, y: 0 },
 
-    // Platform maze
+    // Platform maze with pads
     { type: 'platform', x: 14, y: 1, w: 1, h: 1 },
-    { type: 'platform', x: 16, y: 3, w: 1, h: 1 },
-    { type: 'platform', x: 18, y: 2, w: 1, h: 1 },
-    { type: 'spike', x: 15, y: 0 },
+    { type: 'pad', x: 16, y: 0, padType: 'yellow_pad' },
+    { type: 'platform', x: 18, y: 4, w: 2, h: 1 },
+    { type: 'spike', x: 19, y: 5 },
     { type: 'spike', x: 17, y: 0 },
-    { type: 'spike', x: 19, y: 0 },
 
     // Speed up
-    { type: 'portal', x: 22, y: 0, portalType: 'speed_up' },
+    { type: 'portal', x: 23, y: 0, portalType: 'speed_up' },
 
-    // Fast spike rush
-    { type: 'spike', x: 26, y: 0 },
-    { type: 'spike', x: 28, y: 0 },
+    // Fast spike rush with orbs
+    { type: 'spike', x: 27, y: 0 },
+    { type: 'orb', x: 29, y: 3, orbType: 'yellow_orb' },
     { type: 'spike', x: 30, y: 0 },
-    { type: 'spike', x: 32, y: 0 },
-    { type: 'spike', x: 33, y: 0 },
+    { type: 'spike', x: 31, y: 0 },
+    { type: 'orb', x: 33, y: 2, orbType: 'pink_orb' },
+    { type: 'spike', x: 34, y: 0 },
 
     // Checkpoint 1
-    { type: 'checkpoint', x: 37, y: 0 },
-
-    // Speed back to normal
+    { type: 'checkpoint', x: 38, y: 0 },
     { type: 'portal', x: 39, y: 0, portalType: 'speed_down' },
 
-    // Moving platform hell
-    { type: 'moving', x: 43, y: 2, w: 2, h: 1, endX: 43, endY: 5, speed: 3 },
-    { type: 'spike', x: 47, y: 0 },
-    { type: 'spike', x: 48, y: 0 },
-    { type: 'moving', x: 50, y: 3, w: 2, h: 1, endX: 50, endY: 6, speed: 4 },
-    { type: 'spike', x: 54, y: 0 },
+    // ===== WAVE MODE SECTION =====
+    { type: 'portal', x: 43, y: 0, portalType: 'wave' },
 
-    // Double gravity flip
-    { type: 'portal', x: 57, y: 0, portalType: 'gravity' },
-    { type: 'spike', x: 60, y: 12, rot: 180 },
-    { type: 'spike', x: 61, y: 12, rot: 180 },
-    { type: 'portal', x: 63, y: 0, portalType: 'gravity' },
-    { type: 'spike', x: 66, y: 0 },
-    { type: 'portal', x: 68, y: 0, portalType: 'gravity' },
-    { type: 'spike', x: 71, y: 12, rot: 180 },
-    { type: 'spike', x: 72, y: 12, rot: 180 },
-    { type: 'spike', x: 73, y: 12, rot: 180 },
-    { type: 'portal', x: 76, y: 0, portalType: 'gravity' },
+    // Wave corridor - tight navigation
+    { type: 'platform', x: 47, y: 4, w: 1, h: 8 },
+    { type: 'platform', x: 51, y: 0, w: 1, h: 6 },
+    { type: 'platform', x: 55, y: 5, w: 1, h: 7 },
+    { type: 'platform', x: 59, y: 0, w: 1, h: 5 },
+
+    // Back to cube
+    { type: 'portal', x: 63, y: 0, portalType: 'cube' },
 
     // Checkpoint 2
-    { type: 'checkpoint', x: 80, y: 0 },
+    { type: 'checkpoint', x: 67, y: 0 },
 
-    // Staircase with spikes on every step
-    { type: 'platform', x: 84, y: 1, w: 2, h: 1 },
-    { type: 'spike', x: 85, y: 2 },
-    { type: 'platform', x: 87, y: 2, w: 2, h: 1 },
-    { type: 'spike', x: 88, y: 3 },
-    { type: 'platform', x: 90, y: 3, w: 2, h: 1 },
-    { type: 'spike', x: 91, y: 4 },
-    { type: 'platform', x: 93, y: 4, w: 2, h: 1 },
-    { type: 'spike', x: 94, y: 5 },
+    // ===== SHIP MODE with gravity flips =====
+    { type: 'portal', x: 71, y: 0, portalType: 'ship' },
+    { type: 'spike', x: 75, y: 0 },
+    { type: 'spike', x: 75, y: 10, rot: 180 },
+    { type: 'portal', x: 78, y: 0, portalType: 'gravity' },
+    { type: 'spike', x: 81, y: 0 },
+    { type: 'spike', x: 81, y: 10, rot: 180 },
+    { type: 'portal', x: 84, y: 0, portalType: 'gravity' },
+    { type: 'spike', x: 87, y: 2 },
+    { type: 'spike', x: 87, y: 8, rot: 180 },
 
-    // Speed up for finale
-    { type: 'portal', x: 98, y: 0, portalType: 'speed_up' },
+    // Back to cube
+    { type: 'portal', x: 90, y: 0, portalType: 'cube' },
 
     // Checkpoint 3
-    { type: 'checkpoint', x: 102, y: 0 },
+    { type: 'checkpoint', x: 94, y: 0 },
 
-    // Final rush - alternating spikes and platforms
-    { type: 'spike', x: 106, y: 0 },
-    { type: 'spike', x: 107, y: 0 },
-    { type: 'platform', x: 109, y: 2, w: 2, h: 1 },
-    { type: 'spike', x: 110, y: 3 },
-    { type: 'spike', x: 113, y: 0 },
-    { type: 'spike', x: 114, y: 0 },
-    { type: 'spike', x: 115, y: 0 },
+    // Moving platforms + orbs gauntlet
+    { type: 'moving', x: 98, y: 2, w: 2, h: 1, endX: 98, endY: 5, speed: 3 },
+    { type: 'orb', x: 101, y: 4, orbType: 'dash_orb' },
+    { type: 'spike', x: 103, y: 0 },
+    { type: 'spike', x: 104, y: 0 },
+    { type: 'moving', x: 106, y: 3, w: 2, h: 1, endX: 106, endY: 6, speed: 4 },
 
-    // Gravity flip final
-    { type: 'portal', x: 118, y: 0, portalType: 'gravity' },
-    { type: 'spike', x: 121, y: 12, rot: 180 },
-    { type: 'spike', x: 122, y: 12, rot: 180 },
-    { type: 'spike', x: 123, y: 12, rot: 180 },
-    { type: 'spike', x: 124, y: 12, rot: 180 },
-    { type: 'portal', x: 127, y: 0, portalType: 'gravity' },
+    // Speed up for finale
+    { type: 'portal', x: 110, y: 0, portalType: 'speed_up' },
+
+    // Staircase with spikes
+    { type: 'platform', x: 114, y: 1, w: 2, h: 1 },
+    { type: 'spike', x: 115, y: 2 },
+    { type: 'platform', x: 117, y: 2, w: 2, h: 1 },
+    { type: 'spike', x: 118, y: 3 },
+    { type: 'platform', x: 120, y: 3, w: 2, h: 1 },
+    { type: 'spike', x: 121, y: 4 },
+
+    // Checkpoint 4
+    { type: 'checkpoint', x: 125, y: 0 },
+
+    // Final gravity flip rush
+    { type: 'portal', x: 128, y: 0, portalType: 'gravity' },
+    { type: 'spike', x: 131, y: 12, rot: 180 },
+    { type: 'orb', x: 133, y: 10, orbType: 'yellow_orb' },
+    { type: 'spike', x: 134, y: 12, rot: 180 },
+    { type: 'spike', x: 135, y: 12, rot: 180 },
+    { type: 'portal', x: 138, y: 0, portalType: 'gravity' },
 
     // Very last spikes
-    { type: 'spike', x: 131, y: 0 },
-    { type: 'spike', x: 132, y: 0 },
-    { type: 'spike', x: 133, y: 0 },
-    { type: 'spike', x: 134, y: 0 },
-    { type: 'spike', x: 135, y: 0 },
+    { type: 'pad', x: 141, y: 0, padType: 'yellow_pad' },
+    { type: 'spike', x: 144, y: 0 },
+    { type: 'spike', x: 145, y: 0 },
+    { type: 'spike', x: 146, y: 0 },
+    { type: 'spike', x: 147, y: 0 },
+    { type: 'spike', x: 148, y: 0 },
 
-    // End
-    { type: 'end', x: 142 },
+    { type: 'end', x: 155 },
   ],
 };
