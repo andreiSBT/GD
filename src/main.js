@@ -96,7 +96,10 @@ class Game {
         doPress();
       }
       if (e.code === 'Escape') {
-        if (this.state === PLAYING || this.state === DEAD || this.state === COMPLETE) {
+        if (this.state === CUSTOMIZE) {
+          this._saveCustomization();
+          this.state = MENU;
+        } else if (this.state === PLAYING || this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.state = MENU;
         }
@@ -115,7 +118,7 @@ class Game {
       const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === DEAD || this.state === COMPLETE) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === DEAD || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -169,6 +172,20 @@ class Game {
     } else if (action === 'practice') {
       this.practiceMode = true;
       this.state = LEVEL_SELECT;
+    } else if (action === 'customize') {
+      this.state = CUSTOMIZE;
+    } else if (action === 'back_customize') {
+      this._saveCustomization();
+      this.state = MENU;
+    } else if (action.startsWith('color_')) {
+      this.customization.colorIndex = parseInt(action.split('_')[1]);
+      this._applyCustomization();
+    } else if (action.startsWith('trail_')) {
+      this.customization.trailIndex = parseInt(action.split('_')[1]);
+      this._applyCustomization();
+    } else if (action.startsWith('icon_')) {
+      this.customization.iconIndex = parseInt(action.split('_')[1]);
+      this._applyCustomization();
     } else if (action.startsWith('level_')) {
       const id = parseInt(action.split('_')[1]);
       this._startLevel(id);
@@ -417,6 +434,8 @@ class Game {
       this.ui.drawMainMenu(ctx);
     } else if (this.state === LEVEL_SELECT) {
       this.ui.drawLevelSelect(ctx, this.progress);
+    } else if (this.state === CUSTOMIZE) {
+      this.ui.drawCustomize(ctx, this.customization);
     } else {
       this.renderer.drawBackground(ctx, this.camera.x, this.theme);
 
