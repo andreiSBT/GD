@@ -16,6 +16,7 @@ const TOOLS = [
   { id: 'portal', label: 'Portal', key: '6', color: '#FF00FF' },
   { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
   { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
+  { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
   { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
 ];
 
@@ -84,6 +85,9 @@ export class Editor {
     this.paintErase = false;
     this.lastPaintGx = -1;
     this.lastPaintGy = -1;
+
+    // Start position for testing (grid coords)
+    this.startPos = null;
 
     // Level browser
     this.browsing = false;
@@ -429,6 +433,33 @@ export class Editor {
       obs.draw(ctx, editorCamX, this.theme);
     }
 
+    // Start position marker
+    if (this.startPos) {
+      const { sx, sy } = this._gridToScreen(this.startPos.gx, this.startPos.gy);
+      ctx.save();
+      // Green flag pole
+      ctx.strokeStyle = '#00FF88';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(sx + 4, sy + GRID);
+      ctx.lineTo(sx + 4, sy - 4);
+      ctx.stroke();
+      // Flag triangle
+      ctx.fillStyle = '#00FF88';
+      ctx.beginPath();
+      ctx.moveTo(sx + 6, sy - 2);
+      ctx.lineTo(sx + 28, sy + 10);
+      ctx.lineTo(sx + 6, sy + 18);
+      ctx.closePath();
+      ctx.fill();
+      // Label
+      ctx.font = 'bold 11px monospace';
+      ctx.fillStyle = '#00FF88';
+      ctx.textAlign = 'center';
+      ctx.fillText('START', sx + GRID / 2, sy - 8);
+      ctx.restore();
+    }
+
     // Moving platform end indicator
     if (this.movingEndMode && this.movingStart) {
       this._drawMovingPreview(ctx);
@@ -495,6 +526,13 @@ export class Editor {
   // === OBJECT MANAGEMENT ===
 
   _placeObject(gx, gy) {
+    // Start position is special - only one allowed, not an object
+    if (this.selectedTool === 'start') {
+      this.startPos = { gx, gy };
+      this._showToast('Start pos set at ' + gx);
+      return;
+    }
+
     // Check if object already exists at this position
     const exists = this.objects.find(o => {
       if (o.x !== gx || o.type !== this.selectedTool) return false;
@@ -754,12 +792,16 @@ export class Editor {
   }
 
   getLevelData() {
-    return {
+    const data = {
       id: 99,
       name: this.levelName,
       speed: 1.0,
       objects: [...this.objects],
     };
+    if (this.startPos) {
+      data.startX = this.startPos.gx;
+    }
+    return data;
   }
 
   // === DRAWING ===

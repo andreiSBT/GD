@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { Editor } from './editor.js';
@@ -405,8 +405,9 @@ class Game {
     this.practiceMode = true;
     this.attempts = 0;
     this.lastCheckpoint = null;
-    this.player.reset(0);
-    this.level.reset();
+    const startPixelX = (levelData.startX || 0) * GRID;
+    this.player.reset(startPixelX);
+    this.level.resetFrom(startPixelX);
     this.state = EDITOR_TESTING;
     this.deathTimer = 0;
     this.shakeIntensity = 0;
