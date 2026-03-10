@@ -741,8 +741,22 @@ export class Player {
     if (this.mode === MODE_CUBE) {
       this._makeShapePath(ctx, size, hs, shape);
       ctx.fill();
-    } else {
-      ctx.fillRect(-hs, -hs, size, size);
+    } else if (this.mode === MODE_SHIP) {
+      ctx.beginPath();
+      ctx.moveTo(hs, 0);
+      ctx.lineTo(-hs, -hs + 4);
+      ctx.lineTo(-hs + 10, 0);
+      ctx.lineTo(-hs, hs - 4);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.mode === MODE_WAVE) {
+      ctx.beginPath();
+      ctx.moveTo(0, -hs);
+      ctx.lineTo(hs, 0);
+      ctx.lineTo(0, hs);
+      ctx.lineTo(-hs, 0);
+      ctx.closePath();
+      ctx.fill();
     }
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
