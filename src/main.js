@@ -183,7 +183,7 @@ class Game {
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
           this.shakeIntensity = 0;
-          Sound.stopMusic();
+          Sound.pauseMusic();
           this.state = PAUSED;
           return;
         }
@@ -245,7 +245,7 @@ class Game {
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
           this.shakeIntensity = 0;
-          Sound.stopMusic();
+          Sound.pauseMusic();
           this.state = PAUSED;
           return;
         }
@@ -285,11 +285,11 @@ class Game {
     // Pause game & music when phone screen is turned off or tab is hidden
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
-        if (this.state === PLAYING || this.state === DEAD) {
+        if (this.state === PLAYING || this.state === EDITOR_TESTING || this.state === DEAD) {
           this.shakeIntensity = 0;
           this.state = PAUSED;
         }
-        Sound.stopMusic();
+        Sound.pauseMusic();
       }
     });
   }
