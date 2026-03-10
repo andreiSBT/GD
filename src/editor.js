@@ -76,6 +76,12 @@ export class Editor {
     // Toast notification
     this.toastText = '';
     this.toastTimer = 0;
+
+    // Paint mode (hold+drag to place multiple objects)
+    this.painting = false;
+    this.paintErase = false;
+    this.lastPaintGx = -1;
+    this.lastPaintGy = -1;
   }
 
   // === EVENT HANDLERS ===
@@ -108,6 +114,10 @@ export class Editor {
 
     if (this.selectedTool === 'erase') {
       this._removeObjectAt(gx, gy);
+      this.painting = true;
+      this.paintErase = true;
+      this.lastPaintGx = gx;
+      this.lastPaintGy = gy;
       return;
     }
 
@@ -130,6 +140,13 @@ export class Editor {
     }
 
     this._placeObject(gx, gy);
+    // Start paint mode for tools that support it
+    if (['spike', 'orb', 'pad', 'checkpoint', 'end'].includes(this.selectedTool)) {
+      this.painting = true;
+      this.paintErase = false;
+      this.lastPaintGx = gx;
+      this.lastPaintGy = gy;
+    }
   }
 
   handleMouseMove(x, y) {
@@ -141,6 +158,17 @@ export class Editor {
 
     if (this.dragStart) {
       this.dragWidth = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
+    }
+
+    // Paint mode: place/erase on each new grid cell while dragging
+    if (this.painting && (grid.gx !== this.lastPaintGx || grid.gy !== this.lastPaintGy)) {
+      if (this.paintErase) {
+        this._removeObjectAt(grid.gx, grid.gy);
+      } else {
+        this._placeObject(grid.gx, grid.gy);
+      }
+      this.lastPaintGx = grid.gx;
+      this.lastPaintGy = grid.gy;
     }
 
     // Edge scrolling
@@ -163,6 +191,8 @@ export class Editor {
       this._rebuildLive();
       this.dragStart = null;
     }
+    this.painting = false;
+    this.paintErase = false;
   }
 
   handleKeyDown(e) {
