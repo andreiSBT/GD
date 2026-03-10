@@ -108,6 +108,11 @@ export class Editor {
       this._handleBrowseClick(x, y);
       return;
     }
+    // Dismiss help overlay on any click
+    if (this.showHelp) {
+      this.showHelp = false;
+      return;
+    }
     // buttons are populated during draw() — just check them
     // Check toolbar buttons
     for (const btn of this.buttons) {
