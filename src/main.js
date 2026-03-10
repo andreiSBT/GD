@@ -131,11 +131,11 @@ class Game {
           this._saveCustomization();
           this.state = MENU;
         } else if (this.state === PAUSED) {
-          this.state = PLAYING;
-          if (this.level) Sound.playMusic(this.level.id);
-        } else if (this.state === PLAYING) {
+          this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
+          Sound.resumeMusic();
+        } else if (this.state === PLAYING || this.state === EDITOR_TESTING) {
           this.shakeIntensity = 0;
-          Sound.stopMusic();
+          Sound.pauseMusic();
           this.state = PAUSED;
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
