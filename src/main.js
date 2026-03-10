@@ -2,7 +2,8 @@
 
 import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
-import { Level, Camera, getLevelCount } from './level.js';
+import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
+import { Editor } from './editor.js';
 import { ParticleSystem } from './particles.js';
 import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
@@ -16,6 +17,8 @@ const PLAYING = 'playing';
 const DEAD = 'dead';
 const COMPLETE = 'complete';
 const PAUSED = 'paused';
+const EDITOR = 'editor';
+const EDITOR_TESTING = 'editor_testing';
 
 class Game {
   constructor() {
@@ -45,6 +48,16 @@ class Game {
     this.deathTimer = 0;
     this.pendingOrbHit = null; // orb waiting for click activation
 
+    // Editor
+    this.editor = new Editor(this.canvas, this.ctx, this.renderer);
+    this.editor.onTest = (levelData) => this._testEditorLevel(levelData);
+    this.editor.onBack = () => { this.state = MENU; };
+    this.editor.onLoadLevel = (id) => {
+      const data = LEVEL_DATA[id];
+      if (data) this.editor.loadExistingLevel(data);
+    };
+    this.editorLevelData = null;
+
     // Load customization from localStorage
     this.customization = this._loadCustomization();
     this._applyCustomization();
@@ -56,7 +69,7 @@ class Game {
   _bindEvents() {
     const doPress = () => {
       Sound.resumeAudio();
-      if (this.state === PLAYING) {
+      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         this.player.pressJump();
 
         // Check if we're touching an orb (orbs need click while overlapping)
@@ -84,13 +97,27 @@ class Game {
     };
 
     const doRelease = () => {
-      if (this.state === PLAYING) {
+      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         this.player.releaseJump();
       }
     };
 
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
+
+      // Editor handles its own keys
+      if (this.state === EDITOR) {
+        if (this.editor.handleKeyDown(e)) return;
+      }
+
+      // When testing editor level, ESC goes back to editor
+      if (this.state === EDITOR_TESTING && e.code === 'Escape') {
+        Sound.stopMusic();
+        this.shakeIntensity = 0;
+        this.state = EDITOR;
+        return;
+      }
+
       if (e.code === 'Space' || e.code === 'ArrowUp') {
         e.preventDefault();
         if (this.state === DEAD && this.deathTimer > 0.3) {
@@ -113,7 +140,12 @@ class Game {
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.shakeIntensity = 0;
-          this.state = MENU;
+          if (this.editorLevelData) {
+            this.editorLevelData = null;
+            this.state = EDITOR;
+          } else {
+            this.state = MENU;
+          }
         }
       }
     });
@@ -124,11 +156,18 @@ class Game {
       }
     });
 
+    this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
     this.canvas.addEventListener('mousedown', (e) => {
       Sound.resumeAudio();
       const rect = this.canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+
+      if (this.state === EDITOR) {
+        this.editor.handleMouseDown(x, y, e.button);
+        return;
+      }
 
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === PAUSED || this.state === DEAD || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
@@ -139,7 +178,7 @@ class Game {
         }
       }
 
-      if (this.state === PLAYING) {
+      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
@@ -156,7 +195,25 @@ class Game {
       }
     });
 
-    this.canvas.addEventListener('mouseup', () => doRelease());
+    this.canvas.addEventListener('mousemove', (e) => {
+      if (this.state === EDITOR) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+        const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+        this.editor.handleMouseMove(x, y);
+      }
+    });
+
+    this.canvas.addEventListener('mouseup', (e) => {
+      if (this.state === EDITOR) {
+        const rect = this.canvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+        const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+        this.editor.handleMouseUp(x, y);
+        return;
+      }
+      doRelease();
+    });
 
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
@@ -178,7 +235,7 @@ class Game {
         }
       }
 
-      if (this.state === PLAYING) {
+      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
@@ -196,6 +253,13 @@ class Game {
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
       doRelease();
+    }, { passive: false });
+
+    this.canvas.addEventListener('wheel', (e) => {
+      if (this.state === EDITOR) {
+        e.preventDefault();
+        this.editor.handleWheel(e);
+      }
     }, { passive: false });
 
     // Pause game & music when phone screen is turned off or tab is hidden
@@ -258,18 +322,38 @@ class Game {
         Sound.stopMusic();
         this.state = MENU;
       }
+    } else if (action === 'editor') {
+      this.state = EDITOR;
+      this.editor.load('autosave'); // try to restore last session
     } else if (action === 'back') {
       this.state = MENU;
     }
   }
 
   _startLevel(levelId) {
+    this.editorLevelData = null;
     this.level = new Level(levelId);
     this.theme = THEMES[levelId];
     this.attempts = 0;
     this.lastCheckpoint = null;
     this._restart();
     Sound.playMusic(levelId);
+  }
+
+  _testEditorLevel(levelData) {
+    this.editorLevelData = levelData;
+    this.level = createLevelFromData(levelData);
+    this.theme = this.editor.theme;
+    this.practiceMode = true;
+    this.attempts = 0;
+    this.lastCheckpoint = null;
+    this.player.reset(0);
+    this.level.reset();
+    this.state = EDITOR_TESTING;
+    this.deathTimer = 0;
+    this.shakeIntensity = 0;
+    this.pendingOrbHit = null;
+    Sound.playMusic(this.editor.themeId);
   }
 
   _restart() {
@@ -291,7 +375,7 @@ class Game {
       this.lastCheckpoint = null;
     }
 
-    this.state = PLAYING;
+    this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
   }
 
   _die() {
@@ -342,7 +426,12 @@ class Game {
       return;
     }
 
-    if (this.state !== PLAYING) return;
+    if (this.state === EDITOR) {
+      this.editor.update(dt);
+      return;
+    }
+
+    if (this.state !== PLAYING && this.state !== EDITOR_TESTING) return;
 
     this.level.update();
     this.player.update();
@@ -484,6 +573,12 @@ class Game {
 
     if (this.shakeIntensity > 0.5) {
       this.renderer.drawScreenShake(ctx, this.shakeIntensity);
+    }
+
+    if (this.state === EDITOR) {
+      this.editor.draw(ctx);
+      ctx.restore();
+      return;
     }
 
     if (this.state === MENU) {

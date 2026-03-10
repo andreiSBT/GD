@@ -68,11 +68,14 @@ export class UI {
     // Customize button
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 480, 240, 60, 'CUSTOMIZE', 'customize', '#8844CC');
 
+    // Editor button
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 560, 240, 60, 'EDITOR', 'editor', '#CC6600');
+
     // Controls hint
     ctx.fillStyle = '#445566';
     ctx.font = '16px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SPACE / CLICK to jump  •  ESC for menu', SCREEN_WIDTH / 2, 600);
+    ctx.fillText('SPACE / CLICK to jump  •  ESC for menu', SCREEN_WIDTH / 2, 650);
   }
 
   drawLevelSelect(ctx, progress) {

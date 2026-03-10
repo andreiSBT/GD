@@ -6,7 +6,19 @@ import level1 from './levels/level1.js';
 import level2 from './levels/level2.js';
 import level3 from './levels/level3.js';
 
-const LEVEL_DATA = { 1: level1, 2: level2, 3: level3 };
+export const LEVEL_DATA = { 1: level1, 2: level2, 3: level3 };
+
+export function createLevelFromData(data) {
+  const lvl = Object.create(Level.prototype);
+  lvl.id = data.id || 99;
+  lvl.data = data;
+  lvl.name = data.name || 'Custom Level';
+  lvl.speedMult = data.speed || 1.0;
+  lvl.obstacles = [];
+  lvl.endX = 0;
+  lvl._load();
+  return lvl;
+}
 
 export class Level {
   constructor(levelId) {
