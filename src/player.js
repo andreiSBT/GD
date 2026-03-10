@@ -99,7 +99,7 @@ export class Player {
     } else if (type === 'pink_orb') {
       this.vy = PINK_ORB_VEL * this.gravityMult;
     } else if (type === 'dash_orb') {
-      this.vy = DASH_ORB_VEL * this.gravityMult * 0.5;
+      this.vy = 0; // horizontal dash — no vertical movement
       this.dashing = true;
       this.dashTimer = 120; // max dash duration (safety limit)
     } else if (type === 'yellow_pad') {
