@@ -326,8 +326,13 @@ class Game {
       Sound.stopMusic();
       this.state = PAUSED;
     } else if (action === 'resume') {
-      this.state = PLAYING;
+      this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
       if (this.level) Sound.playMusic(this.level.id);
+    } else if (action === 'back_to_editor') {
+      Sound.stopMusic();
+      this.shakeIntensity = 0;
+      this.editorLevelData = null;
+      this.state = EDITOR;
     } else if (action === 'retry') {
       this._restart();
     } else if (action === 'menu') {
@@ -626,7 +631,7 @@ class Game {
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name);
 
       if (this.state === PAUSED) {
-        this.ui.drawPauseScreen(ctx);
+        this.ui.drawPauseScreen(ctx, !!this.editorLevelData);
       } else if (this.state === COMPLETE) {
         this.ui.drawCompleteScreen(ctx, this.attempts, this.theme);
       }

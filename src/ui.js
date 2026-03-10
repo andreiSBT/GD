@@ -268,7 +268,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 430, 240, 55, 'MENU', 'menu', '#666');
   }
 
-  drawPauseScreen(ctx) {
+  drawPauseScreen(ctx, editorTesting = false) {
     this.buttons = [];
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -280,7 +280,10 @@ export class UI {
     ctx.fillText('PAUSED', SCREEN_WIDTH / 2, 250);
 
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 320, 240, 55, 'RESUME', 'resume', '#00C864');
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 390, 240, 55, 'MENU', 'menu', '#666');
+    if (editorTesting) {
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 390, 240, 55, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
+    }
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, editorTesting ? 460 : 390, 240, 55, 'MENU', 'menu', '#666');
   }
 
   drawCustomize(ctx, customization) {
