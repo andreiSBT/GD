@@ -20,7 +20,7 @@ const WAVE_SPEED = 6;         // wave diagonal speed
 const ORB_JUMP_VEL = -16;     // yellow orb bounce
 const PINK_ORB_VEL = -12;     // pink orb (shorter bounce)
 const DASH_ORB_VEL = -10;     // dash orb (horizontal dash feel)
-const PAD_JUMP_VEL = -18;     // jump pad (stronger than orb)
+const PAD_JUMP_VEL = -21;     // jump pad (stronger than orb)
 
 export class Player {
   constructor() {
