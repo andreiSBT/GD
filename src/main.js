@@ -468,9 +468,7 @@ class Game {
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name);
 
-      if (this.state === DEAD && this.deathTimer > 0.3) {
-        this.ui.drawDeathScreen(ctx, this.currentProgress, this.attempts);
-      } else if (this.state === COMPLETE) {
+      if (this.state === COMPLETE) {
         this.ui.drawCompleteScreen(ctx, this.attempts, this.theme);
       }
     }
