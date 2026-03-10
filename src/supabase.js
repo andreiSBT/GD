@@ -128,7 +128,7 @@ export async function signUp(username, password) {
   const client = getClient();
   if (!client) return { error: 'Supabase not configured' };
 
-  const email = username.toLowerCase().trim() + '@gd.game';
+  const email = username.toLowerCase().trim() + '@gdgame.com';
   const { data, error } = await client.auth.signUp({
     email,
     password,
@@ -153,7 +153,7 @@ export async function signIn(usernameOrEmail, password) {
   // If it contains @, treat as email; otherwise append @gd.game
   const email = usernameOrEmail.includes('@')
     ? usernameOrEmail.toLowerCase().trim()
-    : usernameOrEmail.toLowerCase().trim() + '@gd.game';
+    : usernameOrEmail.toLowerCase().trim() + '@gdgame.com';
   const { data, error } = await client.auth.signInWithPassword({ email, password });
 
   if (error) return { error: error.message };
