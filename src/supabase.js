@@ -98,12 +98,24 @@ export function getUsername() {
 
 export async function initAuth() {
   const client = getClient();
-  if (!client) return;
+  if (!client) {
+    console.log('[Auth] Supabase not configured, skipping auth');
+    return;
+  }
 
-  const { data } = await client.auth.getSession();
-  if (data.session?.user) {
-    currentAuthUser = data.session.user;
-    if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
+  try {
+    const { data, error } = await client.auth.getSession();
+    if (error) {
+      console.warn('[Auth] getSession error:', error.message);
+    } else if (data.session?.user) {
+      currentAuthUser = data.session.user;
+      console.log('[Auth] Session restored for:', currentAuthUser.user_metadata?.username || currentAuthUser.email);
+      if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
+    } else {
+      console.log('[Auth] No existing session');
+    }
+  } catch (e) {
+    console.warn('[Auth] Init failed:', e.message);
   }
 
   client.auth.onAuthStateChange((_event, session) => {
