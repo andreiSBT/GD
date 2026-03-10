@@ -402,7 +402,7 @@ class Game {
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
     Sound.stopMusic();
-    Sound.playMusic();
+    Sound.playMusic(this.level.id);
   }
 
   _die() {
