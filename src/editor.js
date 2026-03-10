@@ -194,10 +194,11 @@ export class Editor {
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
 
-    // Move tool: update object position live while dragging
+    // Move tool: update object position live while dragging (half-grid snap)
     if (this.movingObj) {
-      this.movingObj.x = grid.gx;
-      this.movingObj.y = grid.gy;
+      const half = this._screenToHalfGrid(x, y);
+      this.movingObj.x = half.gx;
+      this.movingObj.y = half.gy;
       this.objects[this.movingObjIndex] = { ...this.movingObj };
       this._rebuildLive();
     }
@@ -374,8 +375,9 @@ export class Editor {
 
     // Move tool: drag object with finger
     if (this.movingObj) {
-      this.movingObj.x = grid.gx;
-      this.movingObj.y = grid.gy;
+      const half = this._screenToHalfGrid(x, y);
+      this.movingObj.x = half.gx;
+      this.movingObj.y = half.gy;
       this.objects[this.movingObjIndex] = { ...this.movingObj };
       this._rebuildLive();
       this.touchMoved = true;
@@ -597,6 +599,14 @@ export class Editor {
     const worldX = sx + this.cameraX;
     const gx = Math.floor(worldX / GRID);
     const gy = Math.max(0, Math.floor((GROUND_Y - sy) / GRID));
+    return { gx, gy };
+  }
+
+  _screenToHalfGrid(sx, sy) {
+    const worldX = sx + this.cameraX;
+    const half = GRID / 2;
+    const gx = Math.round(worldX / half) * 0.5;
+    const gy = Math.max(0, Math.round((GROUND_Y - sy) / half) * 0.5);
     return { gx, gy };
   }
 
