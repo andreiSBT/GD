@@ -64,6 +64,17 @@ export class Editor {
 
     this.onTest = null;
     this.onBack = null;
+
+    // Touch state
+    this.touchStartX = 0;
+    this.touchStartY = 0;
+    this.touchStartCamX = 0;
+    this.isTouchScrolling = false;
+    this.touchMoved = false;
+
+    // Toast notification
+    this.toastText = '';
+    this.toastTimer = 0;
   }
 
   // === EVENT HANDLERS ===
@@ -210,6 +221,71 @@ export class Editor {
     return false;
   }
 
+  // === TOUCH HANDLERS ===
+
+  handleTouchStart(x, y, touchCount) {
+    this.touchStartX = x;
+    this.touchStartY = y;
+    this.touchStartCamX = this.cameraX;
+    this.isTouchScrolling = false;
+    this.touchMoved = false;
+
+    // Update hover position
+    this.mouseX = x;
+    this.mouseY = y;
+    const grid = this._screenToGrid(x, y);
+    this.hoverGx = grid.gx;
+    this.hoverGy = grid.gy;
+  }
+
+  handleTouchMove(x, y) {
+    const dx = x - this.touchStartX;
+    const dy = y - this.touchStartY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    // If moved more than 15px, treat as scroll
+    if (dist > 15) {
+      this.touchMoved = true;
+      this.isTouchScrolling = true;
+      this.cameraX = Math.max(0, this.touchStartCamX - dx);
+    }
+
+    // Update hover
+    this.mouseX = x;
+    this.mouseY = y;
+    const grid = this._screenToGrid(x, y);
+    this.hoverGx = grid.gx;
+    this.hoverGy = grid.gy;
+
+    // Platform drag (only if started dragging a platform)
+    if (this.dragStart && !this.isTouchScrolling) {
+      this.dragWidth = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
+    }
+  }
+
+  handleTouchEnd() {
+    if (this.isTouchScrolling) {
+      // Was scrolling, don't place anything
+      this.isTouchScrolling = false;
+      return;
+    }
+
+    if (this.touchMoved) return;
+
+    // Tap = click at the touch position
+    this.handleMouseDown(this.touchStartX, this.touchStartY, 0);
+
+    // If we started a platform drag via tap, auto-finish it with width 1
+    if (this.dragStart) {
+      this._pushHistory();
+      this.objects.push({
+        type: 'platform', x: this.dragStart.gx, y: this.dragStart.gy, w: 1, h: 1,
+      });
+      this._rebuildLive();
+      this.dragStart = null;
+    }
+  }
+
   handleWheel(e) {
     this.cameraX = Math.max(0, this.cameraX + (e.deltaX || e.deltaY));
   }
@@ -220,6 +296,7 @@ export class Editor {
     if (this.scrollSpeed !== 0) {
       this.cameraX = Math.max(0, this.cameraX + this.scrollSpeed);
     }
+    if (this.toastTimer > 0) this.toastTimer -= dt;
   }
 
   draw(ctx) {
@@ -265,6 +342,22 @@ export class Editor {
     // Help overlay
     if (this.showHelp) {
       this._drawHelp(ctx);
+    }
+
+    // Toast notification
+    if (this.toastTimer > 0) {
+      const alpha = Math.min(1, this.toastTimer * 2);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = 'rgba(0,0,0,0.8)';
+      const tw = ctx.measureText(this.toastText).width + 40;
+      const tx = (SCREEN_WIDTH - tw) / 2;
+      ctx.fillRect(tx, SCREEN_HEIGHT / 2 - 20, tw, 40);
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.toastText, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 6);
+      ctx.restore();
     }
   }
 
@@ -499,10 +592,12 @@ export class Editor {
 
     // Right side: action buttons
     const actions = [
+      { id: 'action_undo', label: '↩', color: '#555' },
+      { id: 'action_redo', label: '↪', color: '#555' },
       { id: 'action_test', label: 'TEST', color: '#00CC44' },
       { id: 'action_save', label: 'SAVE', color: '#4488CC' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
-      { id: 'action_export', label: 'EXPORT', color: '#CC8800' },
+      { id: 'action_export', label: 'EXP', color: '#CC8800' },
       { id: 'action_help', label: '?', color: '#666' },
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
@@ -570,38 +665,58 @@ export class Editor {
   }
 
   _drawBottomBar(ctx) {
-    const y = SCREEN_HEIGHT - 30;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, y, SCREEN_WIDTH, 30);
+    const y = SCREEN_HEIGHT - 36;
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, y, SCREEN_WIDTH, 36);
 
+    // Scroll left/right buttons
+    const scrollBtnW = 44;
+    const scrollBtnH = 28;
+    const sby = y + 4;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(10, sby, scrollBtnW, scrollBtnH);
+    ctx.fillStyle = '#CCC';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('◀', 10 + scrollBtnW / 2, sby + 20);
+    this.buttons.push({ id: 'scroll_left', x: 10, y: sby, w: scrollBtnW, h: scrollBtnH });
+
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(60, sby, scrollBtnW, scrollBtnH);
+    ctx.fillStyle = '#CCC';
+    ctx.fillText('▶', 60 + scrollBtnW / 2, sby + 20);
+    this.buttons.push({ id: 'scroll_right', x: 60, y: sby, w: scrollBtnW, h: scrollBtnH });
+
+    // Info text
     ctx.fillStyle = '#888';
-    ctx.font = '12px monospace';
+    ctx.font = '11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Level: ${this.levelName}  |  Theme: ${this.themeId}  |  H for help  |  Scroll: mouse wheel / arrows`, 10, y + 19);
+    ctx.fillText(`Obj: ${this.objects.length}  X: ${this.hoverGx}  Y: ${this.hoverGy}`, 114, sby + 19);
 
     // Theme cycle buttons
     for (let t = 1; t <= 3; t++) {
       const tx = SCREEN_WIDTH - 150 + (t - 1) * 40;
       const isActive = this.themeId === t;
       ctx.fillStyle = isActive ? THEMES[t].accent : 'rgba(255,255,255,0.15)';
-      ctx.fillRect(tx, y + 3, 32, 24);
+      ctx.fillRect(tx, sby, 32, scrollBtnH);
       ctx.fillStyle = isActive ? '#000' : '#AAA';
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`T${t}`, tx + 16, y + 19);
-      this.buttons.push({ id: 'theme_' + t, x: tx, y: y + 3, w: 32, h: 24 });
+      ctx.fillText(`T${t}`, tx + 16, sby + 19);
+      this.buttons.push({ id: 'theme_' + t, x: tx, y: sby, w: 32, h: scrollBtnH });
     }
 
     // Load level buttons
     for (let l = 1; l <= 3; l++) {
       const lx = SCREEN_WIDTH - 310 + (l - 1) * 40;
       ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      ctx.fillRect(lx, y + 3, 32, 24);
+      ctx.fillRect(lx, sby, 32, scrollBtnH);
       ctx.fillStyle = '#AAA';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`L${l}`, lx + 16, y + 19);
-      this.buttons.push({ id: 'loadlevel_' + l, x: lx, y: y + 3, w: 32, h: 24 });
+      ctx.fillText(`L${l}`, lx + 16, sby + 19);
+      this.buttons.push({ id: 'loadlevel_' + l, x: lx, y: sby, w: 32, h: scrollBtnH });
     }
   }
 
@@ -775,16 +890,25 @@ export class Editor {
     } else if (id.startsWith('theme_')) {
       this.themeId = parseInt(id.replace('theme_', ''));
       this.theme = THEMES[this.themeId];
+    } else if (id === 'scroll_left') {
+      this.cameraX = Math.max(0, this.cameraX - GRID * 6);
+    } else if (id === 'scroll_right') {
+      this.cameraX += GRID * 6;
     } else if (id.startsWith('loadlevel_')) {
       const lvl = parseInt(id.replace('loadlevel_', ''));
       if (this.onLoadLevel) this.onLoadLevel(lvl);
+    } else if (id === 'action_undo') {
+      this._undo();
+    } else if (id === 'action_redo') {
+      this._redo();
     } else if (id === 'action_test') {
       if (this.onTest) this.onTest(this.getLevelData());
     } else if (id === 'action_save') {
       this.save('manual');
-      // Visual feedback could be added here
+      this._showToast('Saved!');
     } else if (id === 'action_load') {
-      this.load('manual');
+      if (this.load('manual')) this._showToast('Loaded!');
+      else this._showToast('No save found');
     } else if (id === 'action_export') {
       const json = this.exportJSON();
       navigator.clipboard?.writeText(json).then(() => {
@@ -797,6 +921,11 @@ export class Editor {
     } else if (id === 'action_back') {
       if (this.onBack) this.onBack();
     }
+  }
+
+  _showToast(text) {
+    this.toastText = text;
+    this.toastTimer = 2.0;
   }
 
   _handlePanelClick(x, y) {

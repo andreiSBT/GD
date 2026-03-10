@@ -224,6 +224,11 @@ class Game {
       const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
 
+      if (this.state === EDITOR) {
+        this.editor.handleTouchStart(x, y, e.touches.length);
+        return;
+      }
+
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
           this.state === PAUSED || (this.state === DEAD && this.deathTimer > 0.3) || this.state === COMPLETE) {
@@ -250,8 +255,23 @@ class Game {
       }
     }, { passive: false });
 
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (this.state === EDITOR) {
+        e.preventDefault();
+        const rect = this.canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+        const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+        this.editor.handleTouchMove(x, y);
+      }
+    }, { passive: false });
+
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
+      if (this.state === EDITOR) {
+        this.editor.handleTouchEnd();
+        return;
+      }
       doRelease();
     }, { passive: false });
 
