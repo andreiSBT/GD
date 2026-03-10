@@ -50,6 +50,7 @@ export class Player {
     this.jumpBufferCounter = 0; // frames since jump was pressed
     this.trail = [];
     this.dashTimer = 0;         // frames of horizontal dash remaining
+    this.dashing = false;        // true while dash orb is active (held)
     this.iconIndex = 0;         // visual icon variant
     this.holdJumped = false;    // flag: did auto-jump from hold this frame
   }
@@ -63,6 +64,10 @@ export class Player {
   // Called on key/click UP
   releaseJump() {
     this.holding = false;
+    if (this.dashing) {
+      this.dashing = false;
+      this.dashTimer = 0;
+    }
   }
 
   jump() {
@@ -94,8 +99,9 @@ export class Player {
     } else if (type === 'pink_orb') {
       this.vy = PINK_ORB_VEL * this.gravityMult;
     } else if (type === 'dash_orb') {
-      this.vy = DASH_ORB_VEL * this.gravityMult * 0.3;
-      this.dashTimer = 15;
+      this.vy = DASH_ORB_VEL * this.gravityMult * 0.5;
+      this.dashing = true;
+      this.dashTimer = 120; // max dash duration (safety limit)
     } else if (type === 'yellow_pad') {
       this.vy = PAD_JUMP_VEL * this.gravityMult;
     } else if (type === 'pink_pad') {
@@ -128,7 +134,10 @@ export class Player {
     // Horizontal
     const speed = SCROLL_SPEED * this.speedMult * (this.dashTimer > 0 ? 1.5 : 1.0);
     this.x += speed;
-    if (this.dashTimer > 0) this.dashTimer--;
+    if (this.dashTimer > 0) {
+      this.dashTimer--;
+      if (this.dashTimer <= 0) this.dashing = false;
+    }
 
     // Store trail position
     this.trail.push({ x: this.x, y: this.y + PLAYER_SIZE / 2 });
@@ -157,7 +166,7 @@ export class Player {
     }
 
     // Hold-to-jump: in cube mode, auto-jump on landing while holding
-    if (this.mode === MODE_CUBE && this.holding && this.grounded) {
+    if (this.mode === MODE_CUBE && this.holding && this.grounded && !this.dashing) {
       this.holdJumped = this.jump();
     } else {
       this.holdJumped = false;
@@ -170,8 +179,13 @@ export class Player {
   }
 
   _updateCube() {
-    this.vy += GRAVITY * this.gravityMult;
-    this.y += this.vy;
+    if (this.dashing) {
+      // During dash: maintain velocity, no gravity
+      this.y += this.vy;
+    } else {
+      this.vy += GRAVITY * this.gravityMult;
+      this.y += this.vy;
+    }
 
     const groundY = GROUND_Y - PLAYER_SIZE;
     if (this.gravityMult > 0) {
@@ -179,6 +193,8 @@ export class Player {
         this.y = groundY;
         this.vy = 0;
         this.grounded = true;
+        this.dashing = false;
+        this.dashTimer = 0;
         this._snapRotation();
       }
     } else {
@@ -186,6 +202,8 @@ export class Player {
         this.y = 0;
         this.vy = 0;
         this.grounded = true;
+        this.dashing = false;
+        this.dashTimer = 0;
         this._snapRotation();
       }
     }
