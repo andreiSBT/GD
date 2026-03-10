@@ -25,6 +25,7 @@ class Game {
 
     this._resizeCanvas();
     window.addEventListener('resize', () => this._resizeCanvas());
+    window.visualViewport?.addEventListener?.('resize', () => this._resizeCanvas());
     screen.orientation?.addEventListener?.('change', () => this._resizeCanvas());
 
     this.player = new Player();
@@ -146,20 +147,26 @@ class Game {
       e.preventDefault();
       Sound.resumeAudio();
 
-      if (this.state === PLAYING) {
-        doPress();
-      } else if (this.state === DEAD && this.deathTimer > 0.3) {
-        this._restart();
-      } else {
-        const rect = this.canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
-        const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+      const rect = this.canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+      const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+
+      // Check UI buttons first for all menu-like states
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
+          (this.state === DEAD && this.deathTimer > 0.3) || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
           this._handleAction(action);
+          return;
         }
+      }
+
+      if (this.state === PLAYING) {
+        doPress();
+      } else if (this.state === DEAD && this.deathTimer > 0.3) {
+        this._restart();
       }
     }, { passive: false });
 
@@ -469,24 +476,24 @@ class Game {
   }
 
   _resizeCanvas() {
-    const windowW = window.innerWidth;
-    const windowH = window.innerHeight;
+    // Use visualViewport for accurate mobile dimensions (handles Safari address bar)
+    const vv = window.visualViewport;
+    const windowW = vv ? vv.width : window.innerWidth;
+    const windowH = vv ? vv.height : window.innerHeight;
     const gameRatio = SCREEN_WIDTH / SCREEN_HEIGHT;
     const windowRatio = windowW / windowH;
 
     let cssW, cssH;
     if (windowRatio > gameRatio) {
-      // Window is wider than game - fit to height
       cssH = windowH;
       cssW = windowH * gameRatio;
     } else {
-      // Window is taller than game - fit to width
       cssW = windowW;
       cssH = windowW / gameRatio;
     }
 
-    this.canvas.style.width = `${cssW}px`;
-    this.canvas.style.height = `${cssH}px`;
+    this.canvas.style.width = `${Math.floor(cssW)}px`;
+    this.canvas.style.height = `${Math.floor(cssH)}px`;
   }
 
   _loadCustomization() {
