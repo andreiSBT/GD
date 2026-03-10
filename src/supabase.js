@@ -124,12 +124,13 @@ export async function initAuth() {
   });
 }
 
-export async function signUp(username, email, password) {
+export async function signUp(username, password) {
   const client = getClient();
   if (!client) return { error: 'Supabase not configured' };
 
+  const email = username.toLowerCase().trim() + '@gd.game';
   const { data, error } = await client.auth.signUp({
-    email: email.toLowerCase().trim(),
+    email,
     password,
     options: { data: { username: username.trim() } }
   });

@@ -761,17 +761,15 @@ class Game {
     document.getElementById('acc-register').addEventListener('click', async () => {
       regError.textContent = '';
       const u = document.getElementById('acc-reg-username').value.trim();
-      const e = document.getElementById('acc-reg-email').value.trim();
       const p = document.getElementById('acc-reg-pass').value;
       const p2 = document.getElementById('acc-reg-pass2').value;
-      if (!u || !e || !p || !p2) { regError.textContent = 'Fill in all fields'; return; }
+      if (!u || !p || !p2) { regError.textContent = 'Fill in all fields'; return; }
       if (u.length < 3) { regError.textContent = 'Username must be at least 3 characters'; return; }
-      if (!e.includes('@')) { regError.textContent = 'Enter a valid email'; return; }
       if (p.length < 6) { regError.textContent = 'Password must be at least 6 characters'; return; }
       if (p !== p2) { regError.textContent = 'Passwords do not match'; return; }
       regError.textContent = 'Creating account...';
       regError.style.color = '#AAA';
-      const { error } = await signUp(u, e, p);
+      const { error } = await signUp(u, p);
       regError.style.color = '#FF4444';
       if (error) { regError.textContent = error; return; }
       updateView();
