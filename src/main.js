@@ -58,6 +58,7 @@ class Game {
       if (data) this.editor.loadExistingLevel(data);
     };
     this.editorLevelData = null;
+    this.editorStartCheckpoint = null;
 
     // Load customization from localStorage, then try cloud
     this.customization = this._loadCustomization();
@@ -390,6 +391,7 @@ class Game {
 
   _startLevel(levelId) {
     this.editorLevelData = null;
+    this.editorStartCheckpoint = null;
     this.level = new Level(levelId);
     this.theme = THEMES[levelId];
     this.attempts = 0;
@@ -404,8 +406,21 @@ class Game {
     this.theme = this.editor.theme;
     this.practiceMode = true;
     this.attempts = 0;
-    this.lastCheckpoint = null;
     const startPixelX = (levelData.startX || 0) * GRID;
+    // Set start pos as a persistent checkpoint so player always respawns here
+    if (startPixelX > 0) {
+      this.editorStartCheckpoint = {
+        x: startPixelX,
+        y: GROUND_Y - PLAYER_SIZE,
+        gravityMult: 1,
+        speedMult: 1,
+        mode: MODE_CUBE,
+      };
+      this.lastCheckpoint = { ...this.editorStartCheckpoint };
+    } else {
+      this.editorStartCheckpoint = null;
+      this.lastCheckpoint = null;
+    }
     this.player.reset(startPixelX);
     this.level.resetFrom(startPixelX);
     this.state = EDITOR_TESTING;
@@ -429,6 +444,12 @@ class Game {
       this.player.speedMult = this.lastCheckpoint.speedMult;
       this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
       this.level.resetFrom(this.lastCheckpoint.x);
+    } else if (this.editorStartCheckpoint) {
+      // Editor start pos - always respawn here
+      this.player.reset(this.editorStartCheckpoint.x);
+      this.player.y = this.editorStartCheckpoint.y;
+      this.level.resetFrom(this.editorStartCheckpoint.x);
+      this.lastCheckpoint = { ...this.editorStartCheckpoint };
     } else {
       this.player.reset(0);
       this.level.reset();
