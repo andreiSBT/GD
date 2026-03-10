@@ -427,6 +427,7 @@ class Game {
       this.player.gravityMult = this.lastCheckpoint.gravityMult;
       this.player.speedMult = this.lastCheckpoint.speedMult;
       this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
+      this.level.resetFrom(this.lastCheckpoint.x);
     } else {
       this.player.reset(0);
       this.level.reset();

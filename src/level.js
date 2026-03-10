@@ -51,6 +51,13 @@ export class Level {
     }
   }
 
+  resetFrom(fromX) {
+    // Reset only obstacles at or after fromX (for checkpoint respawn)
+    for (const obs of this.obstacles) {
+      if (obs.x >= fromX && obs.reset) obs.reset();
+    }
+  }
+
   getVisible(cameraX) {
     const left = cameraX - PLAYER_X_OFFSET - 100;
     const right = cameraX + SCREEN_WIDTH + 100;
