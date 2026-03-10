@@ -333,7 +333,7 @@ class Game {
       this.shakeIntensity = 0;
       this.editorLevelData = null;
       this.state = EDITOR;
-    } else if (action === 'retry') {
+    } else if (action === 'retry' || action === 'restart') {
       this._restart();
     } else if (action === 'menu') {
       Sound.stopMusic();

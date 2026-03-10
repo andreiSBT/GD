@@ -279,11 +279,16 @@ export class UI {
     ctx.textAlign = 'center';
     ctx.fillText('PAUSED', SCREEN_WIDTH / 2, 250);
 
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 320, 240, 55, 'RESUME', 'resume', '#00C864');
+    let btnY = 320;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'RESUME', 'resume', '#00C864');
+    btnY += 70;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'RESTART', 'restart', '#CC3333');
+    btnY += 70;
     if (editorTesting) {
-      this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 390, 240, 55, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
+      btnY += 70;
     }
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, editorTesting ? 460 : 390, 240, 55, 'MENU', 'menu', '#666');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'MENU', 'menu', '#666');
   }
 
   drawCustomize(ctx, customization) {
