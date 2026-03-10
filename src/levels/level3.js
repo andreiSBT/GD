@@ -252,7 +252,6 @@ export default {
     { type: 'spike', x: 844, y: 0 },
     { type: 'spike', x: 845, y: 0 },
     { type: 'spike', x: 846, y: 0 },
-    { type: 'spike', x: 847, y: 0 },
     { type: 'orb', x: 852, y: 3, orbType: 'yellow_orb' },
     { type: 'spike', x: 853, y: 0 },
     { type: 'spike', x: 854, y: 0 },

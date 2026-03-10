@@ -262,7 +262,6 @@ export default {
     { type: 'spike', x: 822, y: 0 },
     { type: 'spike', x: 823, y: 0 },
     { type: 'spike', x: 824, y: 0 },
-    { type: 'spike', x: 825, y: 0 },
     { type: 'spike', x: 830, y: 0 },
     { type: 'spike', x: 831, y: 0 },
     { type: 'spike', x: 832, y: 0 },
