@@ -68,12 +68,134 @@ function getClient() {
 
 // Get or create a simple anonymous user id
 function getUserId() {
+  // If logged in via Supabase Auth, use that ID
+  if (currentAuthUser) return currentAuthUser.id;
   let id = localStorage.getItem('gd_user_id');
   if (!id) {
     id = crypto.randomUUID();
     localStorage.setItem('gd_user_id', id);
   }
   return id;
+}
+
+// === AUTHENTICATION ===
+
+let currentAuthUser = null;
+let onAuthChangeCallback = null;
+
+export function onAuthChange(cb) {
+  onAuthChangeCallback = cb;
+}
+
+export function getAuthUser() {
+  return currentAuthUser;
+}
+
+export function getUsername() {
+  if (!currentAuthUser) return null;
+  return currentAuthUser.user_metadata?.username || currentAuthUser.email?.split('@')[0] || null;
+}
+
+export async function initAuth() {
+  const client = getClient();
+  if (!client) return;
+
+  const { data } = await client.auth.getSession();
+  if (data.session?.user) {
+    currentAuthUser = data.session.user;
+    if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
+  }
+
+  client.auth.onAuthStateChange((_event, session) => {
+    currentAuthUser = session?.user || null;
+    if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
+  });
+}
+
+export async function signUp(username, password) {
+  const client = getClient();
+  if (!client) return { error: 'Supabase not configured' };
+
+  const email = username.toLowerCase().trim() + '@gd.game';
+  const { data, error } = await client.auth.signUp({
+    email,
+    password,
+    options: { data: { username: username.trim() } }
+  });
+
+  if (error) return { error: error.message };
+
+  currentAuthUser = data.user;
+
+  // Migrate anonymous data to the new account
+  await _migrateAnonymousData(data.user.id);
+
+  if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
+  return { error: null };
+}
+
+export async function signIn(username, password) {
+  const client = getClient();
+  if (!client) return { error: 'Supabase not configured' };
+
+  const email = username.toLowerCase().trim() + '@gd.game';
+  const { data, error } = await client.auth.signInWithPassword({ email, password });
+
+  if (error) return { error: error.message };
+
+  currentAuthUser = data.user;
+  if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
+  return { error: null };
+}
+
+export async function signOut() {
+  const client = getClient();
+  if (!client) return;
+
+  await client.auth.signOut();
+  currentAuthUser = null;
+  if (onAuthChangeCallback) onAuthChangeCallback(null);
+}
+
+// Migrate data from anonymous user_id to authenticated user
+async function _migrateAnonymousData(newUserId) {
+  const client = getClient();
+  if (!client) return;
+
+  const anonId = localStorage.getItem('gd_user_id');
+  if (!anonId) return;
+
+  try {
+    // Migrate progress
+    const { data: progressRows } = await client.from('progress').select('*').eq('user_id', anonId);
+    if (progressRows) {
+      for (const row of progressRows) {
+        await client.from('progress').upsert({
+          ...row, id: undefined, user_id: newUserId
+        }, { onConflict: 'user_id,level_id' });
+      }
+    }
+
+    // Migrate customization
+    const { data: custRow } = await client.from('customizations').select('*').eq('user_id', anonId).single();
+    if (custRow) {
+      await client.from('customizations').upsert({
+        ...custRow, id: undefined, user_id: newUserId
+      }, { onConflict: 'user_id' });
+    }
+
+    // Migrate editor levels
+    const { data: levelRows } = await client.from('editor_levels').select('*').eq('user_id', anonId);
+    if (levelRows) {
+      for (const row of levelRows) {
+        await client.from('editor_levels').upsert({
+          ...row, id: undefined, user_id: newUserId
+        }, { onConflict: 'user_id,slot_id' });
+      }
+    }
+  } catch (e) {
+    console.warn('Migration failed:', e.message);
+  }
 }
 
 export async function syncProgressToCloud(localProgress) {

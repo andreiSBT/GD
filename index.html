@@ -44,6 +44,27 @@
   </head>
   <body>
     <canvas id="game"></canvas>
+    <div id="account-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,20,0.95); z-index:100; justify-content:center; align-items:center;">
+      <div style="background:#111; border-radius:16px; padding:32px; width:90%; max-width:360px; text-align:center; font-family:monospace;">
+        <h2 id="account-title" style="color:#00C8FF; margin-bottom:20px; font-size:24px;">ACCOUNT</h2>
+        <div id="account-logged-out">
+          <input id="acc-username" type="text" placeholder="Username" autocomplete="username" maxlength="20"
+            style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+          <input id="acc-password" type="password" placeholder="Password" autocomplete="current-password" maxlength="30"
+            style="width:100%; padding:12px; margin-bottom:16px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+          <div id="acc-error" style="color:#FF4444; font-size:14px; margin-bottom:12px; min-height:20px;"></div>
+          <button id="acc-login" style="width:100%; padding:12px; margin-bottom:8px; background:#00C864; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">LOG IN</button>
+          <button id="acc-register" style="width:100%; padding:12px; margin-bottom:12px; background:#4488CC; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">REGISTER</button>
+        </div>
+        <div id="account-logged-in" style="display:none;">
+          <p style="color:#AAA; font-size:16px; margin-bottom:8px;">Logged in as</p>
+          <p id="acc-display-name" style="color:#00C8FF; font-size:22px; font-weight:bold; margin-bottom:20px;"></p>
+          <p style="color:#666; font-size:13px; margin-bottom:16px;">Your progress, customization, and editor levels are synced across all devices.</p>
+          <button id="acc-logout" style="width:100%; padding:12px; margin-bottom:12px; background:#CC3333; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">LOG OUT</button>
+        </div>
+        <button id="acc-close" style="width:100%; padding:12px; background:#333; border:none; color:#AAA; font-size:16px; font-family:monospace; border-radius:8px; cursor:pointer;">BACK</button>
+      </div>
+    </div>
     <script type="module" src="/src/main.js"></script>
     <script>
       if ('serviceWorker' in navigator) {

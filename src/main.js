@@ -9,7 +9,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress } from './progress.js';
 import * as Sound from './sound.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername } from './supabase.js';
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
@@ -65,6 +65,8 @@ class Game {
     this._initCloudCustomization();
 
     this._bindEvents();
+    this._setupAccountUI();
+    initAuth();
     this._startLoop();
   }
 
@@ -365,6 +367,8 @@ class Game {
     } else if (action === 'editor') {
       this.state = EDITOR;
       this.editor.showBrowser();
+    } else if (action === 'account') {
+      this._showAccountOverlay();
     } else if (action === 'back') {
       this.state = MENU;
     }
@@ -698,6 +702,76 @@ class Game {
       this.canvas.style.width = `${Math.floor(cssW)}px`;
       this.canvas.style.height = `${Math.floor(cssH)}px`;
     }
+  }
+
+  _setupAccountUI() {
+    const overlay = document.getElementById('account-overlay');
+    const loggedOut = document.getElementById('account-logged-out');
+    const loggedIn = document.getElementById('account-logged-in');
+    const displayName = document.getElementById('acc-display-name');
+    const errorEl = document.getElementById('acc-error');
+    const usernameInput = document.getElementById('acc-username');
+    const passwordInput = document.getElementById('acc-password');
+
+    if (!overlay) return;
+
+    const updateView = () => {
+      const user = getAuthUser();
+      if (user) {
+        loggedOut.style.display = 'none';
+        loggedIn.style.display = 'block';
+        displayName.textContent = getUsername() || 'Player';
+      } else {
+        loggedOut.style.display = 'block';
+        loggedIn.style.display = 'none';
+      }
+      errorEl.textContent = '';
+    };
+
+    document.getElementById('acc-login').addEventListener('click', async () => {
+      errorEl.textContent = '';
+      const u = usernameInput.value.trim();
+      const p = passwordInput.value;
+      if (!u || !p) { errorEl.textContent = 'Enter username and password'; return; }
+      errorEl.textContent = 'Logging in...';
+      const { error } = await signIn(u, p);
+      if (error) { errorEl.textContent = error; return; }
+      updateView();
+    });
+
+    document.getElementById('acc-register').addEventListener('click', async () => {
+      errorEl.textContent = '';
+      const u = usernameInput.value.trim();
+      const p = passwordInput.value;
+      if (!u || !p) { errorEl.textContent = 'Enter username and password'; return; }
+      if (u.length < 3) { errorEl.textContent = 'Username must be at least 3 characters'; return; }
+      if (p.length < 6) { errorEl.textContent = 'Password must be at least 6 characters'; return; }
+      errorEl.textContent = 'Creating account...';
+      const { error } = await signUp(u, p);
+      if (error) { errorEl.textContent = error; return; }
+      updateView();
+    });
+
+    document.getElementById('acc-logout').addEventListener('click', async () => {
+      await signOut();
+      updateView();
+    });
+
+    document.getElementById('acc-close').addEventListener('click', () => {
+      overlay.style.display = 'none';
+    });
+
+    this._accountOverlay = overlay;
+    this._updateAccountView = updateView;
+  }
+
+  _showAccountOverlay() {
+    if (!this._accountOverlay) return;
+    this._accountOverlay.style.display = 'flex';
+    this._updateAccountView();
+    document.getElementById('acc-error').textContent = '';
+    document.getElementById('acc-username').value = '';
+    document.getElementById('acc-password').value = '';
   }
 
   async _initCloudCustomization() {

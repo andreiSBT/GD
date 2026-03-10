@@ -3,6 +3,7 @@
 import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE } from './settings.js';
 import { getLevelCount } from './level.js';
 import { lighten } from './player.js';
+import { getUsername } from './supabase.js';
 
 export class UI {
   constructor() {
@@ -70,6 +71,14 @@ export class UI {
 
     // Editor button
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 560, 240, 60, 'EDITOR', 'editor', '#CC6600');
+
+    // Account button (top right)
+    const username = getUsername();
+    if (username) {
+      this._drawButton(ctx, SCREEN_WIDTH - 200, 10, 180, 40, username, 'account', '#336688');
+    } else {
+      this._drawButton(ctx, SCREEN_WIDTH - 140, 10, 120, 40, 'ACCOUNT', 'account', '#336688');
+    }
 
     // Controls hint
     ctx.fillStyle = '#445566';
