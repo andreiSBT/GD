@@ -231,7 +231,7 @@ export class Editor {
     this._drawGrid(ctx);
 
     // Live obstacles
-    const editorCamX = this.cameraX - PLAYER_X_OFFSET;
+    const editorCamX = this.cameraX + PLAYER_X_OFFSET;
     for (const obs of this.liveObstacles) {
       obs.draw(ctx, editorCamX, this.theme);
     }
