@@ -112,13 +112,12 @@ export async function initAuth() {
   });
 }
 
-export async function signUp(username, password) {
+export async function signUp(username, email, password) {
   const client = getClient();
   if (!client) return { error: 'Supabase not configured' };
 
-  const email = username.toLowerCase().trim() + '@gd.game';
   const { data, error } = await client.auth.signUp({
-    email,
+    email: email.toLowerCase().trim(),
     password,
     options: { data: { username: username.trim() } }
   });
@@ -134,11 +133,14 @@ export async function signUp(username, password) {
   return { error: null };
 }
 
-export async function signIn(username, password) {
+export async function signIn(usernameOrEmail, password) {
   const client = getClient();
   if (!client) return { error: 'Supabase not configured' };
 
-  const email = username.toLowerCase().trim() + '@gd.game';
+  // If it contains @, treat as email; otherwise append @gd.game
+  const email = usernameOrEmail.includes('@')
+    ? usernameOrEmail.toLowerCase().trim()
+    : usernameOrEmail.toLowerCase().trim() + '@gd.game';
   const { data, error } = await client.auth.signInWithPassword({ email, password });
 
   if (error) return { error: error.message };

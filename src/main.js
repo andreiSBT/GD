@@ -709,11 +709,24 @@ class Game {
     const loggedOut = document.getElementById('account-logged-out');
     const loggedIn = document.getElementById('account-logged-in');
     const displayName = document.getElementById('acc-display-name');
-    const errorEl = document.getElementById('acc-error');
-    const usernameInput = document.getElementById('acc-username');
-    const passwordInput = document.getElementById('acc-password');
+    const loginForm = document.getElementById('acc-login-form');
+    const registerForm = document.getElementById('acc-register-form');
+    const loginError = document.getElementById('acc-error');
+    const regError = document.getElementById('acc-reg-error');
 
     if (!overlay) return;
+
+    const showLogin = () => {
+      loginForm.style.display = 'block';
+      registerForm.style.display = 'none';
+      loginError.textContent = '';
+    };
+
+    const showRegister = () => {
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'block';
+      regError.textContent = '';
+    };
 
     const updateView = () => {
       const user = getAuthUser();
@@ -724,31 +737,42 @@ class Game {
       } else {
         loggedOut.style.display = 'block';
         loggedIn.style.display = 'none';
+        showLogin();
       }
-      errorEl.textContent = '';
     };
 
+    document.getElementById('acc-show-register').addEventListener('click', showRegister);
+    document.getElementById('acc-show-login').addEventListener('click', showLogin);
+
     document.getElementById('acc-login').addEventListener('click', async () => {
-      errorEl.textContent = '';
-      const u = usernameInput.value.trim();
-      const p = passwordInput.value;
-      if (!u || !p) { errorEl.textContent = 'Enter username and password'; return; }
-      errorEl.textContent = 'Logging in...';
+      loginError.textContent = '';
+      const u = document.getElementById('acc-login-user').value.trim();
+      const p = document.getElementById('acc-login-pass').value;
+      if (!u || !p) { loginError.textContent = 'Enter username/email and password'; return; }
+      loginError.textContent = 'Logging in...';
+      loginError.style.color = '#AAA';
       const { error } = await signIn(u, p);
-      if (error) { errorEl.textContent = error; return; }
+      loginError.style.color = '#FF4444';
+      if (error) { loginError.textContent = error; return; }
       updateView();
     });
 
     document.getElementById('acc-register').addEventListener('click', async () => {
-      errorEl.textContent = '';
-      const u = usernameInput.value.trim();
-      const p = passwordInput.value;
-      if (!u || !p) { errorEl.textContent = 'Enter username and password'; return; }
-      if (u.length < 3) { errorEl.textContent = 'Username must be at least 3 characters'; return; }
-      if (p.length < 6) { errorEl.textContent = 'Password must be at least 6 characters'; return; }
-      errorEl.textContent = 'Creating account...';
-      const { error } = await signUp(u, p);
-      if (error) { errorEl.textContent = error; return; }
+      regError.textContent = '';
+      const u = document.getElementById('acc-reg-username').value.trim();
+      const e = document.getElementById('acc-reg-email').value.trim();
+      const p = document.getElementById('acc-reg-pass').value;
+      const p2 = document.getElementById('acc-reg-pass2').value;
+      if (!u || !e || !p || !p2) { regError.textContent = 'Fill in all fields'; return; }
+      if (u.length < 3) { regError.textContent = 'Username must be at least 3 characters'; return; }
+      if (!e.includes('@')) { regError.textContent = 'Enter a valid email'; return; }
+      if (p.length < 6) { regError.textContent = 'Password must be at least 6 characters'; return; }
+      if (p !== p2) { regError.textContent = 'Passwords do not match'; return; }
+      regError.textContent = 'Creating account...';
+      regError.style.color = '#AAA';
+      const { error } = await signUp(u, e, p);
+      regError.style.color = '#FF4444';
+      if (error) { regError.textContent = error; return; }
       updateView();
     });
 
@@ -769,9 +793,6 @@ class Game {
     if (!this._accountOverlay) return;
     this._accountOverlay.style.display = 'flex';
     this._updateAccountView();
-    document.getElementById('acc-error').textContent = '';
-    document.getElementById('acc-username').value = '';
-    document.getElementById('acc-password').value = '';
   }
 
   async _initCloudCustomization() {

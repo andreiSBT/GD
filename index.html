@@ -48,13 +48,30 @@
       <div style="background:#111; border-radius:16px; padding:32px; width:90%; max-width:360px; text-align:center; font-family:monospace;">
         <h2 id="account-title" style="color:#00C8FF; margin-bottom:20px; font-size:24px;">ACCOUNT</h2>
         <div id="account-logged-out">
-          <input id="acc-username" type="text" placeholder="Username" autocomplete="username" maxlength="20"
-            style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-          <input id="acc-password" type="password" placeholder="Password" autocomplete="current-password" maxlength="30"
-            style="width:100%; padding:12px; margin-bottom:16px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-          <div id="acc-error" style="color:#FF4444; font-size:14px; margin-bottom:12px; min-height:20px;"></div>
-          <button id="acc-login" style="width:100%; padding:12px; margin-bottom:8px; background:#00C864; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">LOG IN</button>
-          <button id="acc-register" style="width:100%; padding:12px; margin-bottom:12px; background:#4488CC; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">REGISTER</button>
+          <!-- Login form -->
+          <div id="acc-login-form">
+            <input id="acc-login-user" type="text" placeholder="Username or Email" autocomplete="username" maxlength="50"
+              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+            <input id="acc-login-pass" type="password" placeholder="Password" autocomplete="current-password" maxlength="30"
+              style="width:100%; padding:12px; margin-bottom:16px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+            <div id="acc-error" style="color:#FF4444; font-size:14px; margin-bottom:12px; min-height:20px;"></div>
+            <button id="acc-login" style="width:100%; padding:12px; margin-bottom:8px; background:#00C864; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">LOG IN</button>
+            <p id="acc-show-register" style="color:#4488CC; font-size:14px; margin-top:8px; margin-bottom:4px; cursor:pointer; text-decoration:underline;">Don't have an account? Register</p>
+          </div>
+          <!-- Register form -->
+          <div id="acc-register-form" style="display:none;">
+            <input id="acc-reg-username" type="text" placeholder="Username" autocomplete="username" maxlength="20"
+              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+            <input id="acc-reg-email" type="email" placeholder="Email" autocomplete="email" maxlength="50"
+              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+            <input id="acc-reg-pass" type="password" placeholder="Password" autocomplete="new-password" maxlength="30"
+              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+            <input id="acc-reg-pass2" type="password" placeholder="Confirm Password" autocomplete="new-password" maxlength="30"
+              style="width:100%; padding:12px; margin-bottom:16px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
+            <div id="acc-reg-error" style="color:#FF4444; font-size:14px; margin-bottom:12px; min-height:20px;"></div>
+            <button id="acc-register" style="width:100%; padding:12px; margin-bottom:8px; background:#4488CC; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">REGISTER</button>
+            <p id="acc-show-login" style="color:#00C864; font-size:14px; margin-top:8px; margin-bottom:4px; cursor:pointer; text-decoration:underline;">Already have an account? Log in</p>
+          </div>
         </div>
         <div id="account-logged-in" style="display:none;">
           <p style="color:#AAA; font-size:16px; margin-bottom:8px;">Logged in as</p>
