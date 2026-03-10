@@ -1500,7 +1500,7 @@ export class Editor {
       if (this.currentSlot && this.objects.length > 0) {
         this.saveToSlot(this.currentSlot);
       }
-      this.showBrowser();
+      if (this.onBack) this.onBack();
     }
   }
 
