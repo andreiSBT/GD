@@ -420,15 +420,16 @@ class Game {
     }
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
-    Sound.stopMusic();
-    Sound.playMusic(this.level.id);
+    // Music keeps playing through death/restart (like real GD)
+    if (!Sound.isMusicPlaying()) {
+      Sound.playMusic(this.level.id);
+    }
   }
 
   _die() {
     if (this.state === DEAD) return;
     this.player.alive = false;
     this.shakeIntensity = 10;
-    Sound.stopMusic();
     Sound.playDeath();
     this.particles.emitDeath(
       this.player.x,

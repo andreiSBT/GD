@@ -150,6 +150,13 @@ export function playMusic(levelId) {
     bassOsc.stop(now + beatMs / 1000 * 0.8);
     activeNodes.push(bassOsc);
 
+    // Clean up finished nodes to prevent memory buildup
+    if (beat % 16 === 0) {
+      activeNodes = activeNodes.filter(n => {
+        try { return n.playbackState !== 3; } catch (_) { return false; }
+      });
+    }
+
     beat++;
   }
 
@@ -177,6 +184,10 @@ export function resumeMusic() {
   if (currentMusicLevel != null && !musicInterval) {
     playMusic(currentMusicLevel);
   }
+}
+
+export function isMusicPlaying() {
+  return musicInterval != null;
 }
 
 export function stopMusic() {
