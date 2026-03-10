@@ -345,8 +345,12 @@ class Game {
       Sound.pauseMusic();
       this.state = PAUSED;
     } else if (action === 'resume') {
-      this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
-      Sound.resumeMusic();
+      if (!this.player.alive) {
+        this._restart();
+      } else {
+        this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
+        Sound.resumeMusic();
+      }
     } else if (action === 'back_to_editor') {
       Sound.stopMusic();
       this.shakeIntensity = 0;
