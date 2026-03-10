@@ -143,24 +143,12 @@ export class Editor {
     }
 
     if (this.selectedTool === 'move') {
-      if (this.movingObj) {
-        // Place the object at new position
+      // Pick up object at this position (drag to move)
+      const idx = this._findObjectAt(gx, gy);
+      if (idx >= 0) {
         this._pushHistory();
-        this.movingObj.x = gx;
-        this.movingObj.y = gy;
-        this.objects[this.movingObjIndex] = this.movingObj;
-        this._rebuildLive();
-        this._showToast('Object moved');
-        this.movingObj = null;
-        this.movingObjIndex = -1;
-      } else {
-        // Pick up object at this position
-        const idx = this._findObjectAt(gx, gy);
-        if (idx >= 0) {
-          this.movingObj = { ...this.objects[idx] };
-          this.movingObjIndex = idx;
-          this._showToast('Move to new position');
-        }
+        this.movingObj = { ...this.objects[idx] };
+        this.movingObjIndex = idx;
       }
       return;
     }
@@ -201,6 +189,14 @@ export class Editor {
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
 
+    // Move tool: update object position live while dragging
+    if (this.movingObj) {
+      this.movingObj.x = grid.gx;
+      this.movingObj.y = grid.gy;
+      this.objects[this.movingObjIndex] = { ...this.movingObj };
+      this._rebuildLive();
+    }
+
     if (this.dragStart) {
       const minGx = Math.min(this.dragStart.gx, this.hoverGx);
       const maxGx = Math.max(this.dragStart.gx, this.hoverGx);
@@ -234,6 +230,11 @@ export class Editor {
   }
 
   handleMouseUp(x, y) {
+    if (this.movingObj) {
+      // Finalize move - object already at new position from handleMouseMove
+      this.movingObj = null;
+      this.movingObjIndex = -1;
+    }
     if (this.dragStart) {
       const minGx = Math.min(this.dragStart.gx, this.hoverGx);
       const minGy = Math.min(this.dragStart.gy, this.hoverGy);
@@ -333,6 +334,18 @@ export class Editor {
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
 
+    // Move tool: pick up object on touch start
+    if (this.selectedTool === 'move' && touchCount === 1 && y > TOOLBAR_H) {
+      const idx = this._findObjectAt(grid.gx, grid.gy);
+      if (idx >= 0) {
+        this._pushHistory();
+        this.movingObj = { ...this.objects[idx] };
+        this.movingObjIndex = idx;
+        this.touchPaintPending = false;
+        return;
+      }
+    }
+
     // Start paint mode on touch for paintable tools (1 finger, on grid area)
     const paintTools = ['spike', 'orb', 'pad', 'checkpoint', 'end'];
     if (touchCount === 1 && y > TOOLBAR_H && paintTools.includes(this.selectedTool)) {
@@ -353,6 +366,16 @@ export class Editor {
     const grid = this._screenToGrid(x, y);
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
+
+    // Move tool: drag object with finger
+    if (this.movingObj) {
+      this.movingObj.x = grid.gx;
+      this.movingObj.y = grid.gy;
+      this.objects[this.movingObjIndex] = { ...this.movingObj };
+      this._rebuildLive();
+      this.touchMoved = true;
+      return;
+    }
 
     // If paint pending and moved enough, start painting instead of scrolling
     if (this.touchPaintPending && dist > 15) {
@@ -397,6 +420,12 @@ export class Editor {
 
   handleTouchEnd() {
     this.touchPaintPending = false;
+
+    if (this.movingObj) {
+      this.movingObj = null;
+      this.movingObjIndex = -1;
+      return;
+    }
 
     if (this.painting) {
       this.painting = false;
