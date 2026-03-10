@@ -39,6 +39,7 @@ export class Player {
     this.alive = true;
     this.grounded = true;
     this.rotation = 0;
+    this.targetRotation = 0;  // target rotation (increments by 90 per jump)
     this.gravityMult = 1;
     this.speedMult = 1;
     this.onPlatform = false;
@@ -74,6 +75,9 @@ export class Player {
         this.onPlatform = false;
         this.coyoteCounter = 0;
         this.jumpBufferCounter = 0;
+        // Rotate 90 degrees per jump
+        const dir = this.gravityMult > 0 ? -1 : 1;
+        this.targetRotation += dir * 90;
         return true;
       }
       return false;
@@ -98,6 +102,9 @@ export class Player {
     }
     this.grounded = false;
     this.onPlatform = false;
+    // Rotate 90 degrees for orb/pad bounce too
+    const dir = this.gravityMult > 0 ? -1 : 1;
+    this.targetRotation += dir * 90;
   }
 
   setMode(mode) {
@@ -182,10 +189,14 @@ export class Player {
       }
     }
 
-    // Rotation
+    // Rotation - smoothly interpolate toward target (90° per jump)
     if (!this.grounded) {
-      const dir = this.gravityMult > 0 ? -1 : 1;
-      this.rotation += dir * SCROLL_SPEED * 2.5;
+      const diff = this.targetRotation - this.rotation;
+      if (Math.abs(diff) > 0.5) {
+        this.rotation += diff * 0.15;
+      } else {
+        this.rotation = this.targetRotation;
+      }
     }
   }
 
@@ -241,7 +252,7 @@ export class Player {
   }
 
   _snapRotation() {
-    this.rotation = Math.round(this.rotation / 90) * 90;
+    this.rotation = this.targetRotation;
     // Enable coyote time when landing
     this.coyoteCounter = COYOTE_TIME;
   }
