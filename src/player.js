@@ -713,12 +713,20 @@ export class Player {
   }
 
   _drawGlow(ctx, cx, cy, size, color) {
+    const hs = size / 2;
+    const shape = this.cubeShape || 'square';
     ctx.save();
     ctx.globalAlpha = 0.15;
     ctx.shadowColor = color;
     ctx.shadowBlur = 20;
     ctx.fillStyle = color;
-    ctx.fillRect(cx - size / 2, cy - size / 2, size, size);
+    if (this.mode === MODE_CUBE) {
+      ctx.translate(cx, cy);
+      this._makeShapePath(ctx, size, hs, shape);
+      ctx.fill();
+    } else {
+      ctx.fillRect(cx - hs, cy - hs, size, size);
+    }
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.restore();
