@@ -291,10 +291,10 @@ export class Player {
       this._drawWave(ctx, size, color);
     }
 
-    ctx.restore();
+    // Outer glow (inside rotated context so it matches rotation)
+    this._drawGlow(ctx, size, color);
 
-    // Outer glow
-    this._drawGlow(ctx, cx, cy, size, color);
+    ctx.restore();
   }
 
   _drawTrail(ctx, cameraX, theme) {
@@ -712,7 +712,7 @@ export class Player {
     ctx.stroke();
   }
 
-  _drawGlow(ctx, cx, cy, size, color) {
+  _drawGlow(ctx, size, color) {
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
     ctx.save();
@@ -721,11 +721,10 @@ export class Player {
     ctx.shadowBlur = 20;
     ctx.fillStyle = color;
     if (this.mode === MODE_CUBE) {
-      ctx.translate(cx, cy);
       this._makeShapePath(ctx, size, hs, shape);
       ctx.fill();
     } else {
-      ctx.fillRect(cx - hs, cy - hs, size, size);
+      ctx.fillRect(-hs, -hs, size, size);
     }
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
