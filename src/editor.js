@@ -979,8 +979,8 @@ export class Editor {
 
     const actions = [
       { id: 'action_rotate', label: 'ROT', color: '#888' },
-      { id: 'action_undo', label: '↪', color: '#555' },
-      { id: 'action_redo', label: '↩', color: '#555' },
+      { id: 'action_undo', label: '⤹', color: '#555' },
+      { id: 'action_redo', label: '⤸', color: '#555' },
       { id: 'action_test', label: 'TEST', color: '#00CC44' },
       { id: 'action_save', label: 'SAVE', color: '#4488CC' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
