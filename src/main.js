@@ -599,7 +599,7 @@ class Game {
     }
 
     // Player death check (wave hitting boundaries, etc.)
-    if (!this.player.alive) {
+    if (!this.player.alive && this.state !== DEAD) {
       this._die();
     }
   }
