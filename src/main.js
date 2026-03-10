@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
 import { Level, Camera, getLevelCount } from './level.js';
 import { ParticleSystem } from './particles.js';
@@ -20,8 +20,6 @@ const PAUSED = 'paused';
 class Game {
   constructor() {
     this.canvas = document.getElementById('game');
-    this.canvas.width = SCREEN_WIDTH;
-    this.canvas.height = SCREEN_HEIGHT;
     this.ctx = this.canvas.getContext('2d');
 
     this._resizeCanvas();
@@ -527,20 +525,16 @@ class Game {
     const vv = window.visualViewport;
     const windowW = vv ? vv.width : window.innerWidth;
     const windowH = vv ? vv.height : window.innerHeight;
-    const gameRatio = SCREEN_WIDTH / SCREEN_HEIGHT;
-    const windowRatio = windowW / windowH;
 
-    let cssW, cssH;
-    if (windowRatio > gameRatio) {
-      cssH = windowH;
-      cssW = windowH * gameRatio;
-    } else {
-      cssW = windowW;
-      cssH = windowW / gameRatio;
-    }
+    // Adjust internal resolution to match viewport aspect ratio (no black bars)
+    const newWidth = Math.round(SCREEN_HEIGHT * (windowW / windowH));
+    setScreenWidth(newWidth);
+    this.canvas.width = newWidth;
+    this.canvas.height = SCREEN_HEIGHT;
 
-    this.canvas.style.width = `${Math.floor(cssW)}px`;
-    this.canvas.style.height = `${Math.floor(cssH)}px`;
+    // CSS fills entire viewport
+    this.canvas.style.width = `${Math.floor(windowW)}px`;
+    this.canvas.style.height = `${Math.floor(windowH)}px`;
   }
 
   _loadCustomization() {

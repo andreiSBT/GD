@@ -1,7 +1,9 @@
 /** Game constants and configuration */
 
-export const SCREEN_WIDTH = 1200;
+export let SCREEN_WIDTH = 1200;
 export const SCREEN_HEIGHT = 700;
+
+export function setScreenWidth(w) { SCREEN_WIDTH = w; }
 export const FPS = 60;
 
 // Grid
