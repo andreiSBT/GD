@@ -18,7 +18,6 @@ export default {
     { type: 'spike', x: 21, y: 0 },
     { type: 'platform', x: 26, y: 1, w: 3, h: 1 },
     { type: 'spike', x: 27, y: 2 },
-    { type: 'spike', x: 32, y: 0 },
     { type: 'spike', x: 33, y: 0 },
     { type: 'spike', x: 34, y: 0 },
     { type: 'pad', x: 38, y: 0, padType: 'yellow_pad' },
