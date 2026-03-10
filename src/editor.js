@@ -378,15 +378,26 @@ export class Editor {
 
   _placeObject(gx, gy) {
     // Check if object already exists at this position
-    const exists = this.objects.find(o => o.x === gx && o.y === gy && o.type === this.selectedTool);
+    const exists = this.objects.find(o => {
+      if (o.x !== gx || o.type !== this.selectedTool) return false;
+      let objGy = o.y;
+      if (o.type === 'spike' && o.rot === 180) {
+        objGy = Math.floor(GROUND_Y / GRID) - o.y - 1;
+      }
+      return objGy === gy;
+    });
     if (exists) return;
 
     this._pushHistory();
 
     const obj = { type: this.selectedTool, x: gx, y: gy };
 
-    if (this.selectedTool === 'spike' && this.rotation !== 0) {
-      obj.rot = this.rotation;
+    if (this.selectedTool === 'spike') {
+      if (this.rotation !== 0) obj.rot = this.rotation;
+      if (this.rotation === 180) {
+        // Spike class uses top-down gy for rot=180, convert from ground-relative
+        obj.y = Math.floor(GROUND_Y / GRID) - gy - 1;
+      }
     }
 
     if (this.selectedTool === 'orb') {
@@ -406,7 +417,12 @@ export class Editor {
       if (o.type === 'platform' || o.type === 'moving') {
         return gx >= o.x && gx < o.x + (o.w || 1) && gy >= o.y && gy < o.y + (o.h || 1);
       }
-      return o.x === gx && o.y === gy;
+      // For rot=180 spikes, stored y is top-down, convert for comparison
+      let objGy = o.y;
+      if (o.type === 'spike' && o.rot === 180) {
+        objGy = Math.floor(GROUND_Y / GRID) - o.y - 1;
+      }
+      return o.x === gx && objGy === gy;
     });
     if (idx >= 0) {
       this._pushHistory();
