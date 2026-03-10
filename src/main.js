@@ -108,6 +108,7 @@ class Game {
         } else if (this.state === PAUSED) {
           this.state = PLAYING;
         } else if (this.state === PLAYING) {
+          this.shakeIntensity = 0;
           this.state = PAUSED;
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
@@ -141,6 +142,7 @@ class Game {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
+          this.shakeIntensity = 0;
           this.state = PAUSED;
           return;
         }
@@ -178,6 +180,7 @@ class Game {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
+          this.shakeIntensity = 0;
           this.state = PAUSED;
           return;
         }
@@ -221,6 +224,7 @@ class Game {
       const id = parseInt(action.split('_')[1]);
       this._startLevel(id);
     } else if (action === 'pause') {
+      this.shakeIntensity = 0;
       this.state = PAUSED;
     } else if (action === 'resume') {
       this.state = PLAYING;
