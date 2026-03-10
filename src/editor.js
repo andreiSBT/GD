@@ -42,6 +42,7 @@ export class Editor {
     this.liveObstacles = [];
     this.selectedTool = 'spike';
     this.subType = null;
+    this.rotation = 0; // 0, 90, 180, 270 for spikes
     this.theme = THEMES[1];
     this.themeId = 1;
     this.levelName = 'Custom Level';
@@ -213,8 +214,7 @@ export class Editor {
     }
 
     if (e.key === 'r' || e.key === 'R') {
-      // Cycle through spike rotation
-      // No-op for now, rotation set via placement
+      this._cycleRotation();
       return true;
     }
 
@@ -386,6 +386,10 @@ export class Editor {
     this._pushHistory();
 
     const obj = { type: this.selectedTool, x: gx, y: gy };
+
+    if (this.selectedTool === 'spike' && this.rotation !== 0) {
+      obj.rot = this.rotation;
+    }
 
     if (this.selectedTool === 'orb') {
       obj.orbType = this.subType || 'yellow_orb';
@@ -565,6 +569,7 @@ export class Editor {
     const margin = 8;
 
     const actions = [
+      { id: 'action_rotate', label: 'ROT', color: '#888' },
       { id: 'action_undo', label: '↩', color: '#555' },
       { id: 'action_redo', label: '↪', color: '#555' },
       { id: 'action_test', label: 'TEST', color: '#00CC44' },
@@ -739,12 +744,16 @@ export class Editor {
 
     if (this.selectedTool === 'spike') {
       ctx.fillStyle = '#FF4444';
+      ctx.save();
+      ctx.translate(sx + GRID / 2, sy + GRID / 2);
+      ctx.rotate((this.rotation * Math.PI) / 180);
       ctx.beginPath();
-      ctx.moveTo(sx + GRID / 2, sy + 2);
-      ctx.lineTo(sx + 4, sy + GRID - 2);
-      ctx.lineTo(sx + GRID - 4, sy + GRID - 2);
+      ctx.moveTo(0, -GRID / 2 + 2);
+      ctx.lineTo(-GRID / 2 + 4, GRID / 2 - 2);
+      ctx.lineTo(GRID / 2 - 4, GRID / 2 - 2);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
     } else if (this.selectedTool === 'platform') {
       ctx.fillStyle = '#4488FF';
       ctx.fillRect(sx, sy, GRID, GRID);
@@ -905,6 +914,8 @@ export class Editor {
     } else if (id.startsWith('loadlevel_')) {
       const lvl = parseInt(id.replace('loadlevel_', ''));
       if (this.onLoadLevel) this.onLoadLevel(lvl);
+    } else if (id === 'action_rotate') {
+      this._cycleRotation();
     } else if (id === 'action_undo') {
       this._undo();
     } else if (id === 'action_redo') {
@@ -929,6 +940,12 @@ export class Editor {
     } else if (id === 'action_back') {
       if (this.onBack) this.onBack();
     }
+  }
+
+  _cycleRotation() {
+    this.rotation = (this.rotation + 90) % 360;
+    const labels = { 0: 'Up', 90: 'Right', 180: 'Down', 270: 'Left' };
+    this._showToast(`Rotation: ${labels[this.rotation]}`);
   }
 
   _showToast(text) {
