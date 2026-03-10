@@ -17,6 +17,7 @@ const TOOLS = [
   { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
   { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
   { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
+  { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
   { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
 ];
 
@@ -86,6 +87,10 @@ export class Editor {
     this.lastPaintGx = -1;
     this.lastPaintGy = -1;
 
+    // Move tool state
+    this.movingObj = null;       // object being moved
+    this.movingObjIndex = -1;    // index in this.objects
+
     // Start position for testing (grid coords)
     this.startPos = null;
 
@@ -134,6 +139,29 @@ export class Editor {
       this.paintErase = true;
       this.lastPaintGx = gx;
       this.lastPaintGy = gy;
+      return;
+    }
+
+    if (this.selectedTool === 'move') {
+      if (this.movingObj) {
+        // Place the object at new position
+        this._pushHistory();
+        this.movingObj.x = gx;
+        this.movingObj.y = gy;
+        this.objects[this.movingObjIndex] = this.movingObj;
+        this._rebuildLive();
+        this._showToast('Object moved');
+        this.movingObj = null;
+        this.movingObjIndex = -1;
+      } else {
+        // Pick up object at this position
+        const idx = this._findObjectAt(gx, gy);
+        if (idx >= 0) {
+          this.movingObj = { ...this.objects[idx] };
+          this.movingObjIndex = idx;
+          this._showToast('Move to new position');
+        }
+      }
       return;
     }
 
@@ -470,8 +498,29 @@ export class Editor {
       this._drawDragPreview(ctx);
     }
 
+    // Move preview - show object following cursor
+    if (this.movingObj && this.mouseY > TOOLBAR_H) {
+      const { sx, sy } = this._gridToScreen(this.hoverGx, this.hoverGy);
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      const tool = TOOLS.find(t => t.id === this.movingObj.type);
+      ctx.fillStyle = tool ? tool.color : '#FFF';
+      ctx.fillRect(sx, sy, GRID, GRID);
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(sx, sy, GRID, GRID);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#FFF';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = 0.9;
+      ctx.fillText(this.movingObj.type, sx + GRID / 2, sy + GRID / 2 + 3);
+      ctx.restore();
+    }
+
     // Hover preview
-    if (!this.dragStart && !this.showHelp && this.mouseY > TOOLBAR_H) {
+    if (!this.dragStart && !this.movingObj && !this.showHelp && this.mouseY > TOOLBAR_H) {
       this._drawHoverPreview(ctx);
     }
 
@@ -576,6 +625,19 @@ export class Editor {
 
     this.objects.push(obj);
     this._rebuildLive();
+  }
+
+  _findObjectAt(gx, gy) {
+    return this.objects.findIndex(o => {
+      if (o.type === 'platform' || o.type === 'moving') {
+        return gx >= o.x && gx < o.x + (o.w || 1) && gy >= o.y && gy < o.y + (o.h || 1);
+      }
+      let objGy = o.y;
+      if (o.type === 'spike' && o.rot === 180) {
+        objGy = Math.floor(GROUND_Y / GRID) - o.y - 1;
+      }
+      return o.x === gx && objGy === gy;
+    });
   }
 
   _removeObjectAt(gx, gy) {
@@ -1343,6 +1405,8 @@ export class Editor {
       this.subType = null;
       this.movingEndMode = false;
       this.movingStart = null;
+      this.movingObj = null;
+      this.movingObjIndex = -1;
     } else if (id.startsWith('sub_')) {
       this.subType = id.replace('sub_', '');
     } else if (id.startsWith('theme_')) {
