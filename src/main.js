@@ -323,11 +323,11 @@ class Game {
       this._startLevel(id);
     } else if (action === 'pause') {
       this.shakeIntensity = 0;
-      Sound.stopMusic();
+      Sound.pauseMusic();
       this.state = PAUSED;
     } else if (action === 'resume') {
       this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
-      if (this.level) Sound.playMusic(this.level.id);
+      Sound.resumeMusic();
     } else if (action === 'back_to_editor') {
       Sound.stopMusic();
       this.shakeIntensity = 0;

@@ -78,9 +78,11 @@ export function playComplete() {
 // Music system
 let musicInterval = null;
 let musicGain = null;
+let currentMusicLevel = null;
 
 export function playMusic(levelId) {
   stopMusic();
+  currentMusicLevel = levelId;
   const c = getCtx();
 
   const bpm = 128 + (levelId - 1) * 10;
@@ -151,10 +153,24 @@ export function playMusic(levelId) {
   musicInterval = setInterval(tick, beatMs);
 }
 
-export function stopMusic() {
+export function pauseMusic() {
   if (musicInterval) {
     clearInterval(musicInterval);
     musicInterval = null;
   }
-  musicGain = null;
+  if (musicGain) {
+    musicGain.disconnect();
+    musicGain = null;
+  }
+}
+
+export function resumeMusic() {
+  if (currentMusicLevel != null && !musicInterval) {
+    playMusic(currentMusicLevel);
+  }
+}
+
+export function stopMusic() {
+  pauseMusic();
+  currentMusicLevel = null;
 }
