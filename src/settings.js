@@ -33,6 +33,18 @@ export const PLAYER_TRAIL_COLORS = [
   '#FF0000', '#AA00FF', '#00FFAA', '#FF69B4', '#FFFFFF',
 ];
 
+// Cube shape variants (visual only, hitbox stays the same)
+export const CUBE_SHAPES = [
+  'square',     // classic square
+  'circle',     // round ball
+  'diamond',    // rotated square / diamond
+  'triangle',   // triangle pointing right
+  'hexagon',    // hexagonal shape
+  'rounded',    // rounded square
+  'cross',      // plus/cross shape
+  'dart',       // dart/arrow shape
+];
+
 // Icon IDs for cube face designs
 export const CUBE_ICONS = [
   'default',    // classic two eyes

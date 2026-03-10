@@ -3,7 +3,7 @@
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
-  PLAYER_COLORS
+  PLAYER_COLORS, CUBE_SHAPES
 } from './settings.js';
 
 // Game modes
@@ -28,6 +28,7 @@ export class Player {
     this.customColor = null;     // custom player color (null = use theme)
     this.customTrailColor = null; // custom trail color (null = use accent)
     this.cubeIcon = 'default';   // cube face icon id
+    this.cubeShape = 'square';   // cube shape variant
     this.reset(0);
   }
 
@@ -323,38 +324,147 @@ export class Player {
 
   _drawCube(ctx, size, color) {
     const hs = size / 2;
+    const shape = this.cubeShape || 'square';
 
-    // Main body
-    ctx.fillStyle = color;
-    ctx.fillRect(-hs, -hs, size, size);
+    // Draw body shape
+    this._drawShapeBody(ctx, size, hs, color, shape);
 
-    // Gradient overlay (top lighter, bottom darker)
+    // Gradient overlay
     const grad = ctx.createLinearGradient(0, -hs, 0, hs);
     grad.addColorStop(0, 'rgba(255,255,255,0.2)');
     grad.addColorStop(0.5, 'rgba(255,255,255,0)');
     grad.addColorStop(1, 'rgba(0,0,0,0.2)');
     ctx.fillStyle = grad;
-    ctx.fillRect(-hs, -hs, size, size);
+    this._fillShape(ctx, size, hs, shape);
 
-    // Inner square with icon
+    // Inner shape (lighter)
     const m = 8;
     ctx.fillStyle = lighten(color, 50);
-    ctx.fillRect(-hs + m, -hs + m, size - m * 2, size - m * 2);
+    this._fillInnerShape(ctx, size, hs, m, shape);
 
     // Face/icon based on cubeIcon
     this._drawCubeIcon(ctx);
 
-    // Border with neon glow feel
+    // Border
     ctx.strokeStyle = '#FFF';
     ctx.lineWidth = 2;
-    ctx.strokeRect(-hs, -hs, size, size);
+    this._strokeShape(ctx, size, hs, shape);
 
-    // Bright edge highlight
-    ctx.strokeStyle = lighten(color, 80);
-    ctx.lineWidth = 1;
+    // Bright edge highlight (only for shapes with a flat top)
+    if (shape === 'square' || shape === 'rounded') {
+      ctx.strokeStyle = lighten(color, 80);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-hs, -hs);
+      ctx.lineTo(hs, -hs);
+      ctx.stroke();
+    }
+  }
+
+  _makeShapePath(ctx, size, hs, shape) {
     ctx.beginPath();
-    ctx.moveTo(-hs, -hs);
-    ctx.lineTo(hs, -hs);
+    switch (shape) {
+      case 'circle':
+        ctx.arc(0, 0, hs, 0, Math.PI * 2);
+        break;
+      case 'diamond':
+        ctx.moveTo(0, -hs);
+        ctx.lineTo(hs, 0);
+        ctx.lineTo(0, hs);
+        ctx.lineTo(-hs, 0);
+        ctx.closePath();
+        break;
+      case 'triangle':
+        ctx.moveTo(hs, 0);
+        ctx.lineTo(-hs + 2, -hs + 2);
+        ctx.lineTo(-hs + 2, hs - 2);
+        ctx.closePath();
+        break;
+      case 'hexagon':
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 3) * i - Math.PI / 6;
+          const px = Math.cos(a) * hs;
+          const py = Math.sin(a) * hs;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        break;
+      case 'rounded': {
+        const r = 10;
+        ctx.moveTo(-hs + r, -hs);
+        ctx.lineTo(hs - r, -hs);
+        ctx.quadraticCurveTo(hs, -hs, hs, -hs + r);
+        ctx.lineTo(hs, hs - r);
+        ctx.quadraticCurveTo(hs, hs, hs - r, hs);
+        ctx.lineTo(-hs + r, hs);
+        ctx.quadraticCurveTo(-hs, hs, -hs, hs - r);
+        ctx.lineTo(-hs, -hs + r);
+        ctx.quadraticCurveTo(-hs, -hs, -hs + r, -hs);
+        ctx.closePath();
+        break;
+      }
+      case 'cross': {
+        const arm = hs * 0.38;
+        ctx.moveTo(-arm, -hs);
+        ctx.lineTo(arm, -hs);
+        ctx.lineTo(arm, -arm);
+        ctx.lineTo(hs, -arm);
+        ctx.lineTo(hs, arm);
+        ctx.lineTo(arm, arm);
+        ctx.lineTo(arm, hs);
+        ctx.lineTo(-arm, hs);
+        ctx.lineTo(-arm, arm);
+        ctx.lineTo(-hs, arm);
+        ctx.lineTo(-hs, -arm);
+        ctx.lineTo(-arm, -arm);
+        ctx.closePath();
+        break;
+      }
+      case 'dart':
+        ctx.moveTo(hs, 0);
+        ctx.lineTo(-hs + 4, -hs + 2);
+        ctx.lineTo(-hs / 2, 0);
+        ctx.lineTo(-hs + 4, hs - 2);
+        ctx.closePath();
+        break;
+      default: // square
+        ctx.rect(-hs, -hs, size, size);
+        break;
+    }
+  }
+
+  _drawShapeBody(ctx, size, hs, color, shape) {
+    ctx.fillStyle = color;
+    this._makeShapePath(ctx, size, hs, shape);
+    ctx.fill();
+  }
+
+  _fillShape(ctx, size, hs, shape) {
+    this._makeShapePath(ctx, size, hs, shape);
+    ctx.fill();
+  }
+
+  _fillInnerShape(ctx, size, hs, m, shape) {
+    if (shape === 'square') {
+      ctx.fillRect(-hs + m, -hs + m, size - m * 2, size - m * 2);
+    } else if (shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, hs - m, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Scale down for other shapes
+      ctx.save();
+      const scale = (size - m * 2) / size;
+      ctx.scale(scale, scale);
+      this._makeShapePath(ctx, size, hs, shape);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  _strokeShape(ctx, size, hs, shape) {
+    this._makeShapePath(ctx, size, hs, shape);
     ctx.stroke();
   }
 

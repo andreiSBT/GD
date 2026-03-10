@@ -1,6 +1,6 @@
 /** UI screens: menu, level select, HUD, death screen, complete screen */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, PLAYER_SIZE } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE } from './settings.js';
 import { getLevelCount } from './level.js';
 import { lighten } from './player.js';
 
@@ -256,7 +256,7 @@ export class UI {
   drawCustomize(ctx, customization) {
     this.buttons = [];
 
-    const { colorIndex, trailIndex, iconIndex } = customization;
+    const { colorIndex, trailIndex, iconIndex, shapeIndex } = customization;
 
     // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
@@ -267,25 +267,26 @@ export class UI {
 
     // Title
     ctx.fillStyle = '#CC88FF';
-    ctx.font = 'bold 48px monospace';
+    ctx.font = 'bold 42px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('CUSTOMIZE', SCREEN_WIDTH / 2, 60);
+    ctx.fillText('CUSTOMIZE', SCREEN_WIDTH / 2, 50);
 
     // === PREVIEW ===
     const previewX = SCREEN_WIDTH / 2;
-    const previewY = 130;
-    const previewSize = PLAYER_SIZE * 1.8;
+    const previewY = 110;
+    const previewSize = PLAYER_SIZE * 1.6;
     const previewColor = PLAYER_COLORS[colorIndex];
     const trailColor = PLAYER_TRAIL_COLORS[trailIndex] || previewColor;
+    const previewShape = CUBE_SHAPES[shapeIndex || 0] || 'square';
 
     // Preview background circle
     ctx.fillStyle = 'rgba(255,255,255,0.05)';
     ctx.beginPath();
-    ctx.arc(previewX, previewY, 55, 0, Math.PI * 2);
+    ctx.arc(previewX, previewY, 50, 0, Math.PI * 2);
     ctx.fill();
 
-    // Draw preview cube
-    this._drawPreviewCube(ctx, previewX, previewY, previewSize, previewColor, CUBE_ICONS[iconIndex]);
+    // Draw preview cube with shape
+    this._drawPreviewCube(ctx, previewX, previewY, previewSize, previewColor, CUBE_ICONS[iconIndex], previewShape);
 
     // Trail preview dots
     for (let i = 0; i < 6; i++) {
@@ -293,25 +294,25 @@ export class UI {
       const sz = 3 + (i / 6) * 8;
       ctx.globalAlpha = alpha;
       ctx.fillStyle = trailColor;
-      ctx.fillRect(previewX - 60 - i * 15, previewY - sz / 2, sz, sz);
+      ctx.fillRect(previewX - 55 - i * 14, previewY - sz / 2, sz, sz);
     }
     ctx.globalAlpha = 1;
 
     // === COLOR SECTION ===
-    const sectionY1 = 210;
+    const sectionY1 = 175;
     ctx.fillStyle = '#AA77DD';
-    ctx.font = 'bold 22px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('COLOR', SCREEN_WIDTH / 2, sectionY1);
 
-    const colorSize = 45;
-    const colorGap = 12;
+    const colorSize = 38;
+    const colorGap = 10;
     const colorTotalW = PLAYER_COLORS.length * (colorSize + colorGap) - colorGap;
     const colorStartX = (SCREEN_WIDTH - colorTotalW) / 2;
 
     for (let i = 0; i < PLAYER_COLORS.length; i++) {
       const cx = colorStartX + i * (colorSize + colorGap);
-      const cy = sectionY1 + 15;
+      const cy = sectionY1 + 10;
 
       ctx.fillStyle = PLAYER_COLORS[i];
       ctx.fillRect(cx, cy, colorSize, colorSize);
@@ -326,31 +327,30 @@ export class UI {
     }
 
     // === TRAIL COLOR SECTION ===
-    const sectionY2 = 310;
+    const sectionY2 = 270;
     ctx.fillStyle = '#AA77DD';
-    ctx.font = 'bold 22px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('TRAIL', SCREEN_WIDTH / 2, sectionY2);
 
-    const trailSize = 45;
-    const trailGap = 12;
+    const trailSize = 38;
+    const trailGap = 10;
     const trailTotalW = PLAYER_TRAIL_COLORS.length * (trailSize + trailGap) - trailGap;
     const trailStartX = (SCREEN_WIDTH - trailTotalW) / 2;
 
     for (let i = 0; i < PLAYER_TRAIL_COLORS.length; i++) {
       const tx = trailStartX + i * (trailSize + trailGap);
-      const ty = sectionY2 + 15;
+      const ty = sectionY2 + 10;
 
       const tc = PLAYER_TRAIL_COLORS[i] || PLAYER_COLORS[colorIndex];
       ctx.fillStyle = tc;
       ctx.fillRect(tx, ty, trailSize, trailSize);
 
       if (i === 0) {
-        // "Auto" label for first slot
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
         ctx.fillRect(tx, ty, trailSize, trailSize);
         ctx.fillStyle = '#FFF';
-        ctx.font = '11px monospace';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'center';
         ctx.fillText('AUTO', tx + trailSize / 2, ty + trailSize / 2 + 4);
       }
@@ -364,28 +364,60 @@ export class UI {
       this.buttons.push({ id: `trail_${i}`, x: tx, y: ty, w: trailSize, h: trailSize });
     }
 
-    // === ICON SECTION ===
-    const sectionY3 = 410;
+    // === SHAPE SECTION ===
+    const sectionY3 = 365;
     ctx.fillStyle = '#AA77DD';
-    ctx.font = 'bold 22px monospace';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('ICON', SCREEN_WIDTH / 2, sectionY3);
+    ctx.fillText('SHAPE', SCREEN_WIDTH / 2, sectionY3);
 
-    const iconSize = 60;
-    const iconGap = 16;
+    const shapeSize = 55;
+    const shapeGap = 14;
+    const shapeTotalW = CUBE_SHAPES.length * (shapeSize + shapeGap) - shapeGap;
+    const shapeStartX = (SCREEN_WIDTH - shapeTotalW) / 2;
+
+    for (let i = 0; i < CUBE_SHAPES.length; i++) {
+      const sx = shapeStartX + i * (shapeSize + shapeGap);
+      const sy = sectionY3 + 10;
+
+      // Shape background
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(sx, sy, shapeSize, shapeSize);
+
+      // Draw mini cube with this shape
+      this._drawPreviewCube(ctx, sx + shapeSize / 2, sy + shapeSize / 2, shapeSize * 0.7, previewColor, null, CUBE_SHAPES[i]);
+
+      if (i === (shapeIndex || 0)) {
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(sx - 3, sy - 3, shapeSize + 6, shapeSize + 6);
+      }
+
+      this.buttons.push({ id: `shape_${i}`, x: sx, y: sy, w: shapeSize, h: shapeSize });
+    }
+
+    // === ICON SECTION ===
+    const sectionY4 = 475;
+    ctx.fillStyle = '#AA77DD';
+    ctx.font = 'bold 18px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ICON', SCREEN_WIDTH / 2, sectionY4);
+
+    const iconSize = 55;
+    const iconGap = 14;
     const iconTotalW = CUBE_ICONS.length * (iconSize + iconGap) - iconGap;
     const iconStartX = (SCREEN_WIDTH - iconTotalW) / 2;
 
     for (let i = 0; i < CUBE_ICONS.length; i++) {
       const ix = iconStartX + i * (iconSize + iconGap);
-      const iy = sectionY3 + 15;
+      const iy = sectionY4 + 10;
 
       // Icon background
       ctx.fillStyle = 'rgba(255,255,255,0.08)';
       ctx.fillRect(ix, iy, iconSize, iconSize);
 
       // Draw mini cube with this icon
-      this._drawPreviewCube(ctx, ix + iconSize / 2, iy + iconSize / 2, iconSize * 0.7, previewColor, CUBE_ICONS[i]);
+      this._drawPreviewCube(ctx, ix + iconSize / 2, iy + iconSize / 2, iconSize * 0.7, previewColor, CUBE_ICONS[i], previewShape);
 
       if (i === iconIndex) {
         ctx.strokeStyle = '#FFF';
@@ -397,17 +429,19 @@ export class UI {
     }
 
     // Back button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 80, 200, 50, '← BACK', 'back_customize', '#666');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 65, 200, 45, '← BACK', 'back_customize', '#666');
   }
 
-  _drawPreviewCube(ctx, cx, cy, size, color, icon) {
+  _drawPreviewCube(ctx, cx, cy, size, color, icon, shape) {
     const hs = size / 2;
+    shape = shape || 'square';
     ctx.save();
     ctx.translate(cx, cy);
 
     // Body
     ctx.fillStyle = color;
-    ctx.fillRect(-hs, -hs, size, size);
+    this._makePreviewShapePath(ctx, size, hs, shape);
+    ctx.fill();
 
     // Gradient overlay
     const grad = ctx.createLinearGradient(0, -hs, 0, hs);
@@ -415,26 +449,116 @@ export class UI {
     grad.addColorStop(0.5, 'rgba(255,255,255,0)');
     grad.addColorStop(1, 'rgba(0,0,0,0.2)');
     ctx.fillStyle = grad;
-    ctx.fillRect(-hs, -hs, size, size);
+    this._makePreviewShapePath(ctx, size, hs, shape);
+    ctx.fill();
 
-    // Inner square
+    // Inner shape (lighter)
     const m = size * 0.18;
     ctx.fillStyle = lighten(color, 50);
-    ctx.fillRect(-hs + m, -hs + m, size - m * 2, size - m * 2);
+    if (shape === 'square') {
+      ctx.fillRect(-hs + m, -hs + m, size - m * 2, size - m * 2);
+    } else if (shape === 'circle') {
+      ctx.beginPath();
+      ctx.arc(0, 0, hs - m, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.save();
+      const sc = (size - m * 2) / size;
+      ctx.scale(sc, sc);
+      this._makePreviewShapePath(ctx, size, hs, shape);
+      ctx.fill();
+      ctx.restore();
+    }
 
     // Icon face (scaled)
-    const scale = size / PLAYER_SIZE;
-    ctx.save();
-    ctx.scale(scale, scale);
-    this._drawIconFace(ctx, icon);
-    ctx.restore();
+    if (icon) {
+      const scale = size / PLAYER_SIZE;
+      ctx.save();
+      ctx.scale(scale, scale);
+      this._drawIconFace(ctx, icon);
+      ctx.restore();
+    }
 
     // Border
     ctx.strokeStyle = '#FFF';
     ctx.lineWidth = 2;
-    ctx.strokeRect(-hs, -hs, size, size);
+    this._makePreviewShapePath(ctx, size, hs, shape);
+    ctx.stroke();
 
     ctx.restore();
+  }
+
+  _makePreviewShapePath(ctx, size, hs, shape) {
+    ctx.beginPath();
+    switch (shape) {
+      case 'circle':
+        ctx.arc(0, 0, hs, 0, Math.PI * 2);
+        break;
+      case 'diamond':
+        ctx.moveTo(0, -hs);
+        ctx.lineTo(hs, 0);
+        ctx.lineTo(0, hs);
+        ctx.lineTo(-hs, 0);
+        ctx.closePath();
+        break;
+      case 'triangle':
+        ctx.moveTo(hs, 0);
+        ctx.lineTo(-hs + 2, -hs + 2);
+        ctx.lineTo(-hs + 2, hs - 2);
+        ctx.closePath();
+        break;
+      case 'hexagon':
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI / 3) * i - Math.PI / 6;
+          const px = Math.cos(a) * hs;
+          const py = Math.sin(a) * hs;
+          if (i === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        break;
+      case 'rounded': {
+        const r = hs * 0.4;
+        ctx.moveTo(-hs + r, -hs);
+        ctx.lineTo(hs - r, -hs);
+        ctx.quadraticCurveTo(hs, -hs, hs, -hs + r);
+        ctx.lineTo(hs, hs - r);
+        ctx.quadraticCurveTo(hs, hs, hs - r, hs);
+        ctx.lineTo(-hs + r, hs);
+        ctx.quadraticCurveTo(-hs, hs, -hs, hs - r);
+        ctx.lineTo(-hs, -hs + r);
+        ctx.quadraticCurveTo(-hs, -hs, -hs + r, -hs);
+        ctx.closePath();
+        break;
+      }
+      case 'cross': {
+        const arm = hs * 0.38;
+        ctx.moveTo(-arm, -hs);
+        ctx.lineTo(arm, -hs);
+        ctx.lineTo(arm, -arm);
+        ctx.lineTo(hs, -arm);
+        ctx.lineTo(hs, arm);
+        ctx.lineTo(arm, arm);
+        ctx.lineTo(arm, hs);
+        ctx.lineTo(-arm, hs);
+        ctx.lineTo(-arm, arm);
+        ctx.lineTo(-hs, arm);
+        ctx.lineTo(-hs, -arm);
+        ctx.lineTo(-arm, -arm);
+        ctx.closePath();
+        break;
+      }
+      case 'dart':
+        ctx.moveTo(hs, 0);
+        ctx.lineTo(-hs + 2, -hs + 2);
+        ctx.lineTo(-hs / 2, 0);
+        ctx.lineTo(-hs + 2, hs - 2);
+        ctx.closePath();
+        break;
+      default: // square
+        ctx.rect(-hs, -hs, size, size);
+        break;
+    }
   }
 
   _drawIconFace(ctx, icon) {

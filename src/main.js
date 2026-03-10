@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
 import { Level, Camera, getLevelCount } from './level.js';
 import { ParticleSystem } from './particles.js';
@@ -196,6 +196,9 @@ class Game {
       this._applyCustomization();
     } else if (action.startsWith('icon_')) {
       this.customization.iconIndex = parseInt(action.split('_')[1]);
+      this._applyCustomization();
+    } else if (action.startsWith('shape_')) {
+      this.customization.shapeIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
     } else if (action.startsWith('level_')) {
       const id = parseInt(action.split('_')[1]);
@@ -503,7 +506,7 @@ class Game {
     } catch (e) {
       console.warn('Failed to load customization:', e);
     }
-    return { colorIndex: 0, trailIndex: 0, iconIndex: 0 };
+    return { colorIndex: 0, trailIndex: 0, iconIndex: 0, shapeIndex: 0 };
   }
 
   _saveCustomization() {
@@ -515,10 +518,11 @@ class Game {
   }
 
   _applyCustomization() {
-    const { colorIndex, trailIndex, iconIndex } = this.customization;
+    const { colorIndex, trailIndex, iconIndex, shapeIndex } = this.customization;
     this.player.customColor = PLAYER_COLORS[colorIndex] || null;
     this.player.customTrailColor = PLAYER_TRAIL_COLORS[trailIndex] || null;
     this.player.cubeIcon = CUBE_ICONS[iconIndex] || 'default';
+    this.player.cubeShape = CUBE_SHAPES[shapeIndex || 0] || 'square';
   }
 }
 
