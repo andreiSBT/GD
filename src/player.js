@@ -14,8 +14,8 @@ export const MODE_WAVE = 'wave';
 // Physics tuning
 const COYOTE_TIME = 6;        // frames of grace after leaving ground
 const JUMP_BUFFER = 8;        // frames to buffer a jump press
-const SHIP_GRAVITY = 0.4;     // lighter gravity for ship
-const SHIP_LIFT = -0.7;       // per-frame lift when holding in ship mode
+const SHIP_GRAVITY = 0.5;     // lighter gravity for ship
+const SHIP_LIFT = -1.1;       // per-frame lift when holding in ship mode
 const WAVE_SPEED = 6;         // wave diagonal speed
 const ORB_JUMP_VEL = -16;     // yellow orb bounce
 const PINK_ORB_VEL = -12;     // pink orb (shorter bounce)
