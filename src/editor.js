@@ -169,8 +169,14 @@ export class Editor {
     this.hoverGy = grid.gy;
 
     if (this.dragStart) {
-      this.dragWidth = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
-      this.dragHeight = Math.max(1, this.dragStart.gy - this.hoverGy + 1);
+      const minGx = Math.min(this.dragStart.gx, this.hoverGx);
+      const maxGx = Math.max(this.dragStart.gx, this.hoverGx);
+      const minGy = Math.min(this.dragStart.gy, this.hoverGy);
+      const maxGy = Math.max(this.dragStart.gy, this.hoverGy);
+      this.dragMinGx = minGx;
+      this.dragMinGy = minGy;
+      this.dragWidth = maxGx - minGx + 1;
+      this.dragHeight = maxGy - minGy + 1;
     }
 
     // Paint mode: place/erase on each new grid cell while dragging
@@ -196,12 +202,13 @@ export class Editor {
 
   handleMouseUp(x, y) {
     if (this.dragStart) {
-      const w = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
-      const h = Math.max(1, this.dragStart.gy - this.hoverGy + 1);
-      const baseY = this.dragStart.gy - (h - 1);
+      const minGx = Math.min(this.dragStart.gx, this.hoverGx);
+      const minGy = Math.min(this.dragStart.gy, this.hoverGy);
+      const w = Math.abs(this.hoverGx - this.dragStart.gx) + 1;
+      const h = Math.abs(this.hoverGy - this.dragStart.gy) + 1;
       this._pushHistory();
       this.objects.push({
-        type: 'platform', x: this.dragStart.gx, y: baseY, w, h,
+        type: 'platform', x: minGx, y: minGy, w, h,
       });
       this._rebuildLive();
       this.dragStart = null;
@@ -344,8 +351,14 @@ export class Editor {
 
     // Platform drag (only if started dragging a platform)
     if (this.dragStart && !this.isTouchScrolling) {
-      this.dragWidth = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
-      this.dragHeight = Math.max(1, this.dragStart.gy - this.hoverGy + 1);
+      const minGx = Math.min(this.dragStart.gx, this.hoverGx);
+      const maxGx = Math.max(this.dragStart.gx, this.hoverGx);
+      const minGy = Math.min(this.dragStart.gy, this.hoverGy);
+      const maxGy = Math.max(this.dragStart.gy, this.hoverGy);
+      this.dragMinGx = minGx;
+      this.dragMinGy = minGy;
+      this.dragWidth = maxGx - minGx + 1;
+      this.dragHeight = maxGy - minGy + 1;
     }
   }
 
@@ -994,8 +1007,9 @@ export class Editor {
   }
 
   _drawDragPreview(ctx) {
-    const startGy = this.dragStart.gy - (this.dragHeight - 1);
-    const { sx, sy } = this._gridToScreen(this.dragStart.gx, startGy);
+    const minGy = this.dragMinGy != null ? this.dragMinGy : this.dragStart.gy;
+    const minGx = this.dragMinGx != null ? this.dragMinGx : this.dragStart.gx;
+    const { sx, sy } = this._gridToScreen(minGx, minGy);
     const w = this.dragWidth * GRID;
     const h = this.dragHeight * GRID;
 
