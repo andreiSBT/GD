@@ -81,9 +81,7 @@ export class Editor {
   // === EVENT HANDLERS ===
 
   handleMouseDown(x, y, button) {
-    this.buttons = [];
-    this._collectButtons();
-
+    // buttons are populated during draw() — just check them
     // Check toolbar buttons
     for (const btn of this.buttons) {
       if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
