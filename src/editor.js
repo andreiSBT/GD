@@ -528,8 +528,13 @@ export class Editor {
   _placeObject(gx, gy) {
     // Start position is special - only one allowed, not an object
     if (this.selectedTool === 'start') {
-      this.startPos = { gx, gy };
-      this._showToast('Start pos set at ' + gx);
+      if (this.startPos && this.startPos.gx === gx && this.startPos.gy === gy) {
+        this.startPos = null;
+        this._showToast('Start pos removed');
+      } else {
+        this.startPos = { gx, gy };
+        this._showToast('Start pos set at ' + gx);
+      }
       return;
     }
 
@@ -574,6 +579,13 @@ export class Editor {
   }
 
   _removeObjectAt(gx, gy) {
+    // Check if erasing the start position
+    if (this.startPos && this.startPos.gx === gx && this.startPos.gy === gy) {
+      this.startPos = null;
+      this._showToast('Start pos removed');
+      return;
+    }
+
     const idx = this.objects.findIndex(o => {
       if (o.type === 'platform' || o.type === 'moving') {
         return gx >= o.x && gx < o.x + (o.w || 1) && gy >= o.y && gy < o.y + (o.h || 1);
