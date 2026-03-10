@@ -23,6 +23,10 @@ class Game {
     this.canvas.height = SCREEN_HEIGHT;
     this.ctx = this.canvas.getContext('2d');
 
+    this._resizeCanvas();
+    window.addEventListener('resize', () => this._resizeCanvas());
+    screen.orientation?.addEventListener?.('change', () => this._resizeCanvas());
+
     this.player = new Player();
     this.camera = new Camera();
     this.particles = new ParticleSystem();
@@ -462,6 +466,27 @@ class Game {
     }
 
     ctx.restore();
+  }
+
+  _resizeCanvas() {
+    const windowW = window.innerWidth;
+    const windowH = window.innerHeight;
+    const gameRatio = SCREEN_WIDTH / SCREEN_HEIGHT;
+    const windowRatio = windowW / windowH;
+
+    let cssW, cssH;
+    if (windowRatio > gameRatio) {
+      // Window is wider than game - fit to height
+      cssH = windowH;
+      cssW = windowH * gameRatio;
+    } else {
+      // Window is taller than game - fit to width
+      cssW = windowW;
+      cssH = windowW / gameRatio;
+    }
+
+    this.canvas.style.width = `${cssW}px`;
+    this.canvas.style.height = `${cssH}px`;
   }
 
   _loadCustomization() {
