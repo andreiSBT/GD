@@ -408,6 +408,7 @@ class Game {
   _die() {
     this.player.alive = false;
     this.shakeIntensity = 10;
+    Sound.stopMusic();
     Sound.playDeath();
     this.particles.emitDeath(
       this.player.x,
