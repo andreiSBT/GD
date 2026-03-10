@@ -2,6 +2,7 @@
 
 import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES } from './settings.js';
 import { createObstacle } from './obstacles.js';
+import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured } from './supabase.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
@@ -651,6 +652,9 @@ export class Editor {
     else list.push(meta);
     this._saveSlotList(list);
     this.currentSlot = slotId;
+
+    // Sync to cloud in background
+    syncEditorLevelToCloud(slotId, data);
   }
 
   loadFromSlot(slotId) {
@@ -675,6 +679,7 @@ export class Editor {
     localStorage.removeItem('gd_editor_slot_' + slotId);
     const list = this._getSlotList().filter(s => s.id !== slotId);
     this._saveSlotList(list);
+    deleteEditorLevelFromCloud(slotId);
   }
 
   _newLevel() {
@@ -694,6 +699,39 @@ export class Editor {
     this.browsing = true;
     this.browseScroll = 0;
     this.buttons = [];
+    this._syncCloudLevels();
+  }
+
+  async _syncCloudLevels() {
+    if (!isConfigured()) return;
+    const cloudLevels = await loadEditorLevelsFromCloud();
+    if (!cloudLevels) return;
+
+    const localList = this._getSlotList();
+    let changed = false;
+
+    for (const cl of cloudLevels) {
+      const localIdx = localList.findIndex(s => s.id === cl.slotId);
+      const localRaw = localStorage.getItem('gd_editor_slot_' + cl.slotId);
+      const localData = localRaw ? JSON.parse(localRaw) : null;
+
+      // Use cloud version if newer or local doesn't exist
+      if (!localData || (cl.updatedAt > (localData.updatedAt || 0))) {
+        const data = {
+          name: cl.name,
+          themeId: cl.themeId,
+          objects: cl.objects,
+          updatedAt: cl.updatedAt
+        };
+        localStorage.setItem('gd_editor_slot_' + cl.slotId, JSON.stringify(data));
+        const meta = { id: cl.slotId, name: cl.name, objectCount: cl.objectCount, updatedAt: cl.updatedAt };
+        if (localIdx >= 0) localList[localIdx] = meta;
+        else localList.push(meta);
+        changed = true;
+      }
+    }
+
+    if (changed) this._saveSlotList(localList);
   }
 
   loadExistingLevel(levelData) {

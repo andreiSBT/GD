@@ -1,16 +1,54 @@
-/** Supabase integration for online progress saving.
+/** Supabase integration for cloud saving.
  *
  * Setup:
  * 1. Create a Supabase project at https://supabase.com
- * 2. Create a table 'progress' with columns:
- *      - id (uuid, primary key, default gen_random_uuid())
- *      - user_id (text, not null)
- *      - level_id (int4, not null)
- *      - attempts (int4, default 0)
- *      - best_progress (float4, default 0)
- *      - completed (bool, default false)
- *      - updated_at (timestamptz, default now())
- *    Add unique constraint on (user_id, level_id)
+ * 2. Run this SQL to create tables:
+ *
+ *    -- Progress table
+ *    CREATE TABLE progress (
+ *      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ *      user_id text NOT NULL,
+ *      level_id int4 NOT NULL,
+ *      attempts int4 DEFAULT 0,
+ *      best_progress float4 DEFAULT 0,
+ *      completed bool DEFAULT false,
+ *      updated_at timestamptz DEFAULT now(),
+ *      UNIQUE(user_id, level_id)
+ *    );
+ *
+ *    -- Customization table
+ *    CREATE TABLE customizations (
+ *      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ *      user_id text NOT NULL UNIQUE,
+ *      color_index int4 DEFAULT 0,
+ *      trail_index int4 DEFAULT 0,
+ *      icon_index int4 DEFAULT 0,
+ *      shape_index int4 DEFAULT 0,
+ *      updated_at timestamptz DEFAULT now()
+ *    );
+ *
+ *    -- Editor levels table
+ *    CREATE TABLE editor_levels (
+ *      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ *      user_id text NOT NULL,
+ *      slot_id text NOT NULL,
+ *      name text DEFAULT 'Custom Level',
+ *      theme_id int4 DEFAULT 1,
+ *      objects jsonb DEFAULT '[]'::jsonb,
+ *      object_count int4 DEFAULT 0,
+ *      updated_at timestamptz DEFAULT now(),
+ *      UNIQUE(user_id, slot_id)
+ *    );
+ *
+ *    -- Enable RLS and add policies for all tables
+ *    ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
+ *    ALTER TABLE customizations ENABLE ROW LEVEL SECURITY;
+ *    ALTER TABLE editor_levels ENABLE ROW LEVEL SECURITY;
+ *
+ *    CREATE POLICY "Allow all" ON progress FOR ALL USING (true) WITH CHECK (true);
+ *    CREATE POLICY "Allow all" ON customizations FOR ALL USING (true) WITH CHECK (true);
+ *    CREATE POLICY "Allow all" ON editor_levels FOR ALL USING (true) WITH CHECK (true);
+ *
  * 3. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
  */
 
@@ -97,6 +135,116 @@ export async function loadProgressFromCloud() {
   } catch (e) {
     console.warn('Supabase load failed:', e.message);
     return null;
+  }
+}
+
+// === CUSTOMIZATION ===
+
+export async function syncCustomizationToCloud(customization) {
+  const client = getClient();
+  if (!client) return;
+
+  const userId = getUserId();
+  try {
+    await client.from('customizations').upsert({
+      user_id: userId,
+      color_index: customization.colorIndex,
+      trail_index: customization.trailIndex,
+      icon_index: customization.iconIndex,
+      shape_index: customization.shapeIndex,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+  } catch (e) {
+    console.warn('Supabase customization sync failed:', e.message);
+  }
+}
+
+export async function loadCustomizationFromCloud() {
+  const client = getClient();
+  if (!client) return null;
+
+  const userId = getUserId();
+  try {
+    const { data, error } = await client
+      .from('customizations')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) return null;
+    return {
+      colorIndex: data.color_index,
+      trailIndex: data.trail_index,
+      iconIndex: data.icon_index,
+      shapeIndex: data.shape_index,
+    };
+  } catch (e) {
+    console.warn('Supabase customization load failed:', e.message);
+    return null;
+  }
+}
+
+// === EDITOR LEVELS ===
+
+export async function syncEditorLevelToCloud(slotId, levelData) {
+  const client = getClient();
+  if (!client) return;
+
+  const userId = getUserId();
+  try {
+    await client.from('editor_levels').upsert({
+      user_id: userId,
+      slot_id: slotId,
+      name: levelData.name,
+      theme_id: levelData.themeId,
+      objects: levelData.objects,
+      object_count: levelData.objects.length,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,slot_id' });
+  } catch (e) {
+    console.warn('Supabase editor sync failed:', e.message);
+  }
+}
+
+export async function loadEditorLevelsFromCloud() {
+  const client = getClient();
+  if (!client) return null;
+
+  const userId = getUserId();
+  try {
+    const { data, error } = await client
+      .from('editor_levels')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error || !data) return null;
+    return data.map(row => ({
+      slotId: row.slot_id,
+      name: row.name,
+      themeId: row.theme_id,
+      objects: row.objects,
+      objectCount: row.object_count,
+      updatedAt: new Date(row.updated_at).getTime(),
+    }));
+  } catch (e) {
+    console.warn('Supabase editor load failed:', e.message);
+    return null;
+  }
+}
+
+export async function deleteEditorLevelFromCloud(slotId) {
+  const client = getClient();
+  if (!client) return;
+
+  const userId = getUserId();
+  try {
+    await client.from('editor_levels')
+      .delete()
+      .eq('user_id', userId)
+      .eq('slot_id', slotId);
+  } catch (e) {
+    console.warn('Supabase editor delete failed:', e.message);
   }
 }
 

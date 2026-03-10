@@ -9,6 +9,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress } from './progress.js';
 import * as Sound from './sound.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured } from './supabase.js';
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
@@ -58,9 +59,10 @@ class Game {
     };
     this.editorLevelData = null;
 
-    // Load customization from localStorage
+    // Load customization from localStorage, then try cloud
     this.customization = this._loadCustomization();
     this._applyCustomization();
+    this._initCloudCustomization();
 
     this._bindEvents();
     this._startLoop();
@@ -683,6 +685,16 @@ class Game {
     }
   }
 
+  async _initCloudCustomization() {
+    if (!isConfigured()) return;
+    const cloud = await loadCustomizationFromCloud();
+    if (cloud) {
+      this.customization = cloud;
+      localStorage.setItem('gd_customization', JSON.stringify(cloud));
+      this._applyCustomization();
+    }
+  }
+
   _loadCustomization() {
     try {
       const data = localStorage.getItem('gd_customization');
@@ -699,6 +711,7 @@ class Game {
     } catch (e) {
       console.warn('Failed to save customization:', e);
     }
+    syncCustomizationToCloud(this.customization);
   }
 
   _applyCustomization() {
