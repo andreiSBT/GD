@@ -107,8 +107,10 @@ class Game {
           this.state = MENU;
         } else if (this.state === PAUSED) {
           this.state = PLAYING;
+          if (this.level) Sound.playMusic(this.level.id);
         } else if (this.state === PLAYING) {
           this.shakeIntensity = 0;
+          Sound.stopMusic();
           this.state = PAUSED;
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
@@ -144,6 +146,7 @@ class Game {
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
           this.shakeIntensity = 0;
+          Sound.stopMusic();
           this.state = PAUSED;
           return;
         }
@@ -182,6 +185,7 @@ class Game {
         const action = this.ui.handleClick(x, y);
         if (action === 'pause') {
           this.shakeIntensity = 0;
+          Sound.stopMusic();
           this.state = PAUSED;
           return;
         }
@@ -195,6 +199,17 @@ class Game {
       e.preventDefault();
       doRelease();
     }, { passive: false });
+
+    // Pause game & music when phone screen is turned off or tab is hidden
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (this.state === PLAYING || this.state === DEAD) {
+          this.shakeIntensity = 0;
+          this.state = PAUSED;
+        }
+        Sound.stopMusic();
+      }
+    });
   }
 
   _handleAction(action) {
@@ -226,9 +241,11 @@ class Game {
       this._startLevel(id);
     } else if (action === 'pause') {
       this.shakeIntensity = 0;
+      Sound.stopMusic();
       this.state = PAUSED;
     } else if (action === 'resume') {
       this.state = PLAYING;
+      if (this.level) Sound.playMusic(this.level.id);
     } else if (action === 'retry') {
       this._restart();
     } else if (action === 'menu') {
