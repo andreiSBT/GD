@@ -188,8 +188,20 @@ export class UI {
     if (practiceMode) {
       ctx.fillStyle = '#FFD700';
       ctx.textAlign = 'right';
-      ctx.fillText('PRACTICE MODE', SCREEN_WIDTH - 20, 30);
+      ctx.fillText('PRACTICE MODE', SCREEN_WIDTH - 60, 30);
     }
+
+    // Pause button (top right)
+    const pbX = SCREEN_WIDTH - 50;
+    const pbY = 10;
+    const pbS = 35;
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.fillRect(pbX, pbY, pbS, pbS);
+    // Two vertical bars (pause icon)
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillRect(pbX + 10, pbY + 8, 5, pbS - 16);
+    ctx.fillRect(pbX + 20, pbY + 8, 5, pbS - 16);
+    this.buttons.push({ id: 'pause', x: pbX, y: pbY, w: pbS, h: pbS });
 
     // Level name
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
@@ -251,6 +263,21 @@ export class UI {
     // Next level / menu
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 360, 240, 55, 'NEXT LEVEL', 'next_level', '#00C864');
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 430, 240, 55, 'MENU', 'menu', '#666');
+  }
+
+  drawPauseScreen(ctx) {
+    this.buttons = [];
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 48px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PAUSED', SCREEN_WIDTH / 2, 250);
+
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 320, 240, 55, 'RESUME', 'resume', '#00C864');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 390, 240, 55, 'MENU', 'menu', '#666');
   }
 
   drawCustomize(ctx, customization) {

@@ -15,6 +15,7 @@ const CUSTOMIZE = 'customize';
 const PLAYING = 'playing';
 const DEAD = 'dead';
 const COMPLETE = 'complete';
+const PAUSED = 'paused';
 
 class Game {
   constructor() {
@@ -104,7 +105,11 @@ class Game {
         if (this.state === CUSTOMIZE) {
           this._saveCustomization();
           this.state = MENU;
-        } else if (this.state === PLAYING || this.state === DEAD || this.state === COMPLETE) {
+        } else if (this.state === PAUSED) {
+          this.state = PLAYING;
+        } else if (this.state === PLAYING) {
+          this.state = PAUSED;
+        } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.state = MENU;
         }
@@ -123,7 +128,7 @@ class Game {
       const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === DEAD || this.state === COMPLETE) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === PAUSED || this.state === DEAD || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -133,6 +138,12 @@ class Game {
       }
 
       if (this.state === PLAYING) {
+        // Check pause button first
+        const action = this.ui.handleClick(x, y);
+        if (action === 'pause') {
+          this.state = PAUSED;
+          return;
+        }
         doPress();
       }
 
@@ -154,7 +165,7 @@ class Game {
 
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
-          (this.state === DEAD && this.deathTimer > 0.3) || this.state === COMPLETE) {
+          this.state === PAUSED || (this.state === DEAD && this.deathTimer > 0.3) || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -164,6 +175,12 @@ class Game {
       }
 
       if (this.state === PLAYING) {
+        // Check pause button first
+        const action = this.ui.handleClick(x, y);
+        if (action === 'pause') {
+          this.state = PAUSED;
+          return;
+        }
         doPress();
       } else if (this.state === DEAD && this.deathTimer > 0.3) {
         this._restart();
@@ -203,6 +220,10 @@ class Game {
     } else if (action.startsWith('level_')) {
       const id = parseInt(action.split('_')[1]);
       this._startLevel(id);
+    } else if (action === 'pause') {
+      this.state = PAUSED;
+    } else if (action === 'resume') {
+      this.state = PLAYING;
     } else if (action === 'retry') {
       this._restart();
     } else if (action === 'menu') {
@@ -468,7 +489,9 @@ class Game {
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name);
 
-      if (this.state === COMPLETE) {
+      if (this.state === PAUSED) {
+        this.ui.drawPauseScreen(ctx);
+      } else if (this.state === COMPLETE) {
         this.ui.drawCompleteScreen(ctx, this.attempts, this.theme);
       }
     }
