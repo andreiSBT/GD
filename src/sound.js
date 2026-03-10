@@ -79,6 +79,7 @@ export function playComplete() {
 let musicInterval = null;
 let musicGain = null;
 let currentMusicLevel = null;
+let activeNodes = []; // track all active oscillators/sources to stop them cleanly
 
 export function playMusic(levelId) {
   stopMusic();
@@ -116,6 +117,7 @@ export function playMusic(levelId) {
     kickGain.connect(musicGain);
     kickOsc.start(now);
     kickOsc.stop(now + 0.1);
+    activeNodes.push(kickOsc);
 
     // Hi-hat on off-beats
     if (beat % 2 === 1) {
@@ -131,6 +133,7 @@ export function playMusic(levelId) {
       src.connect(hg);
       hg.connect(musicGain);
       src.start(now);
+      activeNodes.push(src);
     }
 
     // Bass note
@@ -145,6 +148,7 @@ export function playMusic(levelId) {
     bassGainNode.connect(musicGain);
     bassOsc.start(now);
     bassOsc.stop(now + beatMs / 1000 * 0.8);
+    activeNodes.push(bassOsc);
 
     beat++;
   }
@@ -158,6 +162,11 @@ export function pauseMusic() {
     clearInterval(musicInterval);
     musicInterval = null;
   }
+  // Stop all active audio nodes immediately
+  for (const node of activeNodes) {
+    try { node.stop(0); } catch (_) { /* already stopped */ }
+  }
+  activeNodes = [];
   if (musicGain) {
     musicGain.disconnect();
     musicGain = null;
