@@ -346,7 +346,15 @@ class Game {
       this.state = PAUSED;
     } else if (action === 'resume') {
       if (!this.player.alive) {
-        this._restart();
+        // Resume into DEAD state so explosion continues, then auto-retry
+        this.state = DEAD;
+        const delay = (this.practiceMode && this.lastCheckpoint) ? 800 : 1200;
+        if (this._retryTimer) clearTimeout(this._retryTimer);
+        this._retryTimer = setTimeout(() => {
+          this._retryTimer = null;
+          if (this.state === DEAD) this._restart();
+        }, delay);
+        Sound.resumeMusic();
       } else {
         this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
         Sound.resumeMusic();
