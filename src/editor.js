@@ -1007,9 +1007,10 @@ export class Editor {
   }
 
   _drawDragPreview(ctx) {
-    const minGy = this.dragMinGy != null ? this.dragMinGy : this.dragStart.gy;
     const minGx = this.dragMinGx != null ? this.dragMinGx : this.dragStart.gx;
-    const { sx, sy } = this._gridToScreen(minGx, minGy);
+    const minGy = this.dragMinGy != null ? this.dragMinGy : this.dragStart.gy;
+    const topGy = minGy + this.dragHeight - 1;
+    const { sx, sy } = this._gridToScreen(minGx, topGy);
     const w = this.dragWidth * GRID;
     const h = this.dragHeight * GRID;
 
