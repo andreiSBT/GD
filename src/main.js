@@ -266,11 +266,11 @@ class Game {
     this.currentProgress = progress;
     this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
 
-    if (this.practiceMode && this.lastCheckpoint) {
-      setTimeout(() => {
-        if (this.state === DEAD) this._restart();
-      }, 800);
-    }
+    // Auto-retry after a short delay
+    const delay = (this.practiceMode && this.lastCheckpoint) ? 800 : 1200;
+    setTimeout(() => {
+      if (this.state === DEAD) this._restart();
+    }, delay);
 
     this.state = DEAD;
     this.deathTimer = 0;
