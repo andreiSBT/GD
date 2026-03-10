@@ -169,7 +169,7 @@ class Game {
         return;
       }
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === PAUSED || this.state === DEAD || this.state === COMPLETE) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === PAUSED || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -188,9 +188,7 @@ class Game {
           return;
         }
         doPress();
-      }
-
-      if (this.state === DEAD && this.deathTimer > 0.3) {
+      } else if (this.state === DEAD && this.deathTimer > 0.3) {
         this._restart();
       }
     });
@@ -231,7 +229,7 @@ class Game {
 
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
-          this.state === PAUSED || (this.state === DEAD && this.deathTimer > 0.3) || this.state === COMPLETE) {
+          this.state === PAUSED || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -406,6 +404,7 @@ class Game {
   }
 
   _die() {
+    if (this.state === DEAD) return;
     this.player.alive = false;
     this.shakeIntensity = 10;
     Sound.stopMusic();
@@ -421,8 +420,10 @@ class Game {
     this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
 
     // Auto-retry after a short delay
+    if (this._retryTimer) clearTimeout(this._retryTimer);
     const delay = (this.practiceMode && this.lastCheckpoint) ? 800 : 1200;
-    setTimeout(() => {
+    this._retryTimer = setTimeout(() => {
+      this._retryTimer = null;
       if (this.state === DEAD) this._restart();
     }, delay);
 
