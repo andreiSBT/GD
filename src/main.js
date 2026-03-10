@@ -198,6 +198,7 @@ class Game {
         if (action === 'pause') {
           if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
+          Sound.pauseMusic();
           this.state = PAUSED;
           return;
         }
@@ -265,6 +266,7 @@ class Game {
         if (action === 'pause') {
           if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
+          Sound.pauseMusic();
           this.state = PAUSED;
           return;
         }
