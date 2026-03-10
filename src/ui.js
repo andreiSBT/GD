@@ -216,7 +216,7 @@ export class UI {
     ctx.fillRect(pbX + 13, pbY + 10, 7, pbS - 20);
     ctx.fillRect(pbX + 26, pbY + 10, 7, pbS - 20);
     const hitPad = 15;
-    this.buttons.push({ id: 'pause', x: pbX - hitPad, y: pbY - hitPad, w: pbS + hitPad * 2, h: pbS + hitPad * 2 });
+    this.buttons.push({ id: 'pause', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
 
     // Level name
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
