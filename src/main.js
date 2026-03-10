@@ -616,20 +616,33 @@ class Game {
   }
 
   _resizeCanvas() {
-    // Use visualViewport for accurate mobile dimensions (handles Safari address bar)
     const vv = window.visualViewport;
     const windowW = vv ? vv.width : window.innerWidth;
     const windowH = vv ? vv.height : window.innerHeight;
+    const windowRatio = windowW / windowH;
 
-    // Adjust internal resolution to match viewport aspect ratio (no black bars)
-    const newWidth = Math.round(SCREEN_HEIGHT * (windowW / windowH));
-    setScreenWidth(newWidth);
-    this.canvas.width = newWidth;
-    this.canvas.height = SCREEN_HEIGHT;
+    // Minimum aspect ratio (~4:3) - below this, show black bars instead of squishing
+    const MIN_RATIO = 1.33;
 
-    // CSS fills entire viewport
-    this.canvas.style.width = `${Math.floor(windowW)}px`;
-    this.canvas.style.height = `${Math.floor(windowH)}px`;
+    if (windowRatio >= MIN_RATIO) {
+      // Wide enough: adapt internal width to fill viewport
+      const newWidth = Math.round(SCREEN_HEIGHT * windowRatio);
+      setScreenWidth(newWidth);
+      this.canvas.width = newWidth;
+      this.canvas.height = SCREEN_HEIGHT;
+      this.canvas.style.width = `${Math.floor(windowW)}px`;
+      this.canvas.style.height = `${Math.floor(windowH)}px`;
+    } else {
+      // Too narrow: lock to minimum ratio, add black bars top/bottom
+      const newWidth = Math.round(SCREEN_HEIGHT * MIN_RATIO);
+      setScreenWidth(newWidth);
+      this.canvas.width = newWidth;
+      this.canvas.height = SCREEN_HEIGHT;
+      const cssW = windowW;
+      const cssH = windowW / MIN_RATIO;
+      this.canvas.style.width = `${Math.floor(cssW)}px`;
+      this.canvas.style.height = `${Math.floor(cssH)}px`;
+    }
   }
 
   _loadCustomization() {
