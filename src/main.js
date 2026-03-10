@@ -112,6 +112,7 @@ class Game {
           this.state = PAUSED;
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
+          this.shakeIntensity = 0;
           this.state = MENU;
         }
       }
@@ -232,6 +233,7 @@ class Game {
       this._restart();
     } else if (action === 'menu') {
       Sound.stopMusic();
+      this.shakeIntensity = 0;
       this.state = MENU;
     } else if (action === 'next_level') {
       const nextId = this.level.id + 1;
