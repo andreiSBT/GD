@@ -83,11 +83,21 @@ export class Editor {
     this.paintErase = false;
     this.lastPaintGx = -1;
     this.lastPaintGy = -1;
+
+    // Level browser
+    this.browsing = false;
+    this.currentSlot = null;
+    this.browseScroll = 0;
   }
 
   // === EVENT HANDLERS ===
 
   handleMouseDown(x, y, button) {
+    // Level browser intercepts all clicks
+    if (this.browsing) {
+      this._handleBrowseClick(x, y);
+      return;
+    }
     // buttons are populated during draw() — just check them
     // Check toolbar buttons
     for (const btn of this.buttons) {
@@ -201,6 +211,12 @@ export class Editor {
   }
 
   handleKeyDown(e) {
+    if (this.browsing) {
+      if (e.key === 'Escape') {
+        if (this.onBack) this.onBack();
+      }
+      return true;
+    }
     if (e.key === 'Escape') {
       if (this.movingEndMode) {
         this.movingEndMode = false;
@@ -242,7 +258,10 @@ export class Editor {
     }
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
-      this.save('autosave');
+      if (this.currentSlot) {
+        this.saveToSlot(this.currentSlot);
+        this._showToast('Saved!');
+      }
       return true;
     }
 
@@ -269,6 +288,14 @@ export class Editor {
     const grid = this._screenToGrid(x, y);
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
+
+    // Start paint mode on touch for paintable tools (1 finger, on grid area)
+    const paintTools = ['spike', 'orb', 'pad', 'checkpoint', 'end'];
+    if (touchCount === 1 && y > TOOLBAR_H && paintTools.includes(this.selectedTool)) {
+      this.touchPaintPending = true;
+    } else {
+      this.touchPaintPending = false;
+    }
   }
 
   handleTouchMove(x, y) {
@@ -276,19 +303,40 @@ export class Editor {
     const dy = y - this.touchStartY;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    // If moved more than 15px, treat as scroll
-    if (dist > 15) {
-      this.touchMoved = true;
-      this.isTouchScrolling = true;
-      this.cameraX = Math.max(0, this.touchStartCamX - dx);
-    }
-
     // Update hover
     this.mouseX = x;
     this.mouseY = y;
     const grid = this._screenToGrid(x, y);
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
+
+    // If paint pending and moved enough, start painting instead of scrolling
+    if (this.touchPaintPending && dist > 15) {
+      this.touchPaintPending = false;
+      this.painting = true;
+      this.paintErase = false;
+      // Place first object at start position
+      const startGrid = this._screenToGrid(this.touchStartX, this.touchStartY);
+      this._placeObject(startGrid.gx, startGrid.gy);
+      this.lastPaintGx = startGrid.gx;
+      this.lastPaintGy = startGrid.gy;
+      this.touchMoved = true;
+    }
+
+    // Paint mode: place objects on each new grid cell
+    if (this.painting && (grid.gx !== this.lastPaintGx || grid.gy !== this.lastPaintGy)) {
+      this._placeObject(grid.gx, grid.gy);
+      this.lastPaintGx = grid.gx;
+      this.lastPaintGy = grid.gy;
+      return;
+    }
+
+    // If moved more than 15px and not painting, treat as scroll
+    if (!this.painting && dist > 15) {
+      this.touchMoved = true;
+      this.isTouchScrolling = true;
+      this.cameraX = Math.max(0, this.touchStartCamX - dx);
+    }
 
     // Platform drag (only if started dragging a platform)
     if (this.dragStart && !this.isTouchScrolling) {
@@ -298,6 +346,14 @@ export class Editor {
   }
 
   handleTouchEnd() {
+    this.touchPaintPending = false;
+
+    if (this.painting) {
+      this.painting = false;
+      this.paintErase = false;
+      return;
+    }
+
     if (this.isTouchScrolling) {
       // Was scrolling, don't place anything
       this.isTouchScrolling = false;
@@ -321,6 +377,10 @@ export class Editor {
   }
 
   handleWheel(e) {
+    if (this.browsing) {
+      this.browseScroll = Math.max(0, this.browseScroll + (e.deltaY || 0));
+      return;
+    }
     this.cameraX = Math.max(0, this.cameraX + (e.deltaX || e.deltaY));
   }
 
@@ -334,6 +394,10 @@ export class Editor {
   }
 
   draw(ctx) {
+    if (this.browsing) {
+      this._drawBrowse(ctx);
+      return;
+    }
     // Background + ground
     this.renderer.drawBackground(ctx, this.cameraX, this.theme);
     this.renderer.drawGround(ctx, this.cameraX, this.theme);
@@ -538,6 +602,81 @@ export class Editor {
       this.historyIndex = -1;
       return true;
     } catch { return false; }
+  }
+
+  // === SLOT-BASED LEVEL STORAGE ===
+
+  _getSlotList() {
+    try {
+      const raw = localStorage.getItem('gd_editor_slots');
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+
+  _saveSlotList(list) {
+    localStorage.setItem('gd_editor_slots', JSON.stringify(list));
+  }
+
+  saveToSlot(slotId) {
+    const data = {
+      name: this.levelName,
+      themeId: this.themeId,
+      objects: this.objects,
+      updatedAt: Date.now()
+    };
+    localStorage.setItem('gd_editor_slot_' + slotId, JSON.stringify(data));
+
+    // Update slot list metadata
+    const list = this._getSlotList();
+    const idx = list.findIndex(s => s.id === slotId);
+    const meta = { id: slotId, name: this.levelName, objectCount: this.objects.length, updatedAt: Date.now() };
+    if (idx >= 0) list[idx] = meta;
+    else list.push(meta);
+    this._saveSlotList(list);
+    this.currentSlot = slotId;
+  }
+
+  loadFromSlot(slotId) {
+    try {
+      const raw = localStorage.getItem('gd_editor_slot_' + slotId);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      this.levelName = data.name || 'Custom Level';
+      this.themeId = data.themeId || 1;
+      this.theme = THEMES[this.themeId];
+      this.objects = data.objects || [];
+      this._rebuildLive();
+      this.history = [];
+      this.historyIndex = -1;
+      this.currentSlot = slotId;
+      this.cameraX = 0;
+      return true;
+    } catch { return false; }
+  }
+
+  deleteSlot(slotId) {
+    localStorage.removeItem('gd_editor_slot_' + slotId);
+    const list = this._getSlotList().filter(s => s.id !== slotId);
+    this._saveSlotList(list);
+  }
+
+  _newLevel() {
+    this.currentSlot = 'lvl_' + Date.now();
+    this.levelName = 'My Level';
+    this.themeId = 1;
+    this.theme = THEMES[1];
+    this.objects = [];
+    this.liveObstacles = [];
+    this.history = [];
+    this.historyIndex = -1;
+    this.cameraX = 0;
+    this.browsing = false;
+  }
+
+  showBrowser() {
+    this.browsing = true;
+    this.browseScroll = 0;
+    this.buttons = [];
   }
 
   loadExistingLevel(levelData) {
@@ -941,6 +1080,140 @@ export class Editor {
     }
   }
 
+  // === LEVEL BROWSER ===
+
+  _drawBrowse(ctx) {
+    this.buttons = [];
+
+    // Dark background
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    // Title
+    ctx.fillStyle = '#00C8FF';
+    ctx.font = 'bold 36px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('MY LEVELS', SCREEN_WIDTH / 2, 60);
+
+    const slots = this._getSlotList();
+    // Sort by most recently updated
+    slots.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+    const cardW = Math.min(500, SCREEN_WIDTH - 60);
+    const cardH = 70;
+    const gap = 12;
+    const startX = (SCREEN_WIDTH - cardW) / 2;
+    let startY = 100;
+
+    // "New Level" button
+    const newBtnY = startY;
+    ctx.fillStyle = '#00C864';
+    ctx.beginPath();
+    ctx.roundRect(startX, newBtnY, cardW, cardH, 10);
+    ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText('+ NEW LEVEL', SCREEN_WIDTH / 2, newBtnY + cardH / 2 + 8);
+    this.buttons.push({ id: 'browse_new', x: startX, y: newBtnY, w: cardW, h: cardH });
+
+    startY += cardH + gap * 2;
+
+    // Level cards
+    if (slots.length === 0) {
+      ctx.fillStyle = '#666';
+      ctx.font = '18px monospace';
+      ctx.fillText('No saved levels yet', SCREEN_WIDTH / 2, startY + 30);
+    }
+
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const cy = startY + i * (cardH + gap) - this.browseScroll;
+      if (cy + cardH < 90 || cy > SCREEN_HEIGHT - 60) continue;
+
+      // Card background
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.roundRect(startX, cy, cardW, cardH, 10);
+      ctx.fill();
+
+      // Border
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(startX, cy, cardW, cardH, 10);
+      ctx.stroke();
+
+      // Level name
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(slot.name || 'Untitled', startX + 16, cy + 28);
+
+      // Object count + date
+      ctx.fillStyle = '#888';
+      ctx.font = '14px monospace';
+      const objText = (slot.objectCount || 0) + ' objects';
+      const dateText = slot.updatedAt ? new Date(slot.updatedAt).toLocaleDateString() : '';
+      ctx.fillText(objText + '  •  ' + dateText, startX + 16, cy + 52);
+
+      // Click area for opening
+      this.buttons.push({ id: 'browse_open_' + slot.id, x: startX, y: cy, w: cardW - 60, h: cardH });
+
+      // Delete button (small X)
+      const delX = startX + cardW - 50;
+      const delY = cy + 10;
+      const delS = 50;
+      const delH = cardH - 20;
+      ctx.fillStyle = '#661111';
+      ctx.beginPath();
+      ctx.roundRect(delX, delY, delS, delH, 8);
+      ctx.fill();
+      ctx.fillStyle = '#FF4444';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('✕', delX + delS / 2, delY + delH / 2 + 7);
+      this.buttons.push({ id: 'browse_del_' + slot.id, x: delX, y: delY, w: delS, h: delH });
+
+      ctx.textAlign = 'center';
+    }
+
+    // Back button at bottom
+    const backW = 200;
+    const backH = 50;
+    const backX = (SCREEN_WIDTH - backW) / 2;
+    const backY = SCREEN_HEIGHT - 70;
+    ctx.fillStyle = '#666';
+    ctx.beginPath();
+    ctx.roundRect(backX, backY, backW, backH, 10);
+    ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BACK', SCREEN_WIDTH / 2, backY + backH / 2 + 7);
+    this.buttons.push({ id: 'browse_back', x: backX, y: backY, w: backW, h: backH });
+  }
+
+  _handleBrowseClick(x, y) {
+    for (const btn of this.buttons) {
+      if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+        if (btn.id === 'browse_new') {
+          this._newLevel();
+        } else if (btn.id === 'browse_back') {
+          if (this.onBack) this.onBack();
+        } else if (btn.id.startsWith('browse_del_')) {
+          const slotId = btn.id.replace('browse_del_', '');
+          this.deleteSlot(slotId);
+        } else if (btn.id.startsWith('browse_open_')) {
+          const slotId = btn.id.replace('browse_open_', '');
+          if (this.loadFromSlot(slotId)) {
+            this.browsing = false;
+          }
+        }
+        return;
+      }
+    }
+  }
+
   // === BUTTON HANDLERS ===
 
   _collectButtons() {
@@ -975,11 +1248,16 @@ export class Editor {
     } else if (id === 'action_test') {
       if (this.onTest) this.onTest(this.getLevelData());
     } else if (id === 'action_save') {
-      this.save('manual');
-      this._showToast('Saved!');
+      if (this.currentSlot) {
+        this.saveToSlot(this.currentSlot);
+        this._showToast('Saved!');
+      } else {
+        this.currentSlot = 'lvl_' + Date.now();
+        this.saveToSlot(this.currentSlot);
+        this._showToast('Saved!');
+      }
     } else if (id === 'action_load') {
-      if (this.load('manual')) this._showToast('Loaded!');
-      else this._showToast('No save found');
+      this.showBrowser();
     } else if (id === 'action_export') {
       const json = this.exportJSON();
       navigator.clipboard?.writeText(json).then(() => {
