@@ -559,38 +559,11 @@ export class Editor {
     ctx.fillStyle = 'rgba(255,255,255,0.1)';
     ctx.fillRect(0, TOOLBAR_H - 1, SCREEN_WIDTH, 1);
 
-    // Tool buttons
-    const btnW = 64;
     const btnH = 40;
-    const startX = 10;
     const btnY = 8;
+    const gap = 3;
+    const margin = 8;
 
-    for (let i = 0; i < TOOLS.length; i++) {
-      const tool = TOOLS[i];
-      const bx = startX + i * (btnW + 4);
-      const isActive = this.selectedTool === tool.id;
-
-      ctx.fillStyle = isActive ? tool.color : 'rgba(255,255,255,0.1)';
-      ctx.fillRect(bx, btnY, btnW, btnH);
-
-      if (isActive) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fillRect(bx, btnY, btnW, btnH);
-      }
-
-      ctx.fillStyle = isActive ? '#FFF' : '#AAA';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(tool.label, bx + btnW / 2, btnY + 16);
-
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '9px monospace';
-      ctx.fillText(tool.key, bx + btnW / 2, btnY + 32);
-
-      this.buttons.push({ id: 'tool_' + tool.id, x: bx, y: btnY, w: btnW, h: btnH });
-    }
-
-    // Right side: action buttons
     const actions = [
       { id: 'action_undo', label: '↩', color: '#555' },
       { id: 'action_redo', label: '↪', color: '#555' },
@@ -602,24 +575,51 @@ export class Editor {
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
 
-    const actBtnW = 56;
-    let ax = SCREEN_WIDTH - (actions.length * (actBtnW + 4)) - 6;
-    for (const act of actions) {
-      ctx.fillStyle = act.color;
-      ctx.fillRect(ax, btnY, actBtnW, btnH);
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 11px monospace';
+    // Calculate responsive button width
+    const totalItems = TOOLS.length + actions.length;
+    const totalGaps = (TOOLS.length - 1 + actions.length - 1 + 1) * gap; // gaps within groups + gap between groups
+    const separatorGap = 12; // extra space between tools and actions
+    const availW = SCREEN_WIDTH - margin * 2 - totalGaps - separatorGap;
+    const btnW = Math.min(64, Math.floor(availW / totalItems));
+
+    // Tool buttons
+    for (let i = 0; i < TOOLS.length; i++) {
+      const tool = TOOLS[i];
+      const bx = margin + i * (btnW + gap);
+      const isActive = this.selectedTool === tool.id;
+
+      ctx.fillStyle = isActive ? tool.color : 'rgba(255,255,255,0.1)';
+      ctx.fillRect(bx, btnY, btnW, btnH);
+
+      if (isActive) {
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(bx, btnY, btnW, btnH);
+      }
+
+      ctx.fillStyle = isActive ? '#FFF' : '#AAA';
+      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 6))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(act.label, ax + actBtnW / 2, btnY + 24);
-      this.buttons.push({ id: act.id, x: ax, y: btnY, w: actBtnW, h: btnH });
-      ax += actBtnW + 4;
+      ctx.fillText(tool.label, bx + btnW / 2, btnY + 16);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '9px monospace';
+      ctx.fillText(tool.key, bx + btnW / 2, btnY + 32);
+
+      this.buttons.push({ id: 'tool_' + tool.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
 
-    // Object count + position info
-    ctx.fillStyle = '#888';
-    ctx.font = '11px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(`Objects: ${this.objects.length}  Grid: ${this.hoverGx},${this.hoverGy}  Cam: ${Math.floor(this.cameraX / GRID)}`, startX + TOOLS.length * (btnW + 4) + 10, btnY + 24);
+    // Action buttons from right
+    let ax = SCREEN_WIDTH - margin - actions.length * (btnW + gap) + gap;
+    for (const act of actions) {
+      ctx.fillStyle = act.color;
+      ctx.fillRect(ax, btnY, btnW, btnH);
+      ctx.fillStyle = '#FFF';
+      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 5))}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(act.label, ax + btnW / 2, btnY + 24);
+      this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
+      ax += btnW + gap;
+    }
   }
 
   _hasSidePanel() {
@@ -669,11 +669,13 @@ export class Editor {
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     ctx.fillRect(0, y, SCREEN_WIDTH, 36);
 
-    // Scroll left/right buttons
     const scrollBtnW = 44;
     const scrollBtnH = 28;
     const sby = y + 4;
+    const btnGap = 6;
+    const smallBtnW = 32;
 
+    // Left side: scroll buttons + info
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(10, sby, scrollBtnW, scrollBtnH);
     ctx.fillStyle = '#CCC';
@@ -688,35 +690,41 @@ export class Editor {
     ctx.fillText('▶', 60 + scrollBtnW / 2, sby + 20);
     this.buttons.push({ id: 'scroll_right', x: 60, y: sby, w: scrollBtnW, h: scrollBtnH });
 
-    // Info text
     ctx.fillStyle = '#888';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`Obj: ${this.objects.length}  X: ${this.hoverGx}  Y: ${this.hoverGy}`, 114, sby + 19);
 
-    // Theme cycle buttons
-    for (let t = 1; t <= 3; t++) {
-      const tx = SCREEN_WIDTH - 150 + (t - 1) * 40;
+    // Right side: L1 L2 L3 | T1 T2 T3 — positioned from right edge
+    let rx = SCREEN_WIDTH - 10;
+
+    // Theme buttons (rightmost)
+    for (let t = 3; t >= 1; t--) {
+      rx -= smallBtnW;
       const isActive = this.themeId === t;
       ctx.fillStyle = isActive ? THEMES[t].accent : 'rgba(255,255,255,0.15)';
-      ctx.fillRect(tx, sby, 32, scrollBtnH);
+      ctx.fillRect(rx, sby, smallBtnW, scrollBtnH);
       ctx.fillStyle = isActive ? '#000' : '#AAA';
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`T${t}`, tx + 16, sby + 19);
-      this.buttons.push({ id: 'theme_' + t, x: tx, y: sby, w: 32, h: scrollBtnH });
+      ctx.fillText(`T${t}`, rx + smallBtnW / 2, sby + 19);
+      this.buttons.push({ id: 'theme_' + t, x: rx, y: sby, w: smallBtnW, h: scrollBtnH });
+      rx -= btnGap;
     }
 
+    rx -= 8; // extra gap between groups
+
     // Load level buttons
-    for (let l = 1; l <= 3; l++) {
-      const lx = SCREEN_WIDTH - 310 + (l - 1) * 40;
+    for (let l = 3; l >= 1; l--) {
+      rx -= smallBtnW;
       ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      ctx.fillRect(lx, sby, 32, scrollBtnH);
+      ctx.fillRect(rx, sby, smallBtnW, scrollBtnH);
       ctx.fillStyle = '#AAA';
       ctx.font = '11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`L${l}`, lx + 16, sby + 19);
-      this.buttons.push({ id: 'loadlevel_' + l, x: lx, y: sby, w: 32, h: scrollBtnH });
+      ctx.fillText(`L${l}`, rx + smallBtnW / 2, sby + 19);
+      this.buttons.push({ id: 'loadlevel_' + l, x: rx, y: sby, w: smallBtnW, h: scrollBtnH });
+      rx -= btnGap;
     }
   }
 
