@@ -367,6 +367,8 @@ class Game {
       this.state = EDITOR;
     } else if (action === 'retry' || action === 'restart') {
       this._restart();
+      Sound.stopMusic();
+      Sound.playMusic(this.level.id);
     } else if (action === 'menu') {
       Sound.stopMusic();
       this.shakeIntensity = 0;
@@ -457,10 +459,6 @@ class Game {
     }
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
-    // Music keeps playing through death/restart (like real GD)
-    if (!Sound.isMusicPlaying()) {
-      Sound.playMusic(this.level.id);
-    }
   }
 
   _die() {
