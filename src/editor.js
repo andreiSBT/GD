@@ -53,6 +53,7 @@ export class Editor {
     this.mouseY = 0;
     this.dragStart = null;
     this.dragWidth = 1;
+    this.dragHeight = 1;
     this.movingEndMode = false;
     this.movingStart = null;
 
@@ -130,6 +131,7 @@ export class Editor {
     if (this.selectedTool === 'platform') {
       this.dragStart = { gx, gy };
       this.dragWidth = 1;
+    this.dragHeight = 1;
       return;
     }
 
@@ -158,6 +160,7 @@ export class Editor {
 
     if (this.dragStart) {
       this.dragWidth = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
+      this.dragHeight = Math.max(1, this.dragStart.gy - this.hoverGy + 1);
     }
 
     // Paint mode: place/erase on each new grid cell while dragging
@@ -184,9 +187,11 @@ export class Editor {
   handleMouseUp(x, y) {
     if (this.dragStart) {
       const w = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
+      const h = Math.max(1, this.dragStart.gy - this.hoverGy + 1);
+      const baseY = this.dragStart.gy - (h - 1);
       this._pushHistory();
       this.objects.push({
-        type: 'platform', x: this.dragStart.gx, y: this.dragStart.gy, w, h: 1,
+        type: 'platform', x: this.dragStart.gx, y: baseY, w, h,
       });
       this._rebuildLive();
       this.dragStart = null;
@@ -288,6 +293,7 @@ export class Editor {
     // Platform drag (only if started dragging a platform)
     if (this.dragStart && !this.isTouchScrolling) {
       this.dragWidth = Math.max(1, this.hoverGx - this.dragStart.gx + 1);
+      this.dragHeight = Math.max(1, this.dragStart.gy - this.hoverGy + 1);
     }
   }
 
@@ -845,22 +851,24 @@ export class Editor {
   }
 
   _drawDragPreview(ctx) {
-    const { sx, sy } = this._gridToScreen(this.dragStart.gx, this.dragStart.gy);
+    const startGy = this.dragStart.gy - (this.dragHeight - 1);
+    const { sx, sy } = this._gridToScreen(this.dragStart.gx, startGy);
     const w = this.dragWidth * GRID;
+    const h = this.dragHeight * GRID;
 
     ctx.save();
     ctx.globalAlpha = 0.5;
     ctx.fillStyle = '#4488FF';
-    ctx.fillRect(sx, sy, w, GRID);
+    ctx.fillRect(sx, sy, w, h);
     ctx.strokeStyle = '#FFF';
     ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, w, GRID);
+    ctx.strokeRect(sx, sy, w, h);
 
     ctx.fillStyle = '#FFF';
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
     ctx.globalAlpha = 0.8;
-    ctx.fillText(`${this.dragWidth}×1`, sx + w / 2, sy + GRID / 2 + 4);
+    ctx.fillText(`${this.dragWidth}×${this.dragHeight}`, sx + w / 2, sy + h / 2 + 4);
     ctx.restore();
   }
 
