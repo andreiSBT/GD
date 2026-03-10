@@ -498,6 +498,11 @@ export class Editor {
     // Check if object already exists at this position
     const exists = this.objects.find(o => {
       if (o.x !== gx || o.type !== this.selectedTool) return false;
+      // Allow stacking portals of different subtypes
+      if (o.type === 'portal') {
+        const newSub = this.subType || 'gravity';
+        if (o.portalType !== newSub) return false;
+      }
       let objGy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         objGy = Math.floor(GROUND_Y / GRID) - o.y - 1;
