@@ -172,6 +172,8 @@ export class UI {
   }
 
   drawHUD(ctx, progress, attempts, practiceMode, levelName) {
+    this.buttons = [];
+
     // Progress bar at top
     const barW = 400;
     const barH = 8;
