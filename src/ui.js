@@ -195,15 +195,15 @@ export class UI {
     }
 
     // Pause button (top right)
-    const pbX = SCREEN_WIDTH - 50;
+    const pbS = 46;
+    const pbX = SCREEN_WIDTH - pbS - 10;
     const pbY = 10;
-    const pbS = 35;
     ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.fillRect(pbX, pbY, pbS, pbS);
     // Two vertical bars (pause icon)
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillRect(pbX + 10, pbY + 8, 5, pbS - 16);
-    ctx.fillRect(pbX + 20, pbY + 8, 5, pbS - 16);
+    ctx.fillRect(pbX + 13, pbY + 10, 7, pbS - 20);
+    ctx.fillRect(pbX + 26, pbY + 10, 7, pbS - 20);
     this.buttons.push({ id: 'pause', x: pbX, y: pbY, w: pbS, h: pbS });
 
     // Level name

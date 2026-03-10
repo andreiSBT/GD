@@ -190,8 +190,16 @@ class Game {
           return;
         }
         doPress();
-      } else if (this.state === DEAD && this.deathTimer > 0.3) {
-        this._restart();
+      } else if (this.state === DEAD) {
+        // Allow pause button anytime during death
+        const action = this.ui.handleClick(x, y);
+        if (action === 'pause') {
+          if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
+          this.shakeIntensity = 0;
+          this.state = PAUSED;
+          return;
+        }
+        if (this.deathTimer > 0.3) this._restart();
       }
     });
 
@@ -250,8 +258,15 @@ class Game {
           return;
         }
         doPress();
-      } else if (this.state === DEAD && this.deathTimer > 0.3) {
-        this._restart();
+      } else if (this.state === DEAD) {
+        const action = this.ui.handleClick(x, y);
+        if (action === 'pause') {
+          if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
+          this.shakeIntensity = 0;
+          this.state = PAUSED;
+          return;
+        }
+        if (this.deathTimer > 0.3) this._restart();
       }
     }, { passive: false });
 
