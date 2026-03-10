@@ -227,7 +227,11 @@ export class Editor {
         this.showHelp = false;
         return true;
       }
-      if (this.onBack) this.onBack();
+      // Auto-save and go back to browser
+      if (this.currentSlot && this.objects.length > 0) {
+        this.saveToSlot(this.currentSlot);
+      }
+      this.showBrowser();
       return true;
     }
 
@@ -1268,7 +1272,11 @@ export class Editor {
     } else if (id === 'action_help') {
       this.showHelp = !this.showHelp;
     } else if (id === 'action_back') {
-      if (this.onBack) this.onBack();
+      // Auto-save before leaving
+      if (this.currentSlot && this.objects.length > 0) {
+        this.saveToSlot(this.currentSlot);
+      }
+      this.showBrowser();
     }
   }
 

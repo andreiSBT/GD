@@ -349,7 +349,7 @@ class Game {
       }
     } else if (action === 'editor') {
       this.state = EDITOR;
-      this.editor.load('autosave'); // try to restore last session
+      this.editor.showBrowser();
     } else if (action === 'back') {
       this.state = MENU;
     }
