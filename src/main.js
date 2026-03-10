@@ -562,6 +562,15 @@ class Game {
       }
     }
 
+    // Auto-activate orb if player is already holding click/touch
+    if (this.pendingOrbHit && this.player.holding) {
+      Sound.playJump();
+      this.player.orbBounce(this.pendingOrbHit.orbType);
+      this.pendingOrbHit.obs.markActivated();
+      this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, this.theme.accent);
+      this.pendingOrbHit = null;
+    }
+
     // Check platform fall-off
     if (this.player.onPlatform && this.player.grounded) {
       let stillOn = false;
