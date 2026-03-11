@@ -281,6 +281,16 @@ export class TransportPlatform extends Platform {
     this.deltaY = this.y - prevY;
   }
 
+  reset() {
+    this.active = false;
+    this.progress = 0;
+    this.arrived = false;
+    this.x = this.startX;
+    this.y = this.startY;
+    this.deltaX = 0;
+    this.deltaY = 0;
+  }
+
   isPlayerLocked() {
     if (!this.active || this.arrived) return false;
     const currentFrame = this.progress * this.totalFrames;

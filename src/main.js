@@ -480,6 +480,13 @@ class Game {
     this.deathTimer = 0;
     this.pendingOrbHit = null;
 
+    // Reset all transport platforms back to start position
+    if (this.level) {
+      for (const obs of this.level.obstacles) {
+        if (obs.type === 'transport' && obs.reset) obs.reset();
+      }
+    }
+
     if (this.practiceMode && this.lastCheckpoint) {
       this.player.reset(this.lastCheckpoint.x);
       this.player.y = this.lastCheckpoint.y;
