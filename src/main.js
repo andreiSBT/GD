@@ -742,7 +742,10 @@ class Game {
       this.ui.drawCustomize(ctx, this.customization);
     } else {
       // Use interpolated camera for smooth rendering between physics steps
-      const camX = this.camera.getInterpolatedX(this._drawAlpha || 0);
+      // When paused or dead, don't interpolate — use final position to avoid jitter
+      const isPaused = this.state === PAUSED || this.state === DEAD || this.state === COMPLETE;
+      const alpha = isPaused ? 1 : (this._drawAlpha || 0);
+      const camX = this.camera.getInterpolatedX(alpha);
 
       this.renderer.drawBackground(ctx, camX, this.theme);
 
@@ -755,7 +758,7 @@ class Game {
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
       if (this.player.alive) {
-        this.player.draw(ctx, camX, this.theme, this._drawAlpha);
+        this.player.draw(ctx, camX, this.theme, alpha);
       }
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
