@@ -3,7 +3,7 @@
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
-  PLAYER_COLORS, CUBE_SHAPES
+  PLAYER_COLORS, CUBE_SHAPES, LOW_PERF
 } from './settings.js';
 
 // Game modes
@@ -347,13 +347,11 @@ export class Player {
 
       ctx.globalAlpha = alpha;
       ctx.fillStyle = trailColor;
+      if (!LOW_PERF) {
+        ctx.shadowColor = trailColor;
+        ctx.shadowBlur = 8;
+      }
       ctx.fillRect(tsx, tsy, sz, sz);
-
-      // Neon glow on trail
-      ctx.shadowColor = trailColor;
-      ctx.shadowBlur = 8;
-      ctx.fillRect(tsx, tsy, sz, sz);
-      ctx.shadowBlur = 0;
     }
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -750,6 +748,7 @@ export class Player {
   }
 
   _drawGlow(ctx, size, color) {
+    if (LOW_PERF) return; // skip glow entirely on mobile
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
     ctx.save();
