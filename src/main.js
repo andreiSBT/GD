@@ -525,7 +525,9 @@ class Game {
 
     const progress = this.level.getProgress(this.player.x);
     this.currentProgress = progress;
-    this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
+    if (!this.practiceMode) {
+      this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
+    }
 
     // Auto-retry after a short delay
     if (this._retryTimer) clearTimeout(this._retryTimer);
@@ -701,7 +703,9 @@ class Game {
           this.state = COMPLETE;
           Sound.stopMusic();
           Sound.playComplete();
-          this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true);
+          if (!this.practiceMode) {
+            this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true);
+          }
           return;
         }
       }
