@@ -127,7 +127,8 @@ export class Platform {
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
-    if (wasAbove && playerBottom >= platTop && playerBottom <= platTop + 20) {
+    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
+    if ((wasAbove || feetNearTop) && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
@@ -298,7 +299,8 @@ export class TransportPlatform extends Platform {
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
-    if (wasAbove && playerBottom >= platTop && playerBottom <= platTop + 20) {
+    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
+    if ((wasAbove || feetNearTop) && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
