@@ -707,8 +707,11 @@ class Game {
           this.player.setMode(MODE_BALL);
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF8800', 8);
         } else if (result === 'portal_mini') {
-          this.player.mini = !this.player.mini;
+          this.player.mini = true;
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF44FF', 8);
+        } else if (result === 'portal_big') {
+          this.player.mini = false;
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#44AAFF', 8);
         } else if (result === 'portal_reverse') {
           this.player.reversed = !this.player.reversed;
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00FFFF', 8);
