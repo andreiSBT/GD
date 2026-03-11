@@ -875,9 +875,13 @@ class Game {
 
   async _syncFromCloud() {
     // Sync progress from cloud (merges with local, keeps best)
+    console.log('[Sync] Loading progress from cloud...');
     this.progress = await initProgress();
+    console.log('[Sync] Progress:', JSON.stringify(this.progress));
     // Sync customization from cloud
+    console.log('[Sync] Loading customization from cloud...');
     await this._initCloudCustomization();
+    console.log('[Sync] Customization:', JSON.stringify(this.customization));
   }
 
   _loadCustomization() {
