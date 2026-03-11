@@ -7,7 +7,7 @@ import { Editor } from './editor.js';
 import { ParticleSystem } from './particles.js';
 import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
-import { loadProgress, updateLevelProgress } from './progress.js';
+import { loadProgress, updateLevelProgress, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername } from './supabase.js';
 
@@ -68,7 +68,7 @@ class Game {
 
     this._bindEvents();
     this._setupAccountUI();
-    initAuth();
+    initAuth().then(() => this._syncFromCloud());
     this._startLoop();
   }
 
@@ -365,7 +365,7 @@ class Game {
       this.shakeIntensity = 0;
       this.editorLevelData = null;
       this.editorStartCheckpoint = null;
-      this.state = MENU;
+      this.state = EDITOR;
     } else if (action === 'retry' || action === 'restart') {
       this._restart();
       Sound.stopMusic();
@@ -823,6 +823,7 @@ class Game {
       const { error } = await signIn(u, p);
       loginError.style.color = '#FF4444';
       if (error) { loginError.textContent = error; return; }
+      await this._syncFromCloud();
       updateView();
     });
 
@@ -840,6 +841,7 @@ class Game {
       const { error } = await signUp(u, p);
       regError.style.color = '#FF4444';
       if (error) { regError.textContent = error; return; }
+      await this._syncFromCloud();
       updateView();
     });
 
@@ -870,6 +872,13 @@ class Game {
       localStorage.setItem('gd_customization', JSON.stringify(cloud));
       this._applyCustomization();
     }
+  }
+
+  async _syncFromCloud() {
+    // Sync progress from cloud (merges with local, keeps best)
+    this.progress = await initProgress();
+    // Sync customization from cloud
+    await this._initCloudCustomization();
   }
 
   _loadCustomization() {
