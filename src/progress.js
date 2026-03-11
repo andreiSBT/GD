@@ -32,12 +32,21 @@ export function saveProgress(progress) {
   }
 }
 
+export function incrementAttempt(progress, levelId) {
+  if (!progress[levelId]) {
+    progress[levelId] = { attempts: 0, bestProgress: 0, completed: false };
+  }
+  progress[levelId].attempts++;
+  saveProgress(progress);
+  syncProgressToCloud(progress);
+  return progress;
+}
+
 export function updateLevelProgress(progress, levelId, currentProgress, completed) {
   if (!progress[levelId]) {
     progress[levelId] = { attempts: 0, bestProgress: 0, completed: false };
   }
   const lp = progress[levelId];
-  lp.attempts++;
   if (currentProgress > lp.bestProgress) {
     lp.bestProgress = currentProgress;
   }

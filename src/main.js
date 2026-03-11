@@ -7,7 +7,7 @@ import { Editor } from './editor.js';
 import { ParticleSystem } from './particles.js';
 import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
-import { loadProgress, updateLevelProgress, initProgress } from './progress.js';
+import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername } from './supabase.js';
 
@@ -466,6 +466,15 @@ class Game {
 
   _restart() {
     this.attempts++;
+    // Count every started attempt (including abandoned ones) in persistent stats
+    if (this.level && !this.editorLevelData) {
+      this.progress = incrementAttempt(this.progress, this.level.id);
+    } else if (this.editorLevelData) {
+      try {
+        const cur = parseInt(localStorage.getItem('gd_editor_attempts') || '0');
+        localStorage.setItem('gd_editor_attempts', String(cur + 1));
+      } catch {}
+    }
     this.particles.clear();
     this.shakeIntensity = 0;
     this.deathTimer = 0;
@@ -510,14 +519,6 @@ class Game {
     const progress = this.level.getProgress(this.player.x);
     this.currentProgress = progress;
     this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
-
-    // Track editor testing attempts separately for stats
-    if (this.editorLevelData) {
-      try {
-        const cur = parseInt(localStorage.getItem('gd_editor_attempts') || '0');
-        localStorage.setItem('gd_editor_attempts', String(cur + 1));
-      } catch {}
-    }
 
     // Auto-retry after a short delay
     if (this._retryTimer) clearTimeout(this._retryTimer);
