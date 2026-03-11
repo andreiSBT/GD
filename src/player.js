@@ -140,7 +140,7 @@ export class Player {
     if (this.transportLocked) {
       // Player frozen on transport — delta applied in main.js before collision
     } else {
-      const movingMult = this.onMovingPlatform ? 0.15 : 1.0;
+      const movingMult = 1.0;
       const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
       this.x += speed;
     }
