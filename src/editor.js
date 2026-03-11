@@ -689,11 +689,15 @@ export class Editor {
   }
 
   _removeObjectAt(gx, gy) {
-    // Check if erasing the start position
-    if (this.startPos && this.startPos.gx === gx && this.startPos.gy === gy) {
-      this.startPos = null;
-      this._showToast('Start pos removed');
-      return;
+    // Check if erasing the start position (use floor to handle half-grid clicks)
+    if (this.startPos) {
+      const dx = Math.abs(gx - this.startPos.gx);
+      const dy = Math.abs(gy - this.startPos.gy);
+      if (dx < 1 && dy < 1) {
+        this.startPos = null;
+        this._showToast('Start pos removed');
+        return;
+      }
     }
 
     const idx = this.objects.findIndex(o => {
@@ -703,7 +707,8 @@ export class Editor {
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
-      return gx >= ox && gx < ox + ow && gy >= oy && gy < oy + oh;
+      // Use tolerant check: click within object bounds (half-grid friendly)
+      return gx >= ox - 0.5 && gx < ox + ow + 0.5 && gy >= oy - 0.5 && gy < oy + oh + 0.5;
     });
     if (idx >= 0) {
       this._pushHistory();
