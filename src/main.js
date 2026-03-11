@@ -61,10 +61,9 @@ class Game {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
 
-    // Load customization from localStorage, then try cloud
+    // Load customization from localStorage (cloud sync after auth init)
     this.customization = this._loadCustomization();
     this._applyCustomization();
-    this._initCloudCustomization();
 
     this._bindEvents();
     this._setupAccountUI();
