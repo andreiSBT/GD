@@ -830,16 +830,16 @@ class Game {
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
 
-      // Track new best during gameplay (normal mode only)
+      // Track new best silently during gameplay
       if ((this.state === PLAYING || this.state === EDITOR_TESTING) && !this.practiceMode) {
-        if (progress > this.previousBest && this.previousBest < 1 && !this.newBestTriggered) {
+        if (progress > this.previousBest && this.previousBest < 1) {
           this.newBestTriggered = true;
-          this.newBestTimer = 120;
         }
       }
-      if (this.newBestTimer > 0) this.newBestTimer--;
 
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, this.newBestTimer);
+      // Show NEW BEST! only on death screen
+      const showNewBest = this.state === DEAD && this.newBestTriggered;
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest);
 
       if (this.state === PAUSED) {
         this.ui.drawPauseScreen(ctx, !!this.editorLevelData);

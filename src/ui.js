@@ -376,7 +376,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 80, 200, 48, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, newBestTimer = 0) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -448,29 +448,15 @@ export class UI {
     ctx.textAlign = 'right';
     ctx.fillText(levelName, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 12);
 
-    // NEW BEST! popup
-    if (newBestTimer > 0) {
+    // NEW BEST! popup (shown on death only)
+    if (isNewBest) {
       ctx.save();
+      const popY = 200;
 
-      // Timing: fade in 15 frames, hold, fade out last 30 frames
-      let alpha = 1;
-      if (newBestTimer > 105) alpha = (120 - newBestTimer) / 15;
-      else if (newBestTimer < 30) alpha = newBestTimer / 30;
-
-      // Ease out cubic entrance + subtle breathing scale
-      const enterT = Math.min(1, (120 - newBestTimer) / 15);
-      const eased = enterT < 1 ? 1 - Math.pow(1 - enterT, 3) : 1;
-      const popY = 200 + (1 - eased) * 30;
-      const breathe = enterT >= 1 ? Math.sin((120 - newBestTimer) * 0.08) * 0.015 : 0;
-      const scale = (enterT < 1 ? 0.8 + eased * 0.2 : 1) + breathe;
-
-      ctx.globalAlpha = alpha;
       ctx.translate(SCREEN_WIDTH / 2, popY);
-      ctx.scale(scale, scale);
 
-      // Background pill with dark backdrop
-      const pillW = 260;
-      const pillH = 72;
+      // Background pill
+      const pillW = 260, pillH = 72;
       this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fill();
@@ -484,14 +470,6 @@ export class UI {
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Inner gradient highlight
-      const pillGrad = ctx.createLinearGradient(0, -pillH / 2, 0, pillH / 2);
-      pillGrad.addColorStop(0, 'rgba(255,215,0,0.08)');
-      pillGrad.addColorStop(1, 'rgba(255,215,0,0)');
-      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
-      ctx.fillStyle = pillGrad;
-      ctx.fill();
-
       // Star decorations
       ctx.fillStyle = 'rgba(255,215,0,0.35)';
       ctx.font = '18px monospace';
@@ -500,16 +478,11 @@ export class UI {
       ctx.fillText('\u2605', -pillW / 2 + 24, 0);
       ctx.fillText('\u2605', pillW / 2 - 24, 0);
 
-      // "NEW BEST!" text with glow
+      // "NEW BEST!" text
       ctx.shadowColor = '#FFD700';
       ctx.shadowBlur = 18;
       ctx.fillStyle = '#FFD700';
       ctx.font = 'bold 24px monospace';
-      ctx.fillText('NEW BEST!', 0, -10);
-
-      // Bright overlay pass
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = 'rgba(255,255,200,0.3)';
       ctx.fillText('NEW BEST!', 0, -10);
 
       // Percentage
