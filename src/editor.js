@@ -599,7 +599,7 @@ export class Editor {
   _screenToGrid(sx, sy) {
     const worldX = sx + this.cameraX;
     const gx = Math.floor(worldX / GRID);
-    const gy = Math.max(0, Math.floor((GROUND_Y - sy) / GRID));
+    const gy = Math.floor((GROUND_Y - sy) / GRID);
     return { gx, gy };
   }
 
@@ -607,7 +607,7 @@ export class Editor {
     const worldX = sx + this.cameraX;
     const half = GRID / 2;
     const gx = Math.round(worldX / half) * 0.5;
-    const gy = Math.max(0, Math.round((GROUND_Y - sy) / half) * 0.5);
+    const gy = Math.round((GROUND_Y - sy) / half) * 0.5;
     return { gx, gy };
   }
 
@@ -933,19 +933,20 @@ export class Editor {
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
 
-    // Vertical lines
+    // Vertical lines (extend below ground)
     for (let gx = startGx; gx <= endGx; gx++) {
       const sx = gx * GRID - this.cameraX;
       ctx.beginPath();
       ctx.moveTo(sx, TOOLBAR_H);
-      ctx.lineTo(sx, GROUND_Y);
+      ctx.lineTo(sx, SCREEN_HEIGHT);
       ctx.stroke();
     }
 
-    // Horizontal lines
-    for (let gy = 0; gy <= maxGy; gy++) {
+    // Horizontal lines (above and below ground)
+    for (let gy = -5; gy <= maxGy; gy++) {
       const sy = GROUND_Y - gy * GRID;
       if (sy < TOOLBAR_H) break;
+      if (sy > SCREEN_HEIGHT) continue;
       ctx.beginPath();
       ctx.moveTo(0, sy);
       ctx.lineTo(SCREEN_WIDTH, sy);
