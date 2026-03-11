@@ -411,7 +411,7 @@ export class UI {
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '13px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Att. ${attempts}`, 16, 28);
+    ctx.fillText(`ATTEMPT: ${attempts}`, 16, 28);
 
     // Practice mode indicator
     if (practiceMode) {
