@@ -182,10 +182,14 @@ export class MovingPlatform extends Platform {
   }
 
   update() {
+    const prevX = this.x;
+    const prevY = this.y;
     this.t += this.speed * 0.005;
     const s = (Math.sin(this.t) + 1) / 2;
     this.x = this.startX + (this.endX - this.startX) * s;
     this.y = this.startY + (this.endY - this.startY) * s;
+    this.deltaX = this.x - prevX;
+    this.deltaY = this.y - prevY;
   }
 
   draw(ctx, cameraX, theme) {

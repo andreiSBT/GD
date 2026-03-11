@@ -45,6 +45,7 @@ export class Player {
     this.speedMult = 1;
     this.onPlatform = false;
     this.onMovingPlatform = false;
+    this.movingPlatformRef = null;
     this.mode = MODE_CUBE;
     this.holding = false;       // is jump/click held down
     this.coyoteCounter = 0;     // frames since leaving ground
@@ -133,9 +134,13 @@ export class Player {
     this.prevY = this.y;
 
     // Horizontal
-    const movingMult = this.onMovingPlatform ? 0 : 1.0;
-    const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
-    this.x += speed;
+    if (this.onMovingPlatform && this.movingPlatformRef) {
+      // Ride with the platform — player follows platform movement
+      this.x += this.movingPlatformRef.deltaX || 0;
+    } else {
+      const speed = SCROLL_SPEED * this.speedMult * (this.dashTimer > 0 ? 1.5 : 1.0);
+      this.x += speed;
+    }
     if (this.dashTimer > 0) {
       this.dashTimer--;
       if (this.dashTimer <= 0) this.dashing = false;

@@ -573,6 +573,7 @@ class Game {
     // Reset pending orb each frame
     this.pendingOrbHit = null;
     this.player.onMovingPlatform = false;
+    this.player.movingPlatformRef = null;
 
     // Collision detection
     const playerRect = this.player.getRect();
@@ -595,7 +596,10 @@ class Game {
             this.player.vy = 0;
             this.player.grounded = true;
             this.player.onPlatform = true;
-            if (obs.type === 'moving') this.player.onMovingPlatform = true;
+            if (obs.type === 'moving') {
+              this.player.onMovingPlatform = true;
+              this.player.movingPlatformRef = obs;
+            }
             this.player._snapRotation();
           }
         }
