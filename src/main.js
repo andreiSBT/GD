@@ -52,6 +52,7 @@ class Game {
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
     this.editor.onTest = (levelData) => this._testEditorLevel(levelData);
+    this.editor.onPlay = (levelData) => this._playEditorLevel(levelData);
     this.editor.onBack = () => { this.state = MENU; };
     this.editor.onLoadLevel = (id) => {
       const data = LEVEL_DATA[id];
@@ -372,7 +373,12 @@ class Game {
     } else if (action === 'menu') {
       Sound.stopMusic();
       this.shakeIntensity = 0;
-      this.state = MENU;
+      if (this.editorLevelData) {
+        this.editorLevelData = null;
+        this.state = EDITOR;
+      } else {
+        this.state = MENU;
+      }
     } else if (action === 'next_level') {
       const nextId = this.level.id + 1;
       if (nextId <= getLevelCount()) {
@@ -426,6 +432,22 @@ class Game {
     this.player.reset(startPixelX);
     this.level.resetFrom(startPixelX);
     this.state = EDITOR_TESTING;
+    this.deathTimer = 0;
+    this.shakeIntensity = 0;
+    this.pendingOrbHit = null;
+    Sound.playMusic(this.editor.themeId);
+  }
+
+  _playEditorLevel(levelData) {
+    this.editorLevelData = levelData;
+    this.level = createLevelFromData(levelData);
+    this.theme = this.editor.theme;
+    this.practiceMode = false;
+    this.attempts = 0;
+    this.editorStartCheckpoint = null;
+    this.lastCheckpoint = null;
+    this.player.reset(0);
+    this.state = PLAYING;
     this.deathTimer = 0;
     this.shakeIntensity = 0;
     this.pendingOrbHit = null;

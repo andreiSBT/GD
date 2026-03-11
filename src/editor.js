@@ -68,6 +68,7 @@ export class Editor {
     this.scrollSpeed = 0;
 
     this.onTest = null;
+    this.onPlay = null;
     this.onBack = null;
 
     // Touch state
@@ -1445,7 +1446,7 @@ export class Editor {
           const slotId = btn.id.replace('browse_play_', '');
           if (this.loadFromSlot(slotId)) {
             this.browsing = false;
-            if (this.onTest) this.onTest(this.getLevelData());
+            if (this.onPlay) this.onPlay(this.getLevelData());
           }
         } else if (btn.id.startsWith('browse_del_')) {
           const slotId = btn.id.replace('browse_del_', '');
