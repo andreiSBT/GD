@@ -539,6 +539,12 @@ class Game {
       return;
     }
 
+    // Keep moving platforms animated during pause so timing isn't luck-based
+    if (this.state === PAUSED) {
+      this.level.update();
+      return;
+    }
+
     if (this.state !== PLAYING && this.state !== EDITOR_TESTING) return;
 
     this.level.update();
