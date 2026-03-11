@@ -478,6 +478,11 @@ class Game {
     this.attempts++;
     this.newBestTriggered = false;
     this.newBestTimer = 0;
+    // Update previousBest so NEW BEST only shows when actually beating the record
+    if (this.level && !this.editorLevelData) {
+      const lp = this.progress[this.level.id];
+      if (lp) this.previousBest = lp.bestProgress;
+    }
     // Count every started attempt (including abandoned ones) in persistent stats
     if (this.level && !this.editorLevelData) {
       this.progress = incrementAttempt(this.progress, this.level.id);
