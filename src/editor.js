@@ -15,6 +15,7 @@ const TOOLS = [
   { id: 'orb', label: 'Orb', key: '4', color: '#FFD700' },
   { id: 'pad', label: 'Pad', key: '5', color: '#FFAA00' },
   { id: 'portal', label: 'Portal', key: '6', color: '#FF00FF' },
+  { id: 'coin', label: 'Coin', key: 'C', color: '#FFD700' },
   { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
   { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
   { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
@@ -25,7 +26,7 @@ const TOOLS = [
 const SUBTYPES = {
   orb: ['yellow_orb', 'pink_orb', 'dash_orb'],
   pad: ['yellow_pad', 'pink_pad'],
-  portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube'],
+  portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'reverse'],
 };
 
 const SUBTYPE_COLORS = {
@@ -33,6 +34,7 @@ const SUBTYPE_COLORS = {
   yellow_pad: '#FFD700', pink_pad: '#FF69B4',
   gravity: '#FFD700', speed_up: '#FF6600', speed_down: '#00AAFF',
   ship: '#FF00FF', wave: '#00FFAA', cube: '#00C8FF',
+  ball: '#FF8800', mini: '#FF44FF', reverse: '#00FFFF',
 };
 
 export class Editor {
@@ -182,7 +184,7 @@ export class Editor {
 
     this._placeObject(gx, gy);
     // Start paint mode for tools that support it
-    if (['spike', 'orb', 'pad', 'checkpoint', 'end'].includes(this.selectedTool)) {
+    if (['spike', 'orb', 'pad', 'coin', 'checkpoint', 'end'].includes(this.selectedTool)) {
       this.painting = true;
       this.paintErase = false;
       this.lastPaintGx = gx;
@@ -1271,6 +1273,16 @@ export class Editor {
       ctx.beginPath();
       ctx.ellipse(sx + GRID / 2, sy - GRID / 2, GRID / 2, GRID * 1.5, 0, 0, Math.PI * 2);
       ctx.stroke();
+    } else if (this.selectedTool === 'coin') {
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.arc(sx + GRID / 2, sy + GRID / 2, GRID * 0.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', sx + GRID / 2, sy + GRID / 2);
     } else if (this.selectedTool === 'checkpoint') {
       ctx.fillStyle = '#00FF44';
       ctx.fillRect(sx, sy, 4, GRID * 2);

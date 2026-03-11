@@ -10,10 +10,12 @@ import {
 export const MODE_CUBE = 'cube';
 export const MODE_SHIP = 'ship';
 export const MODE_WAVE = 'wave';
+export const MODE_BALL = 'ball';
 
 // Physics tuning
 const COYOTE_TIME = 6;        // frames of grace after leaving ground
 const JUMP_BUFFER = 8;        // frames to buffer a jump press
+const BALL_GRAVITY = 0.8;     // slightly lighter gravity for ball
 const SHIP_GRAVITY = 0.5;     // lighter gravity for ship
 const SHIP_LIFT = -1.1;       // per-frame lift when holding in ship mode
 const WAVE_SPEED = 6;         // wave diagonal speed
@@ -58,6 +60,8 @@ export class Player {
     this.dashing = false;        // true while dash orb is active (held)
     this.iconIndex = 0;         // visual icon variant
     this.holdJumped = false;    // flag: did auto-jump from hold this frame
+    this.mini = false;          // mini mode (0.5x size)
+    this.reversed = false;      // reverse direction
   }
 
   // Called on key/click DOWN
@@ -81,7 +85,7 @@ export class Player {
     if (this.mode === MODE_CUBE) {
       // Cube: single jump with coyote time + buffer
       if (this.grounded || this.coyoteCounter > 0) {
-        this.vy = JUMP_VEL * this.gravityMult;
+        this.vy = JUMP_VEL * this.gravityMult * (this.mini ? 0.7 : 1);
         this.grounded = false;
         this.onPlatform = false;
         this.coyoteCounter = 0;
@@ -89,6 +93,18 @@ export class Player {
         // Rotate 90 degrees per jump
         const dir = this.gravityMult > 0 ? -1 : 1;
         this.targetRotation += dir * 90;
+        return true;
+      }
+      return false;
+    } else if (this.mode === MODE_BALL) {
+      // Ball: click flips gravity
+      if (this.grounded || this.coyoteCounter > 0) {
+        this.gravityMult *= -1;
+        this.vy = JUMP_VEL * this.gravityMult * 0.5 * (this.mini ? 0.7 : 1);
+        this.grounded = false;
+        this.onPlatform = false;
+        this.coyoteCounter = 0;
+        this.jumpBufferCounter = 0;
         return true;
       }
       return false;
@@ -123,6 +139,8 @@ export class Player {
     this.mode = mode;
     if (mode === MODE_SHIP) {
       this.vy = 0;
+    } else if (mode === MODE_BALL) {
+      this.vy = 0;
     }
   }
 
@@ -147,7 +165,8 @@ export class Player {
         this.transportExitRamp = Math.min(1, this.transportExitRamp + 0.07);
       }
       const ramp = this.transportExitRamp;
-      const speed = SCROLL_SPEED * this.speedMult * ramp * (this.dashTimer > 0 ? 1.5 : 1.0);
+      const dir = this.reversed ? -1 : 1;
+      const speed = SCROLL_SPEED * this.speedMult * ramp * (this.dashTimer > 0 ? 1.5 : 1.0) * dir;
       this.x += speed;
     }
     if (this.dashTimer > 0) {
@@ -166,6 +185,8 @@ export class Player {
       this._updateShip();
     } else if (this.mode === MODE_WAVE) {
       this._updateWave();
+    } else if (this.mode === MODE_BALL) {
+      this._updateBall();
     }
 
     // Coyote time counter
@@ -181,8 +202,8 @@ export class Player {
       }
     }
 
-    // Hold-to-jump: in cube mode, auto-jump on landing while holding
-    if (this.mode === MODE_CUBE && this.holding && this.grounded && !this.dashing) {
+    // Hold-to-jump: in cube/ball mode, auto-jump on landing while holding
+    if ((this.mode === MODE_CUBE || this.mode === MODE_BALL) && this.holding && this.grounded && !this.dashing) {
       this.holdJumped = this.jump();
     } else {
       this.holdJumped = false;
@@ -286,6 +307,40 @@ export class Player {
     this.rotation += 8;
   }
 
+  _updateBall() {
+    // Ball: rolls on surfaces, click flips gravity
+    const grav = BALL_GRAVITY * this.gravityMult * (this.mini ? 0.7 : 1);
+    if (this.dashing) {
+      this.y += this.vy;
+    } else {
+      this.vy += grav;
+      this.y += this.vy;
+    }
+
+    const groundY = GROUND_Y - PLAYER_SIZE;
+    if (this.gravityMult > 0) {
+      if (this.y >= groundY) {
+        this.y = groundY;
+        this.vy = 0;
+        this.grounded = true;
+        this.dashing = false;
+        this.dashTimer = 0;
+      }
+    } else {
+      if (this.y <= 0) {
+        this.y = 0;
+        this.vy = 0;
+        this.grounded = true;
+        this.dashing = false;
+        this.dashTimer = 0;
+      }
+    }
+
+    // Rolling rotation based on horizontal speed
+    const speed = SCROLL_SPEED * this.speedMult;
+    this.rotation += speed * 3;
+  }
+
   _snapRotation() {
     this.rotation = this.targetRotation;
     // Enable coyote time when landing
@@ -294,11 +349,13 @@ export class Player {
 
   getRect() {
     const inset = 4;
+    const s = this.mini ? PLAYER_SIZE * 0.5 : PLAYER_SIZE;
+    const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
-      x: this.x + inset,
-      y: this.y + inset,
-      w: PLAYER_SIZE - inset * 2,
-      h: PLAYER_SIZE - inset * 2,
+      x: this.x + inset + offset,
+      y: this.y + inset + offset,
+      w: s - inset * 2,
+      h: s - inset * 2,
     };
   }
 
@@ -308,9 +365,10 @@ export class Player {
     const interpY = alpha != null ? this.prevY + (this.y - this.prevY) * alpha : this.y;
     const sx = interpX - cameraX + PLAYER_X_OFFSET;
     const sy = interpY;
-    const size = PLAYER_SIZE;
-    const cx = sx + size / 2;
-    const cy = sy + size / 2;
+    const size = this.mini ? PLAYER_SIZE * 0.5 : PLAYER_SIZE;
+    const offset = this.mini ? (PLAYER_SIZE - size) / 2 : 0;
+    const cx = sx + PLAYER_SIZE / 2;
+    const cy = sy + PLAYER_SIZE / 2;
     const color = this.customColor || theme.player;
 
     // --- GLOW TRAIL ---
@@ -318,18 +376,21 @@ export class Player {
 
     ctx.save();
     ctx.translate(cx, cy);
+    if (this.mini) ctx.scale(0.5, 0.5);
     ctx.rotate((this.rotation * Math.PI) / 180);
 
     if (this.mode === MODE_CUBE) {
-      this._drawCube(ctx, size, color);
+      this._drawCube(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_SHIP) {
-      this._drawShip(ctx, size, color);
+      this._drawShip(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_WAVE) {
-      this._drawWave(ctx, size, color);
+      this._drawWave(ctx, PLAYER_SIZE, color);
+    } else if (this.mode === MODE_BALL) {
+      this._drawBall(ctx, PLAYER_SIZE, color);
     }
 
     // Outer glow (inside rotated context so it matches rotation)
-    this._drawGlow(ctx, size, color);
+    this._drawGlow(ctx, PLAYER_SIZE, color);
 
     ctx.restore();
   }
@@ -747,6 +808,44 @@ export class Player {
     ctx.stroke();
   }
 
+  _drawBall(ctx, size, color) {
+    const hs = size / 2;
+
+    // Ball - circle shape
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(0, 0, hs, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gradient overlay
+    const grad = ctx.createRadialGradient(-hs * 0.3, -hs * 0.3, 0, 0, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Inner circle
+    ctx.fillStyle = lighten(color, 40);
+    ctx.beginPath();
+    ctx.arc(0, 0, hs * 0.55, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Direction indicator line (shows rotation)
+    ctx.strokeStyle = '#FFF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(hs * 0.7, 0);
+    ctx.stroke();
+
+    // Border
+    ctx.strokeStyle = '#FFF';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, hs, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   _drawGlow(ctx, size, color) {
     if (LOW_PERF) return; // skip glow entirely on mobile
     const hs = size / 2;
@@ -774,6 +873,10 @@ export class Player {
       ctx.lineTo(0, hs);
       ctx.lineTo(-hs, 0);
       ctx.closePath();
+      ctx.fill();
+    } else if (this.mode === MODE_BALL) {
+      ctx.beginPath();
+      ctx.arc(0, 0, hs, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.shadowBlur = 0;

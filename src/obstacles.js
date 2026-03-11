@@ -565,6 +565,9 @@ export class Portal {
       ship: '#FF00FF',
       wave: '#00FFAA',
       cube: '#00C8FF',
+      ball: '#FF8800',
+      mini: '#FF44FF',
+      reverse: '#00FFFF',
     };
     const color = portalColors[this.portalType] || '#FFD700';
 
@@ -619,6 +622,9 @@ export class Portal {
       ship: '🚀',
       wave: '〰',
       cube: '■',
+      ball: '●',
+      mini: '▼',
+      reverse: '⇄',
     };
     ctx.fillText(icons[this.portalType] || '?', cx, cy);
 
@@ -750,6 +756,80 @@ export class EndMarker {
 }
 
 // ============================================================
+// COIN - collectible with spinning animation
+// ============================================================
+export class Coin {
+  constructor(gx, gy) {
+    this.type = 'coin';
+    this.x = gx * GRID;
+    this.y = GROUND_Y - (gy + 1) * GRID;
+    this.w = GRID;
+    this.h = GRID;
+    this.collected = false;
+    this.animTimer = Math.random() * Math.PI * 2;
+  }
+
+  checkCollision(playerRect) {
+    if (this.collected) return null;
+    // Smaller hitbox centered in the grid cell
+    const coinRect = {
+      x: this.x + GRID * 0.15,
+      y: this.y + GRID * 0.15,
+      w: GRID * 0.7,
+      h: GRID * 0.7,
+    };
+    if (rectsOverlap(playerRect, coinRect)) {
+      this.collected = true;
+      return 'coin';
+    }
+    return null;
+  }
+
+  reset() { this.collected = false; }
+
+  draw(ctx, cameraX) {
+    if (this.collected) return;
+    const sx = this.x - cameraX + PLAYER_X_OFFSET;
+    if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
+    const sy = this.y;
+
+    this.animTimer += 0.05;
+    const scale = Math.abs(Math.cos(this.animTimer)); // spinning effect
+
+    const cx = sx + GRID / 2;
+    const cy = sy + GRID / 2;
+    const r = GRID * 0.35;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, 1); // horizontal squash for spin
+
+    // Gold coin
+    drawNeonGlow(ctx, '#FFD700', 10);
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    clearGlow(ctx);
+
+    // Inner circle
+    ctx.fillStyle = '#FFC000';
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Star in center
+    ctx.fillStyle = '#FFF';
+    ctx.font = `bold ${Math.floor(r)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★', 0, 1);
+
+    ctx.restore();
+  }
+}
+
+// ============================================================
 // FACTORY
 // ============================================================
 export function createObstacle(obj) {
@@ -772,6 +852,8 @@ export function createObstacle(obj) {
       return new JumpOrb(obj.x, obj.y || 1, obj.orbType || 'yellow_orb');
     case 'pad':
       return new JumpPad(obj.x, obj.y || 0, obj.padType || 'yellow_pad');
+    case 'coin':
+      return new Coin(obj.x, obj.y || 1);
     default:
       return null;
   }

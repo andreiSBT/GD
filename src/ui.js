@@ -376,7 +376,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 80, 200, 48, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -412,6 +412,14 @@ export class UI {
     ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`ATTEMPT: ${attempts}`, 16, 28);
+
+    // Coins counter
+    if (coins && coins.total > 0) {
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`★ ${coins.collected}/${coins.total}`, 16, 46);
+    }
 
     // Practice mode indicator
     if (practiceMode) {

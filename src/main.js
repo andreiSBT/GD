@@ -1,7 +1,7 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
 import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth } from './settings.js';
-import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE } from './player.js';
+import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { Editor } from './editor.js';
 import { ParticleSystem } from './particles.js';
@@ -486,6 +486,7 @@ class Game {
 
   _restart() {
     this.attempts++;
+    this.coinsCollected = 0;
     this.newBestTriggered = false;
     this.newBestTimer = 0;
     // Update previousBest so NEW BEST only shows when actually beating the record
@@ -520,6 +521,8 @@ class Game {
       this.player.gravityMult = this.lastCheckpoint.gravityMult;
       this.player.speedMult = this.lastCheckpoint.speedMult;
       this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
+      this.player.mini = this.lastCheckpoint.mini || false;
+      this.player.reversed = this.lastCheckpoint.reversed || false;
       this.level.resetFrom(this.lastCheckpoint.x);
       this.camera.reset(this.lastCheckpoint.x);
     } else if (this.editorStartCheckpoint) {
@@ -700,6 +703,15 @@ class Game {
         } else if (result === 'portal_cube') {
           this.player.setMode(MODE_CUBE);
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00C8FF', 8);
+        } else if (result === 'portal_ball') {
+          this.player.setMode(MODE_BALL);
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF8800', 8);
+        } else if (result === 'portal_mini') {
+          this.player.mini = !this.player.mini;
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF44FF', 8);
+        } else if (result === 'portal_reverse') {
+          this.player.reversed = !this.player.reversed;
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00FFFF', 8);
         }
       } else if (obs.type === 'orb') {
         const orbType = obs.checkCollision(playerRect);
@@ -714,6 +726,12 @@ class Game {
           this.player.orbBounce(padType);
           this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700');
         }
+      } else if (obs.type === 'coin') {
+        if (obs.checkCollision(playerRect) === 'coin') {
+          this.coinsCollected = (this.coinsCollected || 0) + 1;
+          Sound.playCheckpoint(); // reuse checkpoint sound for now
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700', 15);
+        }
       } else if (obs.type === 'checkpoint') {
         if (obs.checkCollision(playerRect) === 'checkpoint') {
           Sound.playCheckpoint();
@@ -723,6 +741,8 @@ class Game {
             gravityMult: this.player.gravityMult,
             speedMult: this.player.speedMult,
             mode: this.player.mode,
+            mini: this.player.mini,
+            reversed: this.player.reversed,
           };
         }
       } else if (obs.type === 'end') {
@@ -854,7 +874,9 @@ class Game {
 
       // Show NEW BEST! only on death screen, never in practice mode
       const showNewBest = this.state === DEAD && this.newBestTriggered && !this.practiceMode;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest);
+      // Count total coins in level
+      const totalCoins = this.level ? this.level.obstacles.filter(o => o.type === 'coin').length : 0;
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null);
 
       if (this.state === PAUSED) {
         this.ui.drawPauseScreen(ctx, !!this.editorLevelData);
