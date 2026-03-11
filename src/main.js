@@ -45,6 +45,9 @@ class Game {
     this.practiceMode = false;
     this.attempts = 0;
     this.currentProgress = 0;
+    this.previousBest = 0;
+    this.newBestTimer = 0;
+    this.newBestTriggered = false;
     this.lastCheckpoint = null;
     this.shakeIntensity = 0;
     this.deathTimer = 0;
@@ -414,6 +417,10 @@ class Game {
     this.theme = THEMES[levelId];
     this.attempts = 0;
     this.lastCheckpoint = null;
+    // Track previous best for "NEW BEST!" popup
+    const lp = this.progress[levelId];
+    this.previousBest = lp ? lp.bestProgress : 0;
+    this.newBestTimer = 0;
     this._restart();
     Sound.playMusic(levelId);
   }
@@ -454,6 +461,9 @@ class Game {
     this.theme = this.editor.theme;
     this.practiceMode = false;
     this.attempts = 0;
+    this.previousBest = 0;
+    this.newBestTimer = 0;
+    this.newBestTriggered = false;
     this.editorStartCheckpoint = null;
     this.lastCheckpoint = null;
     this.player.reset(0);
@@ -466,6 +476,8 @@ class Game {
 
   _restart() {
     this.attempts++;
+    this.newBestTriggered = false;
+    this.newBestTimer = 0;
     // Count every started attempt (including abandoned ones) in persistent stats
     if (this.level && !this.editorLevelData) {
       this.progress = incrementAttempt(this.progress, this.level.id);
@@ -817,7 +829,17 @@ class Game {
       }
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name);
+
+      // Detect new best during gameplay
+      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
+        if (progress > this.previousBest && this.previousBest < 1 && !this.newBestTriggered) {
+          this.newBestTimer = 120; // 2 seconds at 60fps
+          this.newBestTriggered = true;
+        }
+        if (this.newBestTimer > 0) this.newBestTimer--;
+      }
+
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, this.newBestTimer);
 
       if (this.state === PAUSED) {
         this.ui.drawPauseScreen(ctx, !!this.editorLevelData);

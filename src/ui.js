@@ -376,7 +376,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 80, 200, 48, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, newBestTimer = 0) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -447,6 +447,39 @@ export class UI {
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(levelName, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 12);
+
+    // NEW BEST! popup
+    if (newBestTimer > 0) {
+      ctx.save();
+      // Fade in for first 15 frames, hold, fade out last 30 frames
+      let alpha = 1;
+      if (newBestTimer > 105) alpha = (120 - newBestTimer) / 15; // fade in
+      else if (newBestTimer < 30) alpha = newBestTimer / 30; // fade out
+
+      // Slide up entrance
+      const slideOffset = newBestTimer > 105 ? (120 - newBestTimer) / 15 : 1;
+      const popY = SCREEN_HEIGHT / 3 + (1 - slideOffset) * 20;
+
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = 'center';
+
+      // Glow effect
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 20;
+
+      // "NEW BEST!" text
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 32px monospace';
+      ctx.fillText('NEW BEST!', SCREEN_WIDTH / 2, popY);
+
+      // Percentage below
+      ctx.font = 'bold 20px monospace';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.shadowBlur = 10;
+      ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, popY + 30);
+
+      ctx.restore();
+    }
   }
 
   drawDeathScreen(ctx, progress, attempts) {
