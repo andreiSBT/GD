@@ -48,6 +48,7 @@ export class Player {
     this.onMovingPlatform = false;
     this.movingPlatformRef = null;
     this.transportLocked = false;
+    this.transportExitRamp = 1; // smooth speed ramp after leaving transport (1 = full speed)
     this.mode = MODE_CUBE;
     this.holding = false;       // is jump/click held down
     this.coyoteCounter = 0;     // frames since leaving ground
@@ -136,12 +137,17 @@ export class Player {
     this.prevX = this.x;
     this.prevY = this.y;
 
-    // Horizontal — stop on transport, slow on moving platforms
+    // Horizontal — stop on transport, smooth ramp after exit
     if (this.transportLocked) {
       // Player frozen on transport — delta applied in main.js before collision
+      this.transportExitRamp = 0;
     } else {
-      const movingMult = 1.0;
-      const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
+      // Smooth ramp-up after leaving transport (0 → 1 over ~15 frames)
+      if (this.transportExitRamp < 1) {
+        this.transportExitRamp = Math.min(1, this.transportExitRamp + 0.07);
+      }
+      const ramp = this.transportExitRamp;
+      const speed = SCROLL_SPEED * this.speedMult * ramp * (this.dashTimer > 0 ? 1.5 : 1.0);
       this.x += speed;
     }
     if (this.dashTimer > 0) {
