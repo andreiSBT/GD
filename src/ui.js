@@ -5,6 +5,33 @@ import { getLevelCount } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
 
+function getEditorLevelCount() {
+  try {
+    const raw = localStorage.getItem('gd_editor_slots');
+    return raw ? JSON.parse(raw).length : 0;
+  } catch { return 0; }
+}
+
+function getTotalAttempts(progress) {
+  let total = 0;
+  for (const key of Object.keys(progress)) {
+    total += (progress[key]?.attempts || 0);
+  }
+  // Add editor testing attempts
+  try {
+    total += parseInt(localStorage.getItem('gd_editor_attempts') || '0');
+  } catch {}
+  return total;
+}
+
+function getCompletedCount(progress) {
+  let count = 0;
+  for (const key of Object.keys(progress)) {
+    if (progress[key]?.completed) count++;
+  }
+  return count;
+}
+
 export class UI {
   constructor() {
     this.buttons = [];
@@ -43,7 +70,7 @@ export class UI {
     return null;
   }
 
-  drawMainMenu(ctx) {
+  drawMainMenu(ctx, progress) {
     this.buttons = [];
 
     // Background
@@ -61,13 +88,13 @@ export class UI {
     const lineW = 320;
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#00C8FF';
-    ctx.fillRect(SCREEN_WIDTH / 2 - lineW / 2, 255, lineW, 1);
+    ctx.fillRect(SCREEN_WIDTH / 2 - lineW / 2, 215, lineW, 1);
     ctx.globalAlpha = 1;
 
     // Title with pulse and neon glow
     const pulse = 1 + Math.sin(this.pulseTimer * 3) * 0.03;
     ctx.save();
-    ctx.translate(SCREEN_WIDTH / 2, 170);
+    ctx.translate(SCREEN_WIDTH / 2, 140);
     ctx.scale(pulse, pulse);
 
     // Outer glow
@@ -91,19 +118,72 @@ export class UI {
     ctx.fillStyle = '#4A6A8A';
     ctx.font = '18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('A  S I D E - S C R O L L I N G  R H Y T H M  G A M E', SCREEN_WIDTH / 2, 225);
+    ctx.fillText('A  S I D E - S C R O L L I N G  R H Y T H M  G A M E', SCREEN_WIDTH / 2, 190);
 
-    // Menu buttons — slightly wider, better spacing
-    const bw = 260, bh = 56, gap = 64;
+    // Menu buttons
+    const bw = 260, bh = 56, gap = 60;
     const bx = SCREEN_WIDTH / 2 - bw / 2;
-    let by = 290;
-    this._drawButton(ctx, bx, by, bw, bh, 'PLAY', 'play', '#00C864');
-    by += gap;
-    this._drawButton(ctx, bx, by, bw, bh, 'PRACTICE', 'practice', '#C8A000');
+    let by = 250;
+    this._drawButton(ctx, bx, by, bw, bh, 'LEVELS', 'levels', '#00C864');
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'CUSTOMIZE', 'customize', '#8844CC');
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'EDITOR', 'editor', '#CC6600');
+
+    // === STATS SECTION ===
+    const statsY = by + gap + 10;
+    const statsW = 400;
+    const statsX = (SCREEN_WIDTH - statsW) / 2;
+
+    // Stats container
+    this._roundRect(ctx, statsX, statsY, statsW, 100, 12);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(200,180,50,0.25)';
+    ctx.lineWidth = 1;
+    this._roundRect(ctx, statsX, statsY, statsW, 100, 12);
+    ctx.stroke();
+
+    // Stats title
+    ctx.fillStyle = '#C8A000';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('STATS', SCREEN_WIDTH / 2, statsY + 18);
+
+    // Stats values
+    const prog = progress || {};
+    const totalAttempts = getTotalAttempts(prog);
+    const completedLevels = getCompletedCount(prog);
+    const officialCount = getLevelCount();
+    const createdLevels = getEditorLevelCount();
+
+    const statItems = [
+      { label: 'ATTEMPTS', value: `${totalAttempts}`, color: '#FFD700' },
+      { label: 'COMPLETED', value: `${completedLevels}/${officialCount}`, color: '#00FF64' },
+      { label: 'CREATED', value: `${createdLevels}`, color: '#FF8844' },
+    ];
+
+    const colW = statsW / statItems.length;
+    for (let i = 0; i < statItems.length; i++) {
+      const stat = statItems[i];
+      const cx = statsX + colW * i + colW / 2;
+
+      // Value
+      ctx.save();
+      ctx.shadowColor = stat.color;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = stat.color;
+      ctx.font = 'bold 28px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(stat.value, cx, statsY + 55);
+      ctx.restore();
+
+      // Label
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(stat.label, cx, statsY + 80);
+    }
 
     // Account button (top right)
     const username = getUsername();
@@ -138,13 +218,13 @@ export class UI {
     ctx.fillStyle = '#00C8FF';
     ctx.font = 'bold 44px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SELECT LEVEL', SCREEN_WIDTH / 2, 75);
+    ctx.fillText('SELECT LEVEL', SCREEN_WIDTH / 2, 60);
     ctx.shadowBlur = 0;
     ctx.restore();
 
     const count = getLevelCount();
     const cardW = 280;
-    const cardH = 300;
+    const cardH = 340;
     const gap = 40;
     const totalW = count * cardW + (count - 1) * gap;
     const startX = (SCREEN_WIDTH - totalW) / 2;
@@ -153,7 +233,7 @@ export class UI {
     for (let i = 1; i <= count; i++) {
       const theme = THEMES[i];
       const x = startX + (i - 1) * (cardW + gap);
-      const y = 130;
+      const y = 95;
       const prog = progress[i] || { attempts: 0, bestProgress: 0, completed: false };
 
       // Card shadow
@@ -195,20 +275,20 @@ export class UI {
       ctx.fillStyle = theme.accent;
       ctx.font = 'bold 20px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(theme.name, x + cardW / 2, y + 40);
+      ctx.fillText(theme.name, x + cardW / 2, y + 36);
 
       // Level number with glow
       ctx.save();
       ctx.shadowColor = theme.accent;
       ctx.shadowBlur = 15;
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 64px monospace';
-      ctx.fillText(`${i}`, x + cardW / 2, y + 120);
+      ctx.font = 'bold 58px monospace';
+      ctx.fillText(`${i}`, x + cardW / 2, y + 105);
       ctx.restore();
 
       // Progress bar with rounded ends
       const barX = x + 30;
-      const barY = y + 160;
+      const barY = y + 140;
       const barW = cardW - 60;
       const barH = 10;
       const barR = 5;
@@ -225,9 +305,10 @@ export class UI {
       // Stats
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
       ctx.font = '14px monospace';
-      ctx.fillText(`Best: ${Math.floor(prog.bestProgress * 100)}%`, x + cardW / 2, y + 200);
+      ctx.textAlign = 'center';
+      ctx.fillText(`Best: ${Math.floor(prog.bestProgress * 100)}%`, x + cardW / 2, y + 175);
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.fillText(`Attempts: ${prog.attempts}`, x + cardW / 2, y + 222);
+      ctx.fillText(`Attempts: ${prog.attempts}`, x + cardW / 2, y + 195);
 
       // Completed badge
       if (prog.completed) {
@@ -235,17 +316,25 @@ export class UI {
         ctx.shadowColor = '#00FF64';
         ctx.shadowBlur = 8;
         ctx.fillStyle = '#00FF64';
-        ctx.font = 'bold 16px monospace';
-        ctx.fillText('COMPLETED', x + cardW / 2, y + 260);
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('COMPLETED', x + cardW / 2, y + 220);
         ctx.restore();
       }
 
-      // Clickable area
-      this.buttons.push({ id: `level_${i}`, x, y, w: cardW, h: cardH });
+      // Normal and Practice buttons inside card
+      const btnW = 110;
+      const btnH = 40;
+      const btnGap = 10;
+      const btnY = y + cardH - btnH - 16;
+      const btnX1 = x + (cardW - btnW * 2 - btnGap) / 2;
+      const btnX2 = btnX1 + btnW + btnGap;
+
+      this._drawButton(ctx, btnX1, btnY, btnW, btnH, 'NORMAL', `normal_${i}`, '#00C864', 15);
+      this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', 15);
     }
 
     // Back button
-    this._drawButton(ctx, 30, SCREEN_HEIGHT - 70, 130, 44, 'BACK', 'back', '#445566', 20);
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - 65, 130, 44, 'BACK', 'back', '#445566', 20);
   }
 
   drawHUD(ctx, progress, attempts, practiceMode, levelName) {

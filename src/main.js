@@ -320,12 +320,16 @@ class Game {
   }
 
   _handleAction(action) {
-    if (action === 'play') {
+    if (action === 'levels') {
+      this.state = LEVEL_SELECT;
+    } else if (action.startsWith('normal_')) {
+      const id = parseInt(action.split('_')[1]);
       this.practiceMode = false;
-      this.state = LEVEL_SELECT;
-    } else if (action === 'practice') {
+      this._startLevel(id);
+    } else if (action.startsWith('practice_')) {
+      const id = parseInt(action.split('_')[1]);
       this.practiceMode = true;
-      this.state = LEVEL_SELECT;
+      this._startLevel(id);
     } else if (action === 'customize') {
       this.state = CUSTOMIZE;
     } else if (action === 'back_customize') {
@@ -343,9 +347,6 @@ class Game {
     } else if (action.startsWith('shape_')) {
       this.customization.shapeIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
-    } else if (action.startsWith('level_')) {
-      const id = parseInt(action.split('_')[1]);
-      this._startLevel(id);
     } else if (action === 'pause') {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
@@ -502,6 +503,14 @@ class Game {
     const progress = this.level.getProgress(this.player.x);
     this.currentProgress = progress;
     this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
+
+    // Track editor testing attempts separately for stats
+    if (this.editorLevelData) {
+      try {
+        const cur = parseInt(localStorage.getItem('gd_editor_attempts') || '0');
+        localStorage.setItem('gd_editor_attempts', String(cur + 1));
+      } catch {}
+    }
 
     // Auto-retry after a short delay
     if (this._retryTimer) clearTimeout(this._retryTimer);
@@ -743,7 +752,7 @@ class Game {
     }
 
     if (this.state === MENU) {
-      this.ui.drawMainMenu(ctx);
+      this.ui.drawMainMenu(ctx, this.progress);
     } else if (this.state === LEVEL_SELECT) {
       this.ui.drawLevelSelect(ctx, this.progress);
     } else if (this.state === CUSTOMIZE) {
