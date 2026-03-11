@@ -678,9 +678,9 @@ export class Editor {
   _findObjectAt(gx, gy) {
     return this.objects.findIndex(o => {
       const ow = o.w || 1;
-      const oh = o.h || 1;
+      const oh = o.type === 'portal' ? 3 : (o.h || 1);
       let ox = o.x, oy = o.y;
-      if (o.type !== 'platform' && o.type !== 'moving' && o.type === 'spike' && o.rot === 180) {
+      if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
       return gx >= ox && gx < ox + ow && gy >= oy && gy < oy + oh;
@@ -697,9 +697,9 @@ export class Editor {
 
     const idx = this.objects.findIndex(o => {
       const ow = o.w || 1;
-      const oh = o.h || 1;
+      const oh = o.type === 'portal' ? 3 : (o.h || 1);
       let ox = o.x, oy = o.y;
-      if (o.type !== 'platform' && o.type !== 'moving' && o.type === 'spike' && o.rot === 180) {
+      if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
       return gx >= ox && gx < ox + ow && gy >= oy && gy < oy + oh;
