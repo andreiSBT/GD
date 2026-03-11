@@ -855,6 +855,14 @@ class Game {
       const alpha = isPaused ? 1 : (this._drawAlpha || 0);
       const camX = this.camera.getInterpolatedX(alpha);
 
+      // Mirror the entire gameplay when player is reversed
+      const mirrored = this.player.reversed;
+      if (mirrored) {
+        ctx.save();
+        ctx.translate(SCREEN_WIDTH, 0);
+        ctx.scale(-1, 1);
+      }
+
       this.renderer.drawBackground(ctx, camX, this.theme);
 
       const visible = this.level.getVisible(camX);
@@ -867,6 +875,10 @@ class Game {
 
       if (this.player.alive) {
         this.player.draw(ctx, camX, this.theme, alpha);
+      }
+
+      if (mirrored) {
+        ctx.restore();
       }
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
