@@ -1,6 +1,6 @@
 /** Obstacle types with neon glow visuals and new GD mechanics */
 
-import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
+import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH, LOW_PERF } from './settings.js';
 import { lighten, darken } from './player.js';
 
 // AABB collision check
@@ -8,12 +8,14 @@ function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-// Shared neon glow helper
+// Shared neon glow helper — skip on mobile for performance
 function drawNeonGlow(ctx, color, blur = 10) {
+  if (LOW_PERF) return;
   ctx.shadowColor = color;
   ctx.shadowBlur = blur;
 }
 function clearGlow(ctx) {
+  if (LOW_PERF) return;
   ctx.shadowBlur = 0;
 }
 
@@ -128,7 +130,11 @@ export class Platform {
     const platTop = this.y;
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
     const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
-    if ((wasAbove || feetNearTop) && playerBottom <= platTop + 20) {
+    // If player was above last frame, always land (handles high-velocity pad bounces)
+    if (wasAbove) {
+      return { type: 'land', y: platTop };
+    }
+    if (feetNearTop && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
@@ -310,7 +316,11 @@ export class TransportPlatform extends Platform {
     const platTop = this.y;
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
     const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
-    if ((wasAbove || feetNearTop) && playerBottom <= platTop + 20) {
+    // If player was above last frame, always land (handles high-velocity pad bounces)
+    if (wasAbove) {
+      return { type: 'land', y: platTop };
+    }
+    if (feetNearTop && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
