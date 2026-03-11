@@ -145,6 +145,10 @@ export class Player {
       const movingMult = this.onMovingPlatform ? 0.15 : 1.0;
       const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
       this.x += speed;
+      // Move vertically with moving platform
+      if (this.onMovingPlatform && this.movingPlatformRef && this.grounded) {
+        this.y += this.movingPlatformRef.deltaY;
+      }
     }
     if (this.dashTimer > 0) {
       this.dashTimer--;
