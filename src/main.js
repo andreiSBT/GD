@@ -365,7 +365,8 @@ class Game {
       Sound.stopMusic();
       this.shakeIntensity = 0;
       this.editorLevelData = null;
-      this.state = EDITOR;
+      this.editorStartCheckpoint = null;
+      this.state = MENU;
     } else if (action === 'retry' || action === 'restart') {
       this._restart();
       Sound.stopMusic();
