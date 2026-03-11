@@ -18,6 +18,7 @@ const PLAYING = 'playing';
 const DEAD = 'dead';
 const COMPLETE = 'complete';
 const PAUSED = 'paused';
+const STATS = 'stats';
 const EDITOR = 'editor';
 const EDITOR_TESTING = 'editor_testing';
 
@@ -140,7 +141,9 @@ class Game {
         doPress();
       }
       if (e.code === 'Escape') {
-        if (this.state === CUSTOMIZE) {
+        if (this.state === STATS) {
+          this.state = MENU;
+        } else if (this.state === CUSTOMIZE) {
           this._saveCustomization();
           this.state = MENU;
         } else if (this.state === PAUSED) {
@@ -179,7 +182,7 @@ class Game {
         return;
       }
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === PAUSED || this.state === COMPLETE) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -248,7 +251,7 @@ class Game {
 
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
-          this.state === PAUSED || this.state === COMPLETE) {
+          this.state === STATS || this.state === PAUSED || this.state === COMPLETE) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -330,6 +333,10 @@ class Game {
       const id = parseInt(action.split('_')[1]);
       this.practiceMode = true;
       this._startLevel(id);
+    } else if (action === 'stats') {
+      this.state = STATS;
+    } else if (action === 'back_stats') {
+      this.state = MENU;
     } else if (action === 'customize') {
       this.state = CUSTOMIZE;
     } else if (action === 'back_customize') {
@@ -582,11 +589,28 @@ class Game {
       }
     }
 
+    // For active transport: keep player attached without re-detection
+    const prevTransportRef = (this.player.movingPlatformRef &&
+      this.player.movingPlatformRef.type === 'transport' &&
+      this.player.movingPlatformRef.active &&
+      !this.player.movingPlatformRef.arrived) ? this.player.movingPlatformRef : null;
+
     // Reset moving platform flag before collision so it's fresh this frame
     this.player.onMovingPlatform = false;
     this.player.movingPlatformRef = null;
     this.player.transportLocked = false;
     this.pendingOrbHit = null;
+
+    // If player was on active transport, force-keep them attached
+    if (prevTransportRef) {
+      this.player.onMovingPlatform = true;
+      this.player.movingPlatformRef = prevTransportRef;
+      this.player.transportLocked = prevTransportRef.isPlayerLocked();
+      this.player.y = prevTransportRef.y - PLAYER_SIZE;
+      this.player.vy = 0;
+      this.player.grounded = true;
+      this.player.onPlatform = true;
+    }
 
     // Collision detection (before player.update so moving platform flag is set in time)
     const playerRect = this.player.getRect();
@@ -757,6 +781,8 @@ class Game {
       this.ui.drawLevelSelect(ctx, this.progress);
     } else if (this.state === CUSTOMIZE) {
       this.ui.drawCustomize(ctx, this.customization);
+    } else if (this.state === STATS) {
+      this.ui.drawStats(ctx, this.progress);
     } else {
       // Use interpolated camera for smooth rendering between physics steps
       // When paused or dead, don't interpolate — use final position to avoid jitter

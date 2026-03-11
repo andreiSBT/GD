@@ -130,60 +130,9 @@ export class UI {
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'EDITOR', 'editor', '#CC6600');
 
-    // === STATS SECTION ===
-    const statsY = by + gap + 10;
-    const statsW = 400;
-    const statsX = (SCREEN_WIDTH - statsW) / 2;
-
-    // Stats container
-    this._roundRect(ctx, statsX, statsY, statsW, 100, 12);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(200,180,50,0.25)';
-    ctx.lineWidth = 1;
-    this._roundRect(ctx, statsX, statsY, statsW, 100, 12);
-    ctx.stroke();
-
-    // Stats title
-    ctx.fillStyle = '#C8A000';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('STATS', SCREEN_WIDTH / 2, statsY + 18);
-
-    // Stats values
-    const prog = progress || {};
-    const totalAttempts = getTotalAttempts(prog);
-    const completedLevels = getCompletedCount(prog);
-    const officialCount = getLevelCount();
-    const createdLevels = getEditorLevelCount();
-
-    const statItems = [
-      { label: 'ATTEMPTS', value: `${totalAttempts}`, color: '#FFD700' },
-      { label: 'COMPLETED', value: `${completedLevels}/${officialCount}`, color: '#00FF64' },
-      { label: 'CREATED', value: `${createdLevels}`, color: '#FF8844' },
-    ];
-
-    const colW = statsW / statItems.length;
-    for (let i = 0; i < statItems.length; i++) {
-      const stat = statItems[i];
-      const cx = statsX + colW * i + colW / 2;
-
-      // Value
-      ctx.save();
-      ctx.shadowColor = stat.color;
-      ctx.shadowBlur = 8;
-      ctx.fillStyle = stat.color;
-      ctx.font = 'bold 28px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(stat.value, cx, statsY + 55);
-      ctx.restore();
-
-      // Label
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '11px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(stat.label, cx, statsY + 80);
-    }
+    // Stats button
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'STATS', 'stats', '#C8A000');
 
     // Account button (top right)
     const username = getUsername();
@@ -335,6 +284,96 @@ export class UI {
 
     // Back button
     this._drawButton(ctx, 30, SCREEN_HEIGHT - 65, 130, 44, 'BACK', 'back', '#445566', 20);
+  }
+
+  drawStats(ctx, progress) {
+    this.buttons = [];
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    grad.addColorStop(0, '#0A0800');
+    grad.addColorStop(0.5, '#1A1000');
+    grad.addColorStop(1, '#2A1800');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    this._drawMenuParticles(ctx);
+
+    // Title with glow
+    ctx.save();
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 44px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('STATS', SCREEN_WIDTH / 2, 70);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Decorative line
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(SCREEN_WIDTH / 2 - 150, 95, 300, 1);
+    ctx.globalAlpha = 1;
+
+    const prog = progress || {};
+    const totalAttempts = getTotalAttempts(prog);
+    const completedLevels = getCompletedCount(prog);
+    const officialCount = getLevelCount();
+    const createdLevels = getEditorLevelCount();
+
+    const statItems = [
+      { label: 'TOTAL ATTEMPTS', value: `${totalAttempts}`, color: '#FFD700' },
+      { label: 'LEVELS COMPLETED', value: `${completedLevels} / ${officialCount}`, color: '#00FF64' },
+      { label: 'LEVELS CREATED', value: `${createdLevels}`, color: '#FF8844' },
+    ];
+
+    const cardW = 340;
+    const cardH = 100;
+    const cardGap = 24;
+    const startY = 140;
+    const cardX = (SCREEN_WIDTH - cardW) / 2;
+
+    for (let i = 0; i < statItems.length; i++) {
+      const stat = statItems[i];
+      const cy = startY + i * (cardH + cardGap);
+
+      // Card background
+      this._roundRect(ctx, cardX, cy, cardW, cardH, 12);
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fill();
+
+      // Card border with stat color glow
+      ctx.save();
+      ctx.shadowColor = stat.color;
+      ctx.shadowBlur = 8;
+      this._roundRect(ctx, cardX, cy, cardW, cardH, 12);
+      ctx.strokeStyle = stat.color;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.4;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Value
+      ctx.save();
+      ctx.shadowColor = stat.color;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = stat.color;
+      ctx.font = 'bold 38px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(stat.value, SCREEN_WIDTH / 2, cy + 50);
+      ctx.restore();
+
+      // Label
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(stat.label, SCREEN_WIDTH / 2, cy + 80);
+    }
+
+    // Back button
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 80, 200, 48, 'BACK', 'back_stats', '#445566', 20);
   }
 
   drawHUD(ctx, progress, attempts, practiceMode, levelName) {
