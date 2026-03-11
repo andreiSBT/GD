@@ -116,10 +116,17 @@ export class Platform {
   }
 
   checkCollision(playerRect, prevPlayerY) {
-    if (!rectsOverlap(playerRect, this)) return null;
+    const forgiveness = Math.round(GRID * 0.1);
+    const forgivingRect = {
+      x: this.x + forgiveness,
+      y: this.y + forgiveness,
+      w: this.w - forgiveness * 2,
+      h: this.h - forgiveness,
+    };
+    if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
-    const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + 4;
+    const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
     if (wasAbove && playerBottom >= platTop && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
