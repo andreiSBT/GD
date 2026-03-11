@@ -565,6 +565,14 @@ class Game {
 
     this.level.update();
 
+    // Move player with platform BEFORE collision detection
+    if (this.player.movingPlatformRef && this.player.grounded) {
+      this.player.y += this.player.movingPlatformRef.deltaY;
+      if (this.player.transportLocked) {
+        this.player.x += this.player.movingPlatformRef.deltaX;
+      }
+    }
+
     // Reset moving platform flag before collision so it's fresh this frame
     this.player.onMovingPlatform = false;
     this.player.movingPlatformRef = null;

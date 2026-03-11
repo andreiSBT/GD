@@ -137,18 +137,12 @@ export class Player {
     this.prevY = this.y;
 
     // Horizontal — stop on transport, slow on moving platforms
-    if (this.transportLocked && this.movingPlatformRef) {
-      // Player rides transport — move with platform
-      this.x += this.movingPlatformRef.deltaX;
-      this.y += this.movingPlatformRef.deltaY;
+    if (this.transportLocked) {
+      // Player frozen on transport — delta applied in main.js before collision
     } else {
       const movingMult = this.onMovingPlatform ? 0.15 : 1.0;
       const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
       this.x += speed;
-      // Move vertically with moving platform
-      if (this.onMovingPlatform && this.movingPlatformRef && this.grounded) {
-        this.y += this.movingPlatformRef.deltaY;
-      }
     }
     if (this.dashTimer > 0) {
       this.dashTimer--;
