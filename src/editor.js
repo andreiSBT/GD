@@ -132,15 +132,16 @@ export class Editor {
     }
 
     const { gx, gy } = this._screenToGrid(x, y);
+    const half = this._screenToHalfGrid(x, y);
 
     if (button === 2) {
-      // Right click = erase
-      this._removeObjectAt(gx, gy);
+      // Right click = erase (use half-grid to find moved objects)
+      this._removeObjectAt(half.gx, half.gy);
       return;
     }
 
     if (this.selectedTool === 'erase') {
-      this._removeObjectAt(gx, gy);
+      this._removeObjectAt(half.gx, half.gy);
       this.painting = true;
       this.paintErase = true;
       this.lastPaintGx = gx;
@@ -150,7 +151,7 @@ export class Editor {
 
     if (this.selectedTool === 'move') {
       // Pick up object at this position (drag to move)
-      const idx = this._findObjectAt(gx, gy);
+      const idx = this._findObjectAt(half.gx, half.gy);
       if (idx >= 0) {
         this._pushHistory();
         this.movingObj = { ...this.objects[idx] };
@@ -216,9 +217,10 @@ export class Editor {
     }
 
     // Paint mode: place/erase on each new grid cell while dragging
+    const halfGrid = this._screenToHalfGrid(x, y);
     if (this.painting && (grid.gx !== this.lastPaintGx || grid.gy !== this.lastPaintGy)) {
       if (this.paintErase) {
-        this._removeObjectAt(grid.gx, grid.gy);
+        this._removeObjectAt(halfGrid.gx, halfGrid.gy);
       } else {
         this._placeObject(grid.gx, grid.gy);
       }
@@ -342,8 +344,9 @@ export class Editor {
     this.hoverGy = grid.gy;
 
     // Move tool: pick up object on touch start
+    const halfTouch = this._screenToHalfGrid(x, y);
     if (this.selectedTool === 'move' && touchCount === 1 && y > TOOLBAR_H) {
-      const idx = this._findObjectAt(grid.gx, grid.gy);
+      const idx = this._findObjectAt(halfTouch.gx, halfTouch.gy);
       if (idx >= 0) {
         this._pushHistory();
         this.movingObj = { ...this.objects[idx] };
@@ -674,14 +677,13 @@ export class Editor {
 
   _findObjectAt(gx, gy) {
     return this.objects.findIndex(o => {
-      if (o.type === 'platform' || o.type === 'moving') {
-        return gx >= o.x && gx < o.x + (o.w || 1) && gy >= o.y && gy < o.y + (o.h || 1);
+      const ow = o.w || 1;
+      const oh = o.h || 1;
+      let ox = o.x, oy = o.y;
+      if (o.type !== 'platform' && o.type !== 'moving' && o.type === 'spike' && o.rot === 180) {
+        oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
-      let objGy = o.y;
-      if (o.type === 'spike' && o.rot === 180) {
-        objGy = Math.floor(GROUND_Y / GRID) - o.y - 1;
-      }
-      return o.x === gx && objGy === gy;
+      return gx >= ox && gx < ox + ow && gy >= oy && gy < oy + oh;
     });
   }
 
@@ -694,15 +696,13 @@ export class Editor {
     }
 
     const idx = this.objects.findIndex(o => {
-      if (o.type === 'platform' || o.type === 'moving') {
-        return gx >= o.x && gx < o.x + (o.w || 1) && gy >= o.y && gy < o.y + (o.h || 1);
+      const ow = o.w || 1;
+      const oh = o.h || 1;
+      let ox = o.x, oy = o.y;
+      if (o.type !== 'platform' && o.type !== 'moving' && o.type === 'spike' && o.rot === 180) {
+        oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
-      // For rot=180 spikes, stored y is top-down, convert for comparison
-      let objGy = o.y;
-      if (o.type === 'spike' && o.rot === 180) {
-        objGy = Math.floor(GROUND_Y / GRID) - o.y - 1;
-      }
-      return o.x === gx && objGy === gy;
+      return gx >= ox && gx < ox + ow && gy >= oy && gy < oy + oh;
     });
     if (idx >= 0) {
       this._pushHistory();
