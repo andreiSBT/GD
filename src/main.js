@@ -174,11 +174,15 @@ class Game {
 
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
+    this._mouseDownState = null; // track which state the mousedown began in
+
     this.canvas.addEventListener('mousedown', (e) => {
       Sound.resumeAudio();
       const rect = this.canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+
+      this._mouseDownState = this.state;
 
       if (this.state === EDITOR) {
         this.editor.handleMouseDown(x, y, e.button);
@@ -228,7 +232,7 @@ class Game {
     });
 
     this.canvas.addEventListener('mouseup', (e) => {
-      if (this.state === EDITOR) {
+      if (this.state === EDITOR && this._mouseDownState === EDITOR) {
         const rect = this.canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
         const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
@@ -238,6 +242,8 @@ class Game {
       doRelease();
     });
 
+    this._touchStartState = null; // track which state the touch began in
+
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       Sound.resumeAudio();
@@ -246,6 +252,8 @@ class Game {
       const touch = e.touches[0];
       const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+
+      this._touchStartState = this.state;
 
       if (this.state === EDITOR) {
         this.editor.handleTouchStart(x, y, e.touches.length);
@@ -299,7 +307,9 @@ class Game {
 
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
-      if (this.state === EDITOR) {
+      // Only forward to editor if the touch STARTED in editor state
+      // (prevents menu tap from triggering editor browse buttons)
+      if (this.state === EDITOR && this._touchStartState === EDITOR) {
         this.editor.handleTouchEnd();
         return;
       }
