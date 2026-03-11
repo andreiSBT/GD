@@ -98,6 +98,9 @@ export class Editor {
     // Start position for testing (grid coords)
     this.startPos = null;
 
+    // Touch swipe mode: 'scroll' (default, free camera) or 'paint' (swipe places/erases)
+    this.swipeMode = 'scroll';
+
     // Level browser
     this.browsing = false;
     this.currentSlot = null;
@@ -359,9 +362,11 @@ export class Editor {
       }
     }
 
-    // Start paint mode on touch for paintable tools (1 finger, on grid area)
-    const paintTools = ['spike', 'orb', 'pad', 'checkpoint', 'end'];
-    if (touchCount === 1 && y > TOOLBAR_H && paintTools.includes(this.selectedTool)) {
+    // In paint swipe mode, swiping places/erases objects instead of scrolling
+    const paintableTools = ['spike', 'orb', 'pad', 'checkpoint', 'end', 'coin'];
+    const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
+    const paintSwipe = this.swipeMode === 'paint' && paintableTools.includes(this.selectedTool);
+    if (touchCount === 1 && y > TOOLBAR_H && (paintSwipe || eraseSwipe)) {
       this.touchPaintPending = true;
     } else {
       this.touchPaintPending = false;
@@ -391,22 +396,32 @@ export class Editor {
       return;
     }
 
-    // If paint pending and moved enough, start painting instead of scrolling
+    // If paint pending and moved enough, start painting/erasing instead of scrolling
     if (this.touchPaintPending && dist > 15) {
       this.touchPaintPending = false;
       this.painting = true;
-      this.paintErase = false;
-      // Place first object at start position
+      this.paintErase = this.selectedTool === 'erase';
+      // Place/erase first object at start position
       const startGrid = this._screenToGrid(this.touchStartX, this.touchStartY);
-      this._placeObject(startGrid.gx, startGrid.gy);
+      if (this.paintErase) {
+        const half = this._screenToHalfGrid(this.touchStartX, this.touchStartY);
+        this._removeObjectAt(half.gx, half.gy);
+      } else {
+        this._placeObject(startGrid.gx, startGrid.gy);
+      }
       this.lastPaintGx = startGrid.gx;
       this.lastPaintGy = startGrid.gy;
       this.touchMoved = true;
     }
 
-    // Paint mode: place objects on each new grid cell
+    // Paint mode: place/erase objects on each new grid cell
     if (this.painting && (grid.gx !== this.lastPaintGx || grid.gy !== this.lastPaintGy)) {
-      this._placeObject(grid.gx, grid.gy);
+      if (this.paintErase) {
+        const half = this._screenToHalfGrid(x, y);
+        this._removeObjectAt(half.gx, half.gy);
+      } else {
+        this._placeObject(grid.gx, grid.gy);
+      }
       this.lastPaintGx = grid.gx;
       this.lastPaintGy = grid.gy;
       return;
@@ -1177,10 +1192,35 @@ export class Editor {
     ctx.fillText('▶', 60 + scrollBtnW / 2, sby + 20);
     this.buttons.push({ id: 'scroll_right', x: 60, y: sby, w: scrollBtnW, h: scrollBtnH });
 
+    // Swipe mode toggle (paint vs scroll)
+    const swipeBtnW = 52;
+    const swipeX = 60 + scrollBtnW + btnGap;
+    const isPaint = this.swipeMode === 'paint';
+    this._editorRoundRect(ctx, swipeX, sby, swipeBtnW, scrollBtnH, r);
+    ctx.fillStyle = isPaint ? '#FF6600' : 'rgba(255,255,255,0.1)';
+    ctx.fill();
+    if (isPaint) {
+      ctx.save();
+      ctx.shadowColor = '#FF6600';
+      ctx.shadowBlur = 6;
+      ctx.strokeStyle = '#FF6600';
+      ctx.lineWidth = 1;
+      this._editorRoundRect(ctx, swipeX, sby, swipeBtnW, scrollBtnH, r);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = isPaint ? '#FFF' : '#888';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(isPaint ? 'PAINT' : 'MOVE', swipeX + swipeBtnW / 2, sby + 12);
+    ctx.font = '8px monospace';
+    ctx.fillText('swipe', swipeX + swipeBtnW / 2, sby + 23);
+    this.buttons.push({ id: 'action_swipe', x: swipeX, y: sby, w: swipeBtnW, h: scrollBtnH });
+
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Obj: ${this.objects.length}  X: ${this.hoverGx}  Y: ${this.hoverGy}`, 114, sby + 19);
+    ctx.fillText(`Obj: ${this.objects.length}  X: ${this.hoverGx}  Y: ${this.hoverGy}`, swipeX + swipeBtnW + 10, sby + 19);
 
     // Right side: L1 L2 L3 | T1 T2 T3
     let rx = SCREEN_WIDTH - 10;
@@ -1687,6 +1727,8 @@ export class Editor {
     } else if (id.startsWith('loadlevel_')) {
       const lvl = parseInt(id.replace('loadlevel_', ''));
       if (this.onLoadLevel) this.onLoadLevel(lvl);
+    } else if (id === 'action_swipe') {
+      this.swipeMode = this.swipeMode === 'scroll' ? 'paint' : 'scroll';
     } else if (id === 'action_rotate') {
       this._cycleRotation();
     } else if (id === 'action_undo') {
