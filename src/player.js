@@ -34,6 +34,7 @@ export class Player {
 
   reset(startX) {
     this.x = startX;
+    this.prevX = startX;
     this.y = GROUND_Y - PLAYER_SIZE;
     this.vy = 0;
     this.prevY = this.y;
@@ -132,6 +133,7 @@ export class Player {
   update() {
     if (!this.alive) return;
 
+    this.prevX = this.x;
     this.prevY = this.y;
 
     // Horizontal — stop on transport, slow on moving platforms
@@ -296,9 +298,12 @@ export class Player {
     };
   }
 
-  draw(ctx, cameraX, theme) {
-    const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    const sy = this.y;
+  draw(ctx, cameraX, theme, alpha) {
+    // Interpolate position for smooth rendering between physics steps
+    const interpX = alpha != null ? this.prevX + (this.x - this.prevX) * alpha : this.x;
+    const interpY = alpha != null ? this.prevY + (this.y - this.prevY) * alpha : this.y;
+    const sx = interpX - cameraX + PLAYER_X_OFFSET;
+    const sy = interpY;
     const size = PLAYER_SIZE;
     const cx = sx + size / 2;
     const cy = sy + size / 2;

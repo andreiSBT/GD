@@ -755,7 +755,7 @@ class Game {
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
       if (this.player.alive) {
-        this.player.draw(ctx, camX, this.theme);
+        this.player.draw(ctx, camX, this.theme, this._drawAlpha);
       }
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
