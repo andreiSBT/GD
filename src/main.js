@@ -116,11 +116,13 @@ class Game {
         if (this.editor.handleKeyDown(e)) return;
       }
 
-      // When testing editor level, ESC goes back to editor
+      // When testing editor level, ESC goes to menu
       if (this.state === EDITOR_TESTING && e.code === 'Escape') {
         Sound.stopMusic();
         this.shakeIntensity = 0;
-        this.state = EDITOR;
+        this.editorLevelData = null;
+        this.editorStartCheckpoint = null;
+        this.state = MENU;
         return;
       }
 
@@ -146,12 +148,9 @@ class Game {
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.shakeIntensity = 0;
-          if (this.editorLevelData) {
-            this.editorLevelData = null;
-            this.state = EDITOR;
-          } else {
-            this.state = MENU;
-          }
+          this.editorLevelData = null;
+          this.editorStartCheckpoint = null;
+          this.state = MENU;
         }
       }
     });
