@@ -753,29 +753,33 @@ class Game {
     const windowW = vv ? vv.width : window.innerWidth;
     const windowH = vv ? vv.height : window.innerHeight;
     const windowRatio = windowW / windowH;
+    const dpr = window.devicePixelRatio || 1;
 
     // Minimum aspect ratio (~4:3) - below this, show black bars instead of squishing
     const MIN_RATIO = 1.33;
 
+    let logicalW, cssW, cssH;
+
     if (windowRatio >= MIN_RATIO) {
-      // Wide enough: adapt internal width to fill viewport
-      const newWidth = Math.round(SCREEN_HEIGHT * windowRatio);
-      setScreenWidth(newWidth);
-      this.canvas.width = newWidth;
-      this.canvas.height = SCREEN_HEIGHT;
-      this.canvas.style.width = `${Math.floor(windowW)}px`;
-      this.canvas.style.height = `${Math.floor(windowH)}px`;
+      logicalW = Math.round(SCREEN_HEIGHT * windowRatio);
+      cssW = Math.floor(windowW);
+      cssH = Math.floor(windowH);
     } else {
-      // Too narrow: lock to minimum ratio, add black bars top/bottom
-      const newWidth = Math.round(SCREEN_HEIGHT * MIN_RATIO);
-      setScreenWidth(newWidth);
-      this.canvas.width = newWidth;
-      this.canvas.height = SCREEN_HEIGHT;
-      const cssW = windowW;
-      const cssH = windowW / MIN_RATIO;
-      this.canvas.style.width = `${Math.floor(cssW)}px`;
-      this.canvas.style.height = `${Math.floor(cssH)}px`;
+      logicalW = Math.round(SCREEN_HEIGHT * MIN_RATIO);
+      cssW = Math.floor(windowW);
+      cssH = Math.floor(windowW / MIN_RATIO);
     }
+
+    setScreenWidth(logicalW);
+
+    // Set canvas buffer size to logical * dpr for crisp rendering
+    this.canvas.width = logicalW * dpr;
+    this.canvas.height = SCREEN_HEIGHT * dpr;
+    this.canvas.style.width = `${cssW}px`;
+    this.canvas.style.height = `${cssH}px`;
+
+    // Scale context so all drawing code uses logical coordinates
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   _setupAccountUI() {

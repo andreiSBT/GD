@@ -1,6 +1,6 @@
 /** Obstacle types with neon glow visuals and new GD mechanics */
 
-import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET } from './settings.js';
+import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
 import { lighten, darken } from './player.js';
 
 // AABB collision check
@@ -54,7 +54,7 @@ export class Spike {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -GRID || sx > ctx.canvas.width + GRID) return;
+    if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
     ctx.save();
@@ -127,7 +127,7 @@ export class Platform {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -this.w || sx > ctx.canvas.width + this.w) return;
+    if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
     const sy = this.y;
 
     // Main fill with gradient
@@ -194,7 +194,7 @@ export class MovingPlatform extends Platform {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -this.w - 200 || sx > ctx.canvas.width + 200) return;
+    if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
     const sy = this.y;
 
     const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
@@ -259,7 +259,7 @@ export class JumpOrb {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -GRID || sx > ctx.canvas.width + GRID) return;
+    if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
     this.pulseTimer += 0.05;
@@ -333,7 +333,7 @@ export class JumpPad {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -GRID || sx > ctx.canvas.width + GRID) return;
+    if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
     if (this.flashTimer > 0) this.flashTimer--;
@@ -401,7 +401,7 @@ export class Portal {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -GRID * 2 || sx > ctx.canvas.width + GRID * 2) return;
+    if (sx < -GRID * 2 || sx > SCREEN_WIDTH + GRID * 2) return;
     const sy = this.y;
 
     this.animTimer += 0.04;
@@ -502,7 +502,7 @@ export class Checkpoint {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -GRID || sx > ctx.canvas.width + GRID) return;
+    if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
     ctx.save();
@@ -557,7 +557,7 @@ export class EndMarker {
 
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -GRID * 2 || sx > ctx.canvas.width + GRID * 2) return;
+    if (sx < -GRID * 2 || sx > SCREEN_WIDTH + GRID * 2) return;
 
     this.animTimer += 0.03;
 

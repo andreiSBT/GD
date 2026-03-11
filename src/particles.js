@@ -1,6 +1,6 @@
 /** Particle system for visual effects */
 
-import { MAX_PARTICLES } from './settings.js';
+import { MAX_PARTICLES, SCREEN_WIDTH } from './settings.js';
 
 class Particle {
   constructor(x, y, vx, vy, color, size = 4, lifetime = 0.5, gravity = 0) {
@@ -33,7 +33,7 @@ class Particle {
     const sx = this.x - cameraX;
     const sy = this.y;
 
-    if (sx < -10 || sx > ctx.canvas.width + 10) return;
+    if (sx < -10 || sx > SCREEN_WIDTH + 10) return;
 
     ctx.globalAlpha = alpha;
     ctx.fillStyle = this.color;
