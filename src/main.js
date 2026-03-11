@@ -374,12 +374,9 @@ class Game {
     } else if (action === 'menu') {
       Sound.stopMusic();
       this.shakeIntensity = 0;
-      if (this.editorLevelData) {
-        this.editorLevelData = null;
-        this.state = EDITOR;
-      } else {
-        this.state = MENU;
-      }
+      this.editorLevelData = null;
+      this.editorStartCheckpoint = null;
+      this.state = MENU;
     } else if (action === 'next_level') {
       const nextId = this.level.id + 1;
       if (nextId <= getLevelCount()) {
