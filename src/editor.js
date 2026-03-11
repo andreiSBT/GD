@@ -26,7 +26,7 @@ const TOOLS = [
 const SUBTYPES = {
   orb: ['yellow_orb', 'pink_orb', 'dash_orb'],
   pad: ['yellow_pad', 'pink_pad'],
-  portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse'],
+  portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse', 'forward'],
 };
 
 const SUBTYPE_COLORS = {
@@ -34,7 +34,7 @@ const SUBTYPE_COLORS = {
   yellow_pad: '#FFD700', pink_pad: '#FF69B4',
   gravity: '#FFD700', speed_up: '#FF6600', speed_down: '#00AAFF',
   ship: '#FF00FF', wave: '#00FFAA', cube: '#00C8FF',
-  ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF',
+  ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF', forward: '#44FF44',
 };
 
 export class Editor {

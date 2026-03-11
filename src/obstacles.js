@@ -569,6 +569,7 @@ export class Portal {
       mini: '#FF44FF',
       big: '#44AAFF',
       reverse: '#00FFFF',
+      forward: '#44FF44',
     };
     const color = portalColors[this.portalType] || '#FFD700';
 
@@ -626,7 +627,8 @@ export class Portal {
       ball: '●',
       mini: '▼',
       big: '▲',
-      reverse: '⇄',
+      reverse: '⇐',
+      forward: '⇒',
     };
     ctx.fillText(icons[this.portalType] || '?', cx, cy);
 

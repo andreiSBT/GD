@@ -713,8 +713,11 @@ class Game {
           this.player.mini = false;
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#44AAFF', 8);
         } else if (result === 'portal_reverse') {
-          this.player.reversed = !this.player.reversed;
+          this.player.reversed = true;
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00FFFF', 8);
+        } else if (result === 'portal_forward') {
+          this.player.reversed = false;
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#44FF44', 8);
         }
       } else if (obs.type === 'orb') {
         const orbType = obs.checkCollision(playerRect);
