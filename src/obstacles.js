@@ -129,11 +129,19 @@ export class Platform {
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
-    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
-    // If player was above last frame, always land (handles high-velocity pad bounces)
+    // If player was above last frame, always land
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
+    // Handle diagonal/arc approaches (e.g., after jump pad):
+    // If player is falling and their top is above/near the platform top, land
+    const currentY = playerRect.y - 4; // undo inset to get raw player y
+    const falling = currentY > prevPlayerY;
+    if (falling && currentY <= platTop + forgiveness) {
+      return { type: 'land', y: platTop };
+    }
+    // Fallback: feet near top check for slow approaches
+    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
     if (feetNearTop && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
@@ -315,11 +323,19 @@ export class TransportPlatform extends Platform {
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
-    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
-    // If player was above last frame, always land (handles high-velocity pad bounces)
+    // If player was above last frame, always land
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
+    // Handle diagonal/arc approaches (e.g., after jump pad):
+    // If player is falling and their top is above/near the platform top, land
+    const currentY = playerRect.y - 4; // undo inset to get raw player y
+    const falling = currentY > prevPlayerY;
+    if (falling && currentY <= platTop + forgiveness) {
+      return { type: 'land', y: platTop };
+    }
+    // Fallback: feet near top check for slow approaches
+    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
     if (feetNearTop && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
