@@ -678,13 +678,13 @@ export class Editor {
 
   _findObjectAt(gx, gy) {
     return this.objects.findIndex(o => {
-      const ow = o.w || 1;
-      const oh = o.type === 'portal' ? 3 : (o.h || 1);
+      const ow = Math.max(1, o.w || 1);
+      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
-      return gx >= ox && gx < ox + ow && gy >= oy && gy < oy + oh;
+      return gx >= ox - 0.5 && gx < ox + ow + 0.5 && gy >= oy - 0.5 && gy < oy + oh + 0.5;
     });
   }
 
@@ -701,13 +701,13 @@ export class Editor {
     }
 
     const idx = this.objects.findIndex(o => {
-      const ow = o.w || 1;
-      const oh = o.type === 'portal' ? 3 : (o.h || 1);
+      const ow = Math.max(1, o.w || 1);
+      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
       }
-      // Use tolerant check: click within object bounds (half-grid friendly)
+      // Bounding box: full object rect + 0.5 padding for easy clicking
       return gx >= ox - 0.5 && gx < ox + ow + 0.5 && gy >= oy - 0.5 && gy < oy + oh + 0.5;
     });
     if (idx >= 0) {
