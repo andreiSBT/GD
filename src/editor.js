@@ -1379,13 +1379,28 @@ export class Editor {
       ctx.fillText(objText + '  •  ' + dateText, startX + 16, cy + 52);
 
       // Click area for opening
-      this.buttons.push({ id: 'browse_open_' + slot.id, x: startX, y: cy, w: cardW - 60, h: cardH });
+      this.buttons.push({ id: 'browse_open_' + slot.id, x: startX, y: cy, w: cardW - 110, h: cardH });
+
+      // Play button (▶)
+      const playX = startX + cardW - 100;
+      const btnY = cy + 10;
+      const btnS = 45;
+      const btnH = cardH - 20;
+      ctx.fillStyle = '#114411';
+      ctx.beginPath();
+      ctx.roundRect(playX, btnY, btnS, btnH, 8);
+      ctx.fill();
+      ctx.fillStyle = '#44CC44';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('▶', playX + btnS / 2, btnY + btnH / 2 + 7);
+      this.buttons.push({ id: 'browse_play_' + slot.id, x: playX, y: btnY, w: btnS, h: btnH });
 
       // Delete button (small X)
       const delX = startX + cardW - 50;
-      const delY = cy + 10;
-      const delS = 50;
-      const delH = cardH - 20;
+      const delY = btnY;
+      const delS = 45;
+      const delH = btnH;
       ctx.fillStyle = '#661111';
       ctx.beginPath();
       ctx.roundRect(delX, delY, delS, delH, 8);
@@ -1425,6 +1440,12 @@ export class Editor {
             this.browsing = false;
           } else if (this.onBack) {
             this.onBack();
+          }
+        } else if (btn.id.startsWith('browse_play_')) {
+          const slotId = btn.id.replace('browse_play_', '');
+          if (this.loadFromSlot(slotId)) {
+            this.browsing = false;
+            if (this.onTest) this.onTest(this.getLevelData());
           }
         } else if (btn.id.startsWith('browse_del_')) {
           const slotId = btn.id.replace('browse_del_', '');
