@@ -597,7 +597,7 @@ class Game {
       }
     }
 
-    // For active transport: keep player attached without re-detection
+    // For active transport: keep player fully locked until arrived
     const prevTransportRef = (this.player.movingPlatformRef &&
       this.player.movingPlatformRef.type === 'transport' &&
       this.player.movingPlatformRef.active &&
@@ -609,11 +609,11 @@ class Game {
     this.player.transportLocked = false;
     this.pendingOrbHit = null;
 
-    // If player was on active transport, force-keep them attached
+    // If player was on active transport, force-keep them fully locked
     if (prevTransportRef) {
       this.player.onMovingPlatform = true;
       this.player.movingPlatformRef = prevTransportRef;
-      this.player.transportLocked = prevTransportRef.isPlayerLocked();
+      this.player.transportLocked = true;
       this.player.y = prevTransportRef.y - PLAYER_SIZE;
       this.player.vy = 0;
       this.player.grounded = true;
