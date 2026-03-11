@@ -42,11 +42,12 @@ export class Spike {
 
   checkCollision(playerRect) {
     const inset = 10;
+    const topInset = Math.round(GRID * 0.1); // forgiveness at spike tip
     const spikeRect = {
       x: this.x + inset,
-      y: this.y + inset,
+      y: this.y + topInset,
       w: this.w - inset * 2,
-      h: this.h - inset * 2,
+      h: this.h - inset - topInset,
     };
     if (rectsOverlap(playerRect, spikeRect)) return 'death';
     return null;
