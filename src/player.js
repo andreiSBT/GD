@@ -44,6 +44,7 @@ export class Player {
     this.gravityMult = 1;
     this.speedMult = 1;
     this.onPlatform = false;
+    this.onMovingPlatform = false;
     this.mode = MODE_CUBE;
     this.holding = false;       // is jump/click held down
     this.coyoteCounter = 0;     // frames since leaving ground
@@ -132,7 +133,8 @@ export class Player {
     this.prevY = this.y;
 
     // Horizontal
-    const speed = SCROLL_SPEED * this.speedMult * (this.dashTimer > 0 ? 1.5 : 1.0);
+    const movingMult = this.onMovingPlatform ? 0.15 : 1.0;
+    const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
     this.x += speed;
     if (this.dashTimer > 0) {
       this.dashTimer--;
