@@ -74,7 +74,7 @@ export class Player {
   }
 
   jump() {
-    if (!this.alive) return false;
+    if (!this.alive || this.transportLocked) return false;
 
     if (this.mode === MODE_CUBE) {
       // Cube: single jump with coyote time + buffer
@@ -134,10 +134,16 @@ export class Player {
 
     this.prevY = this.y;
 
-    // Horizontal — slow down on moving platforms
-    const movingMult = this.onMovingPlatform ? 0.15 : 1.0;
-    const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
-    this.x += speed;
+    // Horizontal — stop on transport, slow on moving platforms
+    if (this.transportLocked && this.movingPlatformRef) {
+      // Player rides transport — move with platform
+      this.x += this.movingPlatformRef.deltaX;
+      this.y += this.movingPlatformRef.deltaY;
+    } else {
+      const movingMult = this.onMovingPlatform ? 0.15 : 1.0;
+      const speed = SCROLL_SPEED * this.speedMult * movingMult * (this.dashTimer > 0 ? 1.5 : 1.0);
+      this.x += speed;
+    }
     if (this.dashTimer > 0) {
       this.dashTimer--;
       if (this.dashTimer <= 0) this.dashing = false;

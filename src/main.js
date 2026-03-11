@@ -568,6 +568,7 @@ class Game {
     // Reset moving platform flag before collision so it's fresh this frame
     this.player.onMovingPlatform = false;
     this.player.movingPlatformRef = null;
+    this.player.transportLocked = false;
     this.pendingOrbHit = null;
 
     // Collision detection (before player.update so moving platform flag is set in time)
@@ -670,7 +671,7 @@ class Game {
     if (this.player.onPlatform && this.player.grounded) {
       let stillOn = false;
       for (const obs of visible) {
-        if (obs.type === 'platform' || obs.type === 'moving') {
+        if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
           const below = {
             x: this.player.x + 4,
             y: this.player.y + PLAYER_SIZE,

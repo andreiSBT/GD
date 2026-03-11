@@ -11,6 +11,7 @@ const TOOLS = [
   { id: 'spike', label: 'Spike', key: '1', color: '#FF4444' },
   { id: 'platform', label: 'Platform', key: '2', color: '#4488FF' },
   { id: 'moving', label: 'Moving', key: '3', color: '#44AAFF' },
+  { id: 'transport', label: 'Transport', key: 'T', color: '#44FF88' },
   { id: 'orb', label: 'Orb', key: '4', color: '#FFD700' },
   { id: 'pad', label: 'Pad', key: '5', color: '#FFAA00' },
   { id: 'portal', label: 'Portal', key: '6', color: '#FF00FF' },
@@ -173,7 +174,7 @@ export class Editor {
       return;
     }
 
-    if (this.selectedTool === 'moving') {
+    if (this.selectedTool === 'moving' || this.selectedTool === 'transport') {
       this.movingStart = { gx, gy };
       this.movingEndMode = true;
       return;
@@ -714,7 +715,7 @@ export class Editor {
   _finishMovingPlatform(endGx, endGy) {
     this._pushHistory();
     this.objects.push({
-      type: 'moving',
+      type: this.selectedTool === 'transport' ? 'transport' : 'moving',
       x: this.movingStart.gx,
       y: this.movingStart.gy,
       w: 3, h: 1,
@@ -965,19 +966,38 @@ export class Editor {
     }
   }
 
+  _editorRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
   _drawToolbar(ctx) {
     this.buttons = [];
 
-    // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    // Background with subtle gradient
+    const tbGrad = ctx.createLinearGradient(0, 0, 0, TOOLBAR_H);
+    tbGrad.addColorStop(0, 'rgba(10,10,20,0.95)');
+    tbGrad.addColorStop(1, 'rgba(5,5,15,0.9)');
+    ctx.fillStyle = tbGrad;
     ctx.fillRect(0, 0, SCREEN_WIDTH, TOOLBAR_H);
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    // Bottom accent line
+    ctx.fillStyle = 'rgba(0,200,255,0.15)';
     ctx.fillRect(0, TOOLBAR_H - 1, SCREEN_WIDTH, 1);
 
     const btnH = 40;
     const btnY = 8;
     const gap = 3;
     const margin = 8;
+    const r = 6;
 
     const actions = [
       { id: 'action_rotate', label: 'ROT', color: '#888' },
@@ -993,8 +1013,8 @@ export class Editor {
 
     // Calculate responsive button width
     const totalItems = TOOLS.length + actions.length;
-    const totalGaps = (TOOLS.length - 1 + actions.length - 1 + 1) * gap; // gaps within groups + gap between groups
-    const separatorGap = 12; // extra space between tools and actions
+    const totalGaps = (TOOLS.length - 1 + actions.length - 1 + 1) * gap;
+    const separatorGap = 12;
     const availW = SCREEN_WIDTH - margin * 2 - totalGaps - separatorGap;
     const btnW = Math.min(64, Math.floor(availW / totalItems));
 
@@ -1004,20 +1024,32 @@ export class Editor {
       const bx = margin + i * (btnW + gap);
       const isActive = this.selectedTool === tool.id;
 
-      ctx.fillStyle = isActive ? tool.color : 'rgba(255,255,255,0.1)';
-      ctx.fillRect(bx, btnY, btnW, btnH);
-
+      this._editorRoundRect(ctx, bx, btnY, btnW, btnH, r);
       if (isActive) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fillRect(bx, btnY, btnW, btnH);
+        ctx.fillStyle = tool.color;
+        ctx.fill();
+        // Inner darkening
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.fill();
+        // Glow border
+        ctx.save();
+        ctx.shadowColor = tool.color;
+        ctx.shadowBlur = 6;
+        ctx.strokeStyle = tool.color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.fill();
       }
 
-      ctx.fillStyle = isActive ? '#FFF' : '#AAA';
+      ctx.fillStyle = isActive ? '#FFF' : '#999';
       ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 6))}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(tool.label, bx + btnW / 2, btnY + 16);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillStyle = isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)';
       ctx.font = '9px monospace';
       ctx.fillText(tool.key, bx + btnW / 2, btnY + 32);
 
@@ -1027,8 +1059,16 @@ export class Editor {
     // Action buttons from right
     let ax = SCREEN_WIDTH - margin - actions.length * (btnW + gap) + gap;
     for (const act of actions) {
+      this._editorRoundRect(ctx, ax, btnY, btnW, btnH, r);
       ctx.fillStyle = act.color;
-      ctx.fillRect(ax, btnY, btnW, btnH);
+      ctx.fill();
+      // Top highlight
+      ctx.globalAlpha = 0.15;
+      this._editorRoundRect(ctx, ax, btnY, btnW, btnH / 2, r);
+      ctx.fillStyle = '#FFF';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
       ctx.fillStyle = '#FFF';
       ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 5))}px monospace`;
       ctx.textAlign = 'center';
@@ -1048,35 +1088,50 @@ export class Editor {
 
     const px = SCREEN_WIDTH - PANEL_W;
     const py = TOOLBAR_H + 10;
+    const panelH = subtypes.length * 40 + 34;
+    const r = 10;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
-    ctx.fillRect(px, py, PANEL_W, subtypes.length * 40 + 30);
+    // Panel background with rounded corners (left side only)
+    this._editorRoundRect(ctx, px - 4, py, PANEL_W + 4, panelH, r);
+    ctx.fillStyle = 'rgba(5,5,20,0.9)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,200,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 13px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Subtype', px + PANEL_W / 2, py + 16);
+    ctx.fillText('SUBTYPE', px + PANEL_W / 2, py + 16);
 
     for (let i = 0; i < subtypes.length; i++) {
       const st = subtypes[i];
       const by = py + 26 + i * 36;
       const isActive = this.subType === st || (!this.subType && i === 0);
+      const bx = px + 10;
+      const bw = PANEL_W - 20;
 
-      ctx.fillStyle = isActive ? SUBTYPE_COLORS[st] : 'rgba(255,255,255,0.1)';
-      ctx.fillRect(px + 10, by, PANEL_W - 20, 30);
+      this._editorRoundRect(ctx, bx, by, bw, 30, 6);
+      ctx.fillStyle = isActive ? SUBTYPE_COLORS[st] : 'rgba(255,255,255,0.08)';
+      ctx.fill();
 
       if (isActive) {
-        ctx.strokeStyle = '#FFF';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(px + 10, by, PANEL_W - 20, 30);
+        ctx.save();
+        ctx.shadowColor = SUBTYPE_COLORS[st];
+        ctx.shadowBlur = 6;
+        ctx.strokeStyle = SUBTYPE_COLORS[st];
+        ctx.lineWidth = 1.5;
+        this._editorRoundRect(ctx, bx, by, bw, 30, 6);
+        ctx.stroke();
+        ctx.restore();
       }
 
-      ctx.fillStyle = isActive ? '#000' : '#CCC';
+      ctx.fillStyle = isActive ? '#000' : '#BBB';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(st.replace('_', ' '), px + PANEL_W / 2, by + 19);
 
-      this.buttons.push({ id: 'sub_' + st, x: px + 10, y: by, w: PANEL_W - 20, h: 30 });
+      this.buttons.push({ id: 'sub_' + st, x: bx, y: by, w: bw, h: 30 });
     }
   }
 

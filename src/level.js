@@ -76,7 +76,7 @@ export class Level {
   update() {
     // Update moving platforms
     for (const obs of this.obstacles) {
-      if (obs.type === 'moving' && obs.update) obs.update();
+      if ((obs.type === 'moving' || obs.type === 'transport') && obs.update) obs.update();
     }
   }
 }

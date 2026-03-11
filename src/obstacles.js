@@ -235,6 +235,112 @@ export class MovingPlatform extends Platform {
 }
 
 // ============================================================
+// TRANSPORT PLATFORM - moves only when player is on it, locks player
+// ============================================================
+export class TransportPlatform extends Platform {
+  constructor(gx, gy, gw, gh, endGx, endGy, speed = 2) {
+    super(gx, gy, gw, gh);
+    this.startX = this.x;
+    this.startY = this.y;
+    this.endX = endGx * GRID;
+    this.endY = GROUND_Y - (endGy + gh) * GRID;
+    this.speed = speed;
+    this.t = 0;
+    this.type = 'transport';
+    this.active = false; // only moves when player is on it
+    this.progress = 0; // 0 to 1, linear progress toward end
+    this.arrived = false;
+    this.deltaX = 0;
+    this.deltaY = 0;
+
+    // Calculate total distance for timing
+    const dx = this.endX - this.startX;
+    const dy = this.endY - this.startY;
+    this.totalDist = Math.sqrt(dx * dx + dy * dy);
+    // Speed in pixels per frame
+    this.pixelsPerFrame = speed * 1.5;
+    this.totalFrames = this.totalDist / this.pixelsPerFrame;
+    // How many frames = 0.1 sec at 60fps
+    this.unlockFrame = Math.max(0, this.totalFrames - 6);
+  }
+
+  update() {
+    const prevX = this.x;
+    const prevY = this.y;
+    if (this.active && !this.arrived) {
+      this.progress += 1 / this.totalFrames;
+      if (this.progress >= 1) {
+        this.progress = 1;
+        this.arrived = true;
+      }
+    }
+    this.x = this.startX + (this.endX - this.startX) * this.progress;
+    this.y = this.startY + (this.endY - this.startY) * this.progress;
+    this.deltaX = this.x - prevX;
+    this.deltaY = this.y - prevY;
+  }
+
+  isPlayerLocked() {
+    if (!this.active || this.arrived) return false;
+    const currentFrame = this.progress * this.totalFrames;
+    return currentFrame < this.unlockFrame;
+  }
+
+  checkCollision(playerRect, prevPlayerY) {
+    const forgiveness = Math.round(GRID * 0.1);
+    const forgivingRect = {
+      x: this.x + forgiveness,
+      y: this.y + forgiveness,
+      w: this.w - forgiveness * 2,
+      h: this.h - forgiveness,
+    };
+    if (!rectsOverlap(playerRect, forgivingRect)) return null;
+    const playerBottom = playerRect.y + playerRect.h;
+    const platTop = this.y;
+    const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
+    if (wasAbove && playerBottom >= platTop && playerBottom <= platTop + 20) {
+      return { type: 'land', y: platTop };
+    }
+    return { type: 'death' };
+  }
+
+  draw(ctx, cameraX, theme) {
+    const sx = this.x - cameraX + PLAYER_X_OFFSET;
+    if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
+    const sy = this.y;
+
+    // Fill with distinct color
+    const color = this.active ? '#44FF88' : '#44AAFF';
+    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+    grad.addColorStop(0, lighten(color, 30));
+    grad.addColorStop(1, color);
+    ctx.fillStyle = grad;
+    ctx.fillRect(sx, sy, this.w, this.h);
+
+    // Transport arrows (double chevrons)
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    const mid = sy + this.h / 2;
+    for (let ax = sx + 8; ax < sx + this.w - 8; ax += 16) {
+      ctx.beginPath();
+      ctx.moveTo(ax, mid - 5);
+      ctx.lineTo(ax + 5, mid);
+      ctx.lineTo(ax, mid + 5);
+      ctx.moveTo(ax + 6, mid - 5);
+      ctx.lineTo(ax + 11, mid);
+      ctx.lineTo(ax + 6, mid + 5);
+      ctx.fill();
+    }
+
+    // Neon border solid
+    drawNeonGlow(ctx, '#44FF88', 6);
+    ctx.strokeStyle = '#44FF88';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(sx, sy, this.w, this.h);
+    clearGlow(ctx);
+  }
+}
+
+// ============================================================
 // JUMP ORB - click while touching to bounce
 // ============================================================
 export class JumpOrb {
@@ -616,6 +722,8 @@ export function createObstacle(obj) {
       return new Platform(obj.x, obj.y, obj.w || 1, obj.h || 1);
     case 'moving':
       return new MovingPlatform(obj.x, obj.y, obj.w || 3, obj.h || 1, obj.endX ?? obj.x, obj.endY ?? obj.y + 3, obj.speed || 2);
+    case 'transport':
+      return new TransportPlatform(obj.x, obj.y, obj.w || 3, obj.h || 1, obj.endX ?? obj.x, obj.endY ?? obj.y + 3, obj.speed || 2);
     case 'portal':
       return new Portal(obj.x, obj.y || 0, obj.portalType || 'gravity');
     case 'checkpoint':
