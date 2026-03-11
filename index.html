@@ -44,42 +44,180 @@
   </head>
   <body>
     <canvas id="game"></canvas>
-    <div id="account-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,20,0.95); z-index:100; justify-content:center; align-items:center;">
-      <div style="background:#111; border-radius:16px; padding:32px; width:90%; max-width:360px; text-align:center; font-family:monospace;">
-        <h2 id="account-title" style="color:#00C8FF; margin-bottom:20px; font-size:24px;">ACCOUNT</h2>
+    <div id="account-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,20,0.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:100; justify-content:center; align-items:center;">
+      <div class="acc-panel">
+        <h2 id="account-title">ACCOUNT</h2>
         <div id="account-logged-out">
           <!-- Login form -->
           <div id="acc-login-form">
-            <input id="acc-login-user" type="text" placeholder="Username" autocomplete="username" maxlength="50"
-              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-            <input id="acc-login-pass" type="password" placeholder="Password" autocomplete="current-password" maxlength="30"
-              style="width:100%; padding:12px; margin-bottom:16px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-            <div id="acc-error" style="color:#FF4444; font-size:14px; margin-bottom:12px; min-height:20px;"></div>
-            <button id="acc-login" style="width:100%; padding:12px; margin-bottom:8px; background:#00C864; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">LOG IN</button>
-            <p id="acc-show-register" style="color:#4488CC; font-size:14px; margin-top:8px; margin-bottom:4px; cursor:pointer; text-decoration:underline;">Don't have an account? Register</p>
+            <input id="acc-login-user" class="acc-input" type="text" placeholder="Username" autocomplete="username" maxlength="50">
+            <input id="acc-login-pass" class="acc-input" type="password" placeholder="Password" autocomplete="current-password" maxlength="30">
+            <div id="acc-error" class="acc-error"></div>
+            <button id="acc-login" class="acc-btn acc-btn-green">LOG IN</button>
+            <p id="acc-show-register" class="acc-link" style="color:#4488CC;">Don't have an account? Register</p>
           </div>
           <!-- Register form -->
           <div id="acc-register-form" style="display:none;">
-            <input id="acc-reg-username" type="text" placeholder="Username" autocomplete="username" maxlength="20"
-              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-            <input id="acc-reg-pass" type="password" placeholder="Password" autocomplete="new-password" maxlength="30"
-              style="width:100%; padding:12px; margin-bottom:12px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-            <input id="acc-reg-pass2" type="password" placeholder="Confirm Password" autocomplete="new-password" maxlength="30"
-              style="width:100%; padding:12px; margin-bottom:16px; background:#222; border:1px solid #444; color:#FFF; font-size:16px; font-family:monospace; border-radius:8px; outline:none;">
-            <div id="acc-reg-error" style="color:#FF4444; font-size:14px; margin-bottom:12px; min-height:20px;"></div>
-            <button id="acc-register" style="width:100%; padding:12px; margin-bottom:8px; background:#4488CC; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">REGISTER</button>
-            <p id="acc-show-login" style="color:#00C864; font-size:14px; margin-top:8px; margin-bottom:4px; cursor:pointer; text-decoration:underline;">Already have an account? Log in</p>
+            <input id="acc-reg-username" class="acc-input" type="text" placeholder="Username" autocomplete="username" maxlength="20">
+            <input id="acc-reg-pass" class="acc-input" type="password" placeholder="Password" autocomplete="new-password" maxlength="30">
+            <input id="acc-reg-pass2" class="acc-input" type="password" placeholder="Confirm Password" autocomplete="new-password" maxlength="30">
+            <div id="acc-reg-error" class="acc-error"></div>
+            <button id="acc-register" class="acc-btn acc-btn-blue">REGISTER</button>
+            <p id="acc-show-login" class="acc-link" style="color:#00C864;">Already have an account? Log in</p>
           </div>
         </div>
         <div id="account-logged-in" style="display:none;">
-          <p style="color:#AAA; font-size:16px; margin-bottom:8px;">Logged in as</p>
-          <p id="acc-display-name" style="color:#00C8FF; font-size:22px; font-weight:bold; margin-bottom:20px;"></p>
-          <p style="color:#666; font-size:13px; margin-bottom:16px;">Your progress, customization, and editor levels are synced across all devices.</p>
-          <button id="acc-logout" style="width:100%; padding:12px; margin-bottom:12px; background:#CC3333; border:none; color:#FFF; font-size:18px; font-family:monospace; font-weight:bold; border-radius:8px; cursor:pointer;">LOG OUT</button>
+          <div class="acc-avatar">&#9733;</div>
+          <p style="color:#667788; font-size:13px; margin-bottom:4px; letter-spacing:2px; text-transform:uppercase;">Logged in as</p>
+          <p id="acc-display-name" class="acc-username"></p>
+          <div class="acc-sync-badge">&#x2601; SYNCED ACROSS DEVICES</div>
+          <button id="acc-logout" class="acc-btn acc-btn-red">LOG OUT</button>
         </div>
-        <button id="acc-close" style="width:100%; padding:12px; background:#333; border:none; color:#AAA; font-size:16px; font-family:monospace; border-radius:8px; cursor:pointer;">BACK</button>
+        <button id="acc-close" class="acc-btn acc-btn-back">BACK</button>
       </div>
     </div>
+    <style>
+      .acc-panel {
+        background: linear-gradient(180deg, #0a0e1a 0%, #111828 50%, #0a0e1a 100%);
+        border: 1px solid rgba(0,200,255,0.15);
+        border-radius: 20px;
+        padding: 36px 32px 28px;
+        width: 90%;
+        max-width: 380px;
+        text-align: center;
+        font-family: monospace;
+        box-shadow: 0 0 40px rgba(0,100,200,0.15), 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+        position: relative;
+      }
+      .acc-panel h2 {
+        color: #00C8FF;
+        font-size: 28px;
+        margin-bottom: 24px;
+        letter-spacing: 4px;
+        text-shadow: 0 0 20px rgba(0,200,255,0.5), 0 0 40px rgba(0,200,255,0.2);
+      }
+      .acc-input {
+        width: 100%;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #EEE;
+        font-size: 15px;
+        font-family: monospace;
+        letter-spacing: 0.5px;
+        border-radius: 10px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .acc-input:focus {
+        border-color: rgba(0,200,255,0.4);
+        box-shadow: 0 0 12px rgba(0,200,255,0.15), inset 0 0 8px rgba(0,200,255,0.05);
+      }
+      .acc-input::placeholder {
+        color: #445566;
+        font-size: 14px;
+      }
+      .acc-error {
+        color: #FF4444;
+        font-size: 13px;
+        margin-bottom: 12px;
+        min-height: 18px;
+        text-shadow: 0 0 8px rgba(255,50,50,0.3);
+      }
+      .acc-btn {
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 10px;
+        border: none;
+        color: #FFF;
+        font-size: 16px;
+        font-family: monospace;
+        font-weight: bold;
+        letter-spacing: 2px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.15s, box-shadow 0.2s, filter 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+      .acc-btn:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.15);
+      }
+      .acc-btn:active {
+        transform: translateY(1px);
+        filter: brightness(0.95);
+      }
+      .acc-btn-green {
+        background: linear-gradient(180deg, #00DD6E 0%, #00A050 100%);
+        box-shadow: 0 4px 16px rgba(0,200,100,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      }
+      .acc-btn-green:hover { box-shadow: 0 6px 24px rgba(0,200,100,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
+      .acc-btn-blue {
+        background: linear-gradient(180deg, #5599DD 0%, #3366AA 100%);
+        box-shadow: 0 4px 16px rgba(50,100,200,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      }
+      .acc-btn-blue:hover { box-shadow: 0 6px 24px rgba(50,100,200,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
+      .acc-btn-red {
+        background: linear-gradient(180deg, #DD4444 0%, #AA2222 100%);
+        box-shadow: 0 4px 16px rgba(200,50,50,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+      }
+      .acc-btn-red:hover { box-shadow: 0 6px 24px rgba(200,50,50,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
+      .acc-btn-back {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #778899;
+        letter-spacing: 3px;
+        margin-top: 6px;
+      }
+      .acc-btn-back:hover {
+        background: rgba(255,255,255,0.1);
+        color: #AAB;
+      }
+      .acc-link {
+        font-size: 13px;
+        margin-top: 10px;
+        margin-bottom: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+      .acc-link:hover { opacity: 1; text-decoration: underline; }
+      .acc-avatar {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 16px;
+        background: linear-gradient(135deg, #00C8FF 0%, #0066CC 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: #FFF;
+        box-shadow: 0 0 20px rgba(0,200,255,0.3);
+      }
+      .acc-username {
+        color: #00C8FF;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 16px;
+        text-shadow: 0 0 15px rgba(0,200,255,0.4);
+        letter-spacing: 1px;
+      }
+      .acc-sync-badge {
+        display: inline-block;
+        background: rgba(0,200,255,0.08);
+        border: 1px solid rgba(0,200,255,0.15);
+        border-radius: 20px;
+        padding: 6px 16px;
+        color: #4488AA;
+        font-size: 11px;
+        letter-spacing: 1px;
+        margin-bottom: 24px;
+      }
+    </style>
     <script type="module" src="/src/main.js"></script>
     <script>
       if ('serviceWorker' in navigator) {
