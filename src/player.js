@@ -165,8 +165,7 @@ export class Player {
         this.transportExitRamp = Math.min(1, this.transportExitRamp + 0.07);
       }
       const ramp = this.transportExitRamp;
-      const dir = this.reversed ? -1 : 1;
-      const speed = SCROLL_SPEED * this.speedMult * ramp * (this.dashTimer > 0 ? 1.5 : 1.0) * dir;
+      const speed = SCROLL_SPEED * this.speedMult * ramp * (this.dashTimer > 0 ? 1.5 : 1.0);
       this.x += speed;
     }
     if (this.dashTimer > 0) {
