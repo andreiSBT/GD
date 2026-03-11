@@ -68,6 +68,12 @@ class Game {
     this._bindEvents();
     this._setupAccountUI();
     initAuth().then(() => this._syncFromCloud());
+    // Re-sync when tab becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') this._syncFromCloud();
+    });
+    // Periodic sync every 30s
+    setInterval(() => this._syncFromCloud(), 30000);
     this._startLoop();
   }
 
