@@ -105,6 +105,9 @@ export class Editor {
     this.browsing = false;
     this.currentSlot = null;
     this.browseScroll = 0;
+
+    // Delete confirmation dialog
+    this.confirmDelete = null; // null or { slotId, slotName }
   }
 
   // === EVENT HANDLERS ===
@@ -1667,9 +1670,100 @@ export class Editor {
     ctx.textAlign = 'center';
     ctx.fillText('BACK', SCREEN_WIDTH / 2, backY + backH / 2 + 7);
     this.buttons.push({ id: 'browse_back', x: backX, y: backY, w: backW, h: backH });
+
+    // Delete confirmation dialog overlay
+    if (this.confirmDelete) {
+      // Dim background
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+      // Dialog box
+      const dlgW = Math.min(380, SCREEN_WIDTH - 40);
+      const dlgH = 180;
+      const dlgX = (SCREEN_WIDTH - dlgW) / 2;
+      const dlgY = (SCREEN_HEIGHT - dlgH) / 2;
+
+      const dlgGrad = ctx.createLinearGradient(dlgX, dlgY, dlgX, dlgY + dlgH);
+      dlgGrad.addColorStop(0, '#1a1a30');
+      dlgGrad.addColorStop(1, '#0e0e20');
+      ctx.fillStyle = dlgGrad;
+      this._editorRoundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,80,80,0.4)';
+      ctx.lineWidth = 2;
+      this._editorRoundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+      ctx.stroke();
+
+      // Warning text
+      ctx.fillStyle = '#FF6666';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('DELETE LEVEL?', SCREEN_WIDTH / 2, dlgY + 40);
+
+      ctx.fillStyle = '#AAB';
+      ctx.font = '14px monospace';
+      const name = this.confirmDelete.slotName || 'Untitled';
+      const displayName = name.length > 25 ? name.slice(0, 22) + '...' : name;
+      ctx.fillText('"' + displayName + '"', SCREEN_WIDTH / 2, dlgY + 68);
+      ctx.fillStyle = '#778';
+      ctx.font = '12px monospace';
+      ctx.fillText('This cannot be undone', SCREEN_WIDTH / 2, dlgY + 90);
+
+      // Cancel button
+      const cbtnW = (dlgW - 30) / 2;
+      const cbtnH = 44;
+      const cbtnY = dlgY + dlgH - cbtnH - 18;
+      const cancelX = dlgX + 10;
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      this._editorRoundRect(ctx, cancelX, cbtnY, cbtnW, cbtnH, 10);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      this._editorRoundRect(ctx, cancelX, cbtnY, cbtnW, cbtnH, 10);
+      ctx.stroke();
+      ctx.fillStyle = '#CCC';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('CANCEL', cancelX + cbtnW / 2, cbtnY + cbtnH / 2 + 6);
+      this.buttons.push({ id: 'confirm_delete_no', x: cancelX, y: cbtnY, w: cbtnW, h: cbtnH });
+
+      // Delete button
+      const deleteX = dlgX + dlgW - cbtnW - 10;
+      ctx.shadowColor = '#FF3333';
+      ctx.shadowBlur = 10;
+      const delGrad = ctx.createLinearGradient(deleteX, cbtnY, deleteX, cbtnY + cbtnH);
+      delGrad.addColorStop(0, '#DD3333');
+      delGrad.addColorStop(1, '#AA2222');
+      ctx.fillStyle = delGrad;
+      this._editorRoundRect(ctx, deleteX, cbtnY, cbtnW, cbtnH, 10);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('DELETE', deleteX + cbtnW / 2, cbtnY + cbtnH / 2 + 6);
+      this.buttons.push({ id: 'confirm_delete_yes', x: deleteX, y: cbtnY, w: cbtnW, h: cbtnH });
+    }
   }
 
   _handleBrowseClick(x, y) {
+    // When confirmation dialog is showing, only process dialog buttons
+    if (this.confirmDelete) {
+      for (const btn of this.buttons) {
+        if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+          if (btn.id === 'confirm_delete_yes') {
+            this.deleteSlot(this.confirmDelete.slotId);
+            this.confirmDelete = null;
+            return;
+          } else if (btn.id === 'confirm_delete_no') {
+            this.confirmDelete = null;
+            return;
+          }
+        }
+      }
+      // Click outside dialog = cancel
+      this.confirmDelete = null;
+      return;
+    }
+
     for (const btn of this.buttons) {
       if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
         if (btn.id === 'browse_new') {
@@ -1688,7 +1782,10 @@ export class Editor {
           }
         } else if (btn.id.startsWith('browse_del_')) {
           const slotId = btn.id.replace('browse_del_', '');
-          this.deleteSlot(slotId);
+          // Show confirmation dialog instead of deleting immediately
+          const raw = localStorage.getItem('gd_editor_slot_' + slotId);
+          const name = raw ? (JSON.parse(raw).name || 'Untitled') : 'Untitled';
+          this.confirmDelete = { slotId, slotName: name };
         } else if (btn.id.startsWith('browse_open_')) {
           const slotId = btn.id.replace('browse_open_', '');
           if (this.loadFromSlot(slotId)) {
