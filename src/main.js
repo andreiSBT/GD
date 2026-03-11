@@ -470,16 +470,19 @@ class Game {
       this.player.speedMult = this.lastCheckpoint.speedMult;
       this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
       this.level.resetFrom(this.lastCheckpoint.x);
+      this.camera.reset(this.lastCheckpoint.x);
     } else if (this.editorStartCheckpoint) {
       // Editor start pos - always respawn here
       this.player.reset(this.editorStartCheckpoint.x);
       this.player.y = this.editorStartCheckpoint.y;
       this.level.resetFrom(this.editorStartCheckpoint.x);
       this.lastCheckpoint = { ...this.editorStartCheckpoint };
+      this.camera.reset(this.editorStartCheckpoint.x);
     } else {
       this.player.reset(0);
       this.level.reset();
       this.lastCheckpoint = null;
+      this.camera.reset(0);
     }
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
@@ -514,11 +517,22 @@ class Game {
 
   _startLoop() {
     let lastTime = performance.now();
+    const FIXED_DT = 1 / 60; // physics at fixed 60Hz
+    let accumulator = 0;
 
     const loop = (now) => {
-      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      const frameDt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
-      this._update(dt);
+
+      // Fixed timestep: physics always steps at 60Hz
+      accumulator += frameDt;
+      while (accumulator >= FIXED_DT) {
+        this._update(FIXED_DT);
+        accumulator -= FIXED_DT;
+      }
+
+      // Interpolation alpha for smooth rendering between physics steps
+      this._drawAlpha = accumulator / FIXED_DT;
       this._draw();
       requestAnimationFrame(loop);
     };
@@ -566,7 +580,7 @@ class Game {
           this._die();
           return;
         }
-      } else if (obs.type === 'platform' || obs.type === 'moving') {
+      } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         const result = obs.checkCollision(playerRect, this.player.prevY);
         if (result) {
           if (result.type === 'death') {
@@ -580,6 +594,11 @@ class Game {
             if (obs.type === 'moving') {
               this.player.onMovingPlatform = true;
               this.player.movingPlatformRef = obs;
+            } else if (obs.type === 'transport') {
+              obs.active = true;
+              this.player.onMovingPlatform = true;
+              this.player.movingPlatformRef = obs;
+              this.player.transportLocked = obs.isPlayerLocked();
             }
             this.player._snapRotation();
           }
@@ -721,18 +740,21 @@ class Game {
     } else if (this.state === CUSTOMIZE) {
       this.ui.drawCustomize(ctx, this.customization);
     } else {
-      this.renderer.drawBackground(ctx, this.camera.x, this.theme);
+      // Use interpolated camera for smooth rendering between physics steps
+      const camX = this.camera.getInterpolatedX(this._drawAlpha || 0);
 
-      const visible = this.level.getVisible(this.camera.x);
+      this.renderer.drawBackground(ctx, camX, this.theme);
+
+      const visible = this.level.getVisible(camX);
       for (const obs of visible) {
-        obs.draw(ctx, this.camera.x, this.theme);
+        obs.draw(ctx, camX, this.theme);
       }
 
-      this.renderer.drawGround(ctx, this.camera.x, this.theme);
-      this.particles.draw(ctx, this.camera.x - PLAYER_X_OFFSET);
+      this.renderer.drawGround(ctx, camX, this.theme);
+      this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
       if (this.player.alive) {
-        this.player.draw(ctx, this.camera.x, this.theme);
+        this.player.draw(ctx, camX, this.theme);
       }
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
@@ -780,6 +802,8 @@ class Game {
 
     // Scale context so all drawing code uses logical coordinates
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    this.ctx.imageSmoothingEnabled = true;
+    this.ctx.imageSmoothingQuality = 'high';
   }
 
   _setupAccountUI() {

@@ -46,6 +46,7 @@ export class Player {
     this.onPlatform = false;
     this.onMovingPlatform = false;
     this.movingPlatformRef = null;
+    this.transportLocked = false;
     this.mode = MODE_CUBE;
     this.holding = false;       // is jump/click held down
     this.coyoteCounter = 0;     // frames since leaving ground
@@ -215,7 +216,7 @@ export class Player {
     if (!this.grounded) {
       const diff = this.targetRotation - this.rotation;
       if (Math.abs(diff) > 0.5) {
-        this.rotation += diff * 0.15;
+        this.rotation += diff * 0.25;
       } else {
         this.rotation = this.targetRotation;
       }

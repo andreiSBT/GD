@@ -84,10 +84,25 @@ export class Level {
 export class Camera {
   constructor() {
     this.x = 0;
+    this.prevX = 0;
+    this.targetX = 0;
   }
 
   update(playerX) {
-    this.x = playerX;
+    this.prevX = this.x;
+    this.targetX = playerX;
+    // Smooth follow — lerp toward target
+    this.x += (this.targetX - this.x) * 0.35;
+  }
+
+  getInterpolatedX(alpha) {
+    return this.prevX + (this.x - this.prevX) * alpha;
+  }
+
+  reset(x = 0) {
+    this.x = x;
+    this.prevX = x;
+    this.targetX = x;
   }
 }
 
