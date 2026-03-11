@@ -9,10 +9,28 @@ export class UI {
   constructor() {
     this.buttons = [];
     this.pulseTimer = 0;
+    // Floating menu particles
+    this.menuParticles = [];
+    for (let i = 0; i < 30; i++) {
+      this.menuParticles.push({
+        x: Math.random() * 1400,
+        y: Math.random() * 700,
+        size: 1 + Math.random() * 3,
+        speed: 0.2 + Math.random() * 0.5,
+        alpha: 0.05 + Math.random() * 0.15,
+        drift: (Math.random() - 0.5) * 0.3,
+      });
+    }
   }
 
   update(dt) {
     this.pulseTimer += dt;
+    // Animate menu particles
+    for (const p of this.menuParticles) {
+      p.y -= p.speed;
+      p.x += p.drift;
+      if (p.y < -10) { p.y = 710; p.x = Math.random() * 1400; }
+    }
   }
 
   // Returns button id if clicked, null otherwise
@@ -30,137 +48,196 @@ export class UI {
 
     // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#001030');
+    grad.addColorStop(0, '#000818');
+    grad.addColorStop(0.5, '#001030');
     grad.addColorStop(1, '#002060');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Title with pulse
-    const pulse = 1 + Math.sin(this.pulseTimer * 3) * 0.05;
-    ctx.save();
-    ctx.translate(SCREEN_WIDTH / 2, 180);
-    ctx.scale(pulse, pulse);
+    // Floating particles
+    this._drawMenuParticles(ctx);
+
+    // Decorative horizontal line
+    const lineW = 320;
+    ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#00C8FF';
-    ctx.font = 'bold 72px monospace';
+    ctx.fillRect(SCREEN_WIDTH / 2 - lineW / 2, 255, lineW, 1);
+    ctx.globalAlpha = 1;
+
+    // Title with pulse and neon glow
+    const pulse = 1 + Math.sin(this.pulseTimer * 3) * 0.03;
+    ctx.save();
+    ctx.translate(SCREEN_WIDTH / 2, 170);
+    ctx.scale(pulse, pulse);
+
+    // Outer glow
+    ctx.shadowColor = '#00C8FF';
+    ctx.shadowBlur = 30;
+    ctx.fillStyle = '#00C8FF';
+    ctx.font = 'bold 68px monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('GEOMETRY DASH', 0, 0);
+    ctx.shadowBlur = 0;
 
-    // Title glow
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#00FFFF';
-    ctx.font = 'bold 74px monospace';
+    // Bright inner text
+    ctx.fillStyle = '#FFF';
+    ctx.globalAlpha = 0.9;
     ctx.fillText('GEOMETRY DASH', 0, 0);
     ctx.globalAlpha = 1;
     ctx.restore();
 
     // Subtitle
-    ctx.fillStyle = '#6688AA';
-    ctx.font = '20px monospace';
+    ctx.fillStyle = '#4A6A8A';
+    ctx.font = '18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('A side-scrolling rhythm game', SCREEN_WIDTH / 2, 240);
+    ctx.fillText('A  S I D E - S C R O L L I N G  R H Y T H M  G A M E', SCREEN_WIDTH / 2, 225);
 
-    // Play button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 320, 240, 60, 'PLAY', 'play', '#00C864');
-
-    // Practice button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 400, 240, 60, 'PRACTICE', 'practice', '#C8A000');
-
-    // Customize button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 480, 240, 60, 'CUSTOMIZE', 'customize', '#8844CC');
-
-    // Editor button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 560, 240, 60, 'EDITOR', 'editor', '#CC6600');
+    // Menu buttons — slightly wider, better spacing
+    const bw = 260, bh = 56, gap = 64;
+    const bx = SCREEN_WIDTH / 2 - bw / 2;
+    let by = 290;
+    this._drawButton(ctx, bx, by, bw, bh, 'PLAY', 'play', '#00C864');
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'PRACTICE', 'practice', '#C8A000');
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'CUSTOMIZE', 'customize', '#8844CC');
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'EDITOR', 'editor', '#CC6600');
 
     // Account button (top right)
     const username = getUsername();
     if (username) {
-      this._drawButton(ctx, SCREEN_WIDTH - 200, 10, 180, 40, username, 'account', '#336688');
+      this._drawButton(ctx, SCREEN_WIDTH - 200, 12, 180, 38, username, 'account', '#224466', 16);
     } else {
-      this._drawButton(ctx, SCREEN_WIDTH - 140, 10, 120, 40, 'ACCOUNT', 'account', '#336688');
+      this._drawButton(ctx, SCREEN_WIDTH - 140, 12, 120, 38, 'ACCOUNT', 'account', '#224466', 16);
     }
 
     // Controls hint
-    ctx.fillStyle = '#445566';
-    ctx.font = '16px monospace';
+    ctx.fillStyle = '#334455';
+    ctx.font = '14px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SPACE / CLICK to jump  •  ESC for menu', SCREEN_WIDTH / 2, 650);
+    ctx.fillText('SPACE / CLICK to jump   •   ESC for menu', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
   }
 
   drawLevelSelect(ctx, progress) {
     this.buttons = [];
 
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#001030');
-    grad.addColorStop(1, '#002060');
+    grad.addColorStop(0, '#000818');
+    grad.addColorStop(1, '#001840');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    this._drawMenuParticles(ctx);
+
+    // Title with glow
+    ctx.save();
+    ctx.shadowColor = '#00C8FF';
+    ctx.shadowBlur = 20;
     ctx.fillStyle = '#00C8FF';
-    ctx.font = 'bold 48px monospace';
+    ctx.font = 'bold 44px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SELECT LEVEL', SCREEN_WIDTH / 2, 80);
+    ctx.fillText('SELECT LEVEL', SCREEN_WIDTH / 2, 75);
+    ctx.shadowBlur = 0;
+    ctx.restore();
 
     const count = getLevelCount();
     const cardW = 280;
-    const cardH = 280;
+    const cardH = 300;
     const gap = 40;
     const totalW = count * cardW + (count - 1) * gap;
     const startX = (SCREEN_WIDTH - totalW) / 2;
+    const r = 14;
 
     for (let i = 1; i <= count; i++) {
       const theme = THEMES[i];
       const x = startX + (i - 1) * (cardW + gap);
-      const y = 140;
+      const y = 130;
       const prog = progress[i] || { attempts: 0, bestProgress: 0, completed: false };
 
-      // Card background
+      // Card shadow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 16;
+      ctx.shadowOffsetY = 4;
+      this._roundRect(ctx, x, y, cardW, cardH, r);
+      ctx.fillStyle = '#000';
+      ctx.fill();
+      ctx.restore();
+
+      // Card background gradient
       const cgrad = ctx.createLinearGradient(x, y, x, y + cardH);
       cgrad.addColorStop(0, theme.bgTop);
       cgrad.addColorStop(1, theme.bgBot);
+      this._roundRect(ctx, x, y, cardW, cardH, r);
       ctx.fillStyle = cgrad;
-      ctx.fillRect(x, y, cardW, cardH);
+      ctx.fill();
 
-      // Card border
+      // Inner highlight at top
+      ctx.globalAlpha = 0.08;
+      this._roundRect(ctx, x, y, cardW, cardH / 2, r);
+      ctx.fillStyle = '#FFF';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Neon border glow
+      ctx.save();
+      ctx.shadowColor = theme.accent;
+      ctx.shadowBlur = 10;
+      this._roundRect(ctx, x, y, cardW, cardH, r);
       ctx.strokeStyle = theme.accent;
       ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, cardW, cardH);
+      ctx.stroke();
+      ctx.restore();
 
       // Level name
       ctx.fillStyle = theme.accent;
-      ctx.font = 'bold 22px monospace';
+      ctx.font = 'bold 20px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(theme.name, x + cardW / 2, y + 40);
 
-      // Level number
+      // Level number with glow
+      ctx.save();
+      ctx.shadowColor = theme.accent;
+      ctx.shadowBlur = 15;
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 60px monospace';
+      ctx.font = 'bold 64px monospace';
       ctx.fillText(`${i}`, x + cardW / 2, y + 120);
+      ctx.restore();
 
-      // Progress bar
+      // Progress bar with rounded ends
       const barX = x + 30;
       const barY = y + 160;
       const barW = cardW - 60;
-      const barH = 12;
-      ctx.fillStyle = '#111';
-      ctx.fillRect(barX, barY, barW, barH);
-      ctx.fillStyle = prog.completed ? '#0F0' : theme.accent;
-      ctx.fillRect(barX, barY, barW * prog.bestProgress, barH);
-      ctx.strokeStyle = '#444';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(barX, barY, barW, barH);
+      const barH = 10;
+      const barR = 5;
+      this._roundRect(ctx, barX, barY, barW, barH, barR);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fill();
+      if (prog.bestProgress > 0) {
+        const fillW = Math.max(barH, barW * prog.bestProgress);
+        this._roundRect(ctx, barX, barY, fillW, barH, barR);
+        ctx.fillStyle = prog.completed ? '#00FF64' : theme.accent;
+        ctx.fill();
+      }
 
       // Stats
-      ctx.fillStyle = '#AAA';
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
       ctx.font = '14px monospace';
       ctx.fillText(`Best: ${Math.floor(prog.bestProgress * 100)}%`, x + cardW / 2, y + 200);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ctx.fillText(`Attempts: ${prog.attempts}`, x + cardW / 2, y + 222);
 
       // Completed badge
       if (prog.completed) {
-        ctx.fillStyle = '#0F0';
+        ctx.save();
+        ctx.shadowColor = '#00FF64';
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = '#00FF64';
         ctx.font = 'bold 16px monospace';
-        ctx.fillText('✓ COMPLETED', x + cardW / 2, y + 252);
+        ctx.fillText('COMPLETED', x + cardW / 2, y + 260);
+        ctx.restore();
       }
 
       // Clickable area
@@ -168,89 +245,116 @@ export class UI {
     }
 
     // Back button
-    this._drawButton(ctx, 30, SCREEN_HEIGHT - 70, 120, 45, '← BACK', 'back', '#666');
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - 70, 130, 44, 'BACK', 'back', '#445566', 20);
   }
 
   drawHUD(ctx, progress, attempts, practiceMode, levelName) {
     this.buttons = [];
 
-    // Progress bar at top
-    const barW = 400;
+    // Progress bar at top — rounded, sleek
+    const barW = 360;
     const barH = 8;
     const barX = (SCREEN_WIDTH - barW) / 2;
-    const barY = 20;
+    const barY = 18;
+    const barR = 4;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(barX, barY, barW, barH);
-    ctx.fillStyle = '#00FF64';
-    ctx.fillRect(barX, barY, barW * progress, barH);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(barX, barY, barW, barH);
+    this._roundRect(ctx, barX, barY, barW, barH, barR);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+
+    if (progress > 0) {
+      const fillW = Math.max(barH, barW * progress);
+      ctx.save();
+      ctx.shadowColor = '#00FF64';
+      ctx.shadowBlur = 6;
+      this._roundRect(ctx, barX, barY, fillW, barH, barR);
+      ctx.fillStyle = '#00FF64';
+      ctx.fill();
+      ctx.restore();
+    }
 
     // Progress percentage
-    ctx.fillStyle = '#FFF';
-    ctx.font = '14px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + 18);
+    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + 16);
 
     // Attempts counter
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '13px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`Attempt ${attempts}`, 20, 30);
+    ctx.fillText(`Att. ${attempts}`, 16, 28);
 
     // Practice mode indicator
     if (practiceMode) {
+      ctx.save();
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 6;
       ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText('PRACTICE MODE', SCREEN_WIDTH - 60, 30);
+      ctx.fillText('PRACTICE', SCREEN_WIDTH - 65, 28);
+      ctx.restore();
     }
 
-    // Pause button (top right)
-    const pbS = 46;
+    // Pause button (top right) — rounded
+    const pbS = 44;
     const pbX = SCREEN_WIDTH - pbS - 10;
-    const pbY = 10;
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(pbX, pbY, pbS, pbS);
+    const pbY = 8;
+    this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fill();
     // Two vertical bars (pause icon)
+    const bw = 6, bGap = 5;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillRect(pbX + 13, pbY + 10, 7, pbS - 20);
-    ctx.fillRect(pbX + 26, pbY + 10, 7, pbS - 20);
+    this._roundRect(ctx, pbX + pbS / 2 - bw - bGap / 2, pbY + 11, bw, pbS - 22, 2);
+    ctx.fill();
+    this._roundRect(ctx, pbX + pbS / 2 + bGap / 2, pbY + 11, bw, pbS - 22, 2);
+    ctx.fill();
     const hitPad = 15;
     this.buttons.push({ id: 'pause', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
 
     // Level name
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '12px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '11px monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(levelName, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 15);
+    ctx.fillText(levelName, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 12);
   }
 
   drawDeathScreen(ctx, progress, attempts) {
     this.buttons = [];
 
-    // Overlay
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    // Dark overlay with vignette
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    const vig = ctx.createRadialGradient(SCREEN_WIDTH / 2, 300, 100, SCREEN_WIDTH / 2, 300, SCREEN_WIDTH * 0.7);
+    vig.addColorStop(0, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.fillStyle = vig;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Death text
+    // Death text with red glow
+    ctx.save();
+    ctx.shadowColor = '#FF3333';
+    ctx.shadowBlur = 25;
     ctx.fillStyle = '#FF3333';
     ctx.font = 'bold 48px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('YOU CRASHED!', SCREEN_WIDTH / 2, 230);
+    ctx.restore();
 
     // Progress
-    ctx.fillStyle = '#FFF';
-    ctx.font = '24px monospace';
-    ctx.fillText(`Progress: ${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, 290);
-    ctx.fillStyle = '#AAA';
-    ctx.font = '18px monospace';
-    ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 325);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, 290);
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '16px monospace';
+    ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 320);
 
-    // Retry
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 370, 240, 55, 'RETRY', 'retry', '#00C864');
-
-    // Back to menu
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 440, 240, 55, 'MENU', 'menu', '#666');
+    // Buttons
+    const bw = 240, bh = 52;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365, bw, bh, 'RETRY', 'retry', '#00C864');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 432, bw, bh, 'MENU', 'menu', '#445566');
   }
 
   drawCompleteScreen(ctx, attempts, theme) {
@@ -259,48 +363,71 @@ export class UI {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Complete text with glow
+    // Green glow vignette
+    const glow = ctx.createRadialGradient(SCREEN_WIDTH / 2, 230, 50, SCREEN_WIDTH / 2, 230, 400);
+    glow.addColorStop(0, 'rgba(0,255,100,0.08)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    // Complete text with neon glow
+    ctx.save();
+    ctx.shadowColor = '#00FF64';
+    ctx.shadowBlur = 30;
     ctx.fillStyle = '#00FF64';
-    ctx.font = 'bold 56px monospace';
+    ctx.font = 'bold 52px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('LEVEL COMPLETE!', SCREEN_WIDTH / 2, 230);
-
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#00FF96';
-    ctx.font = 'bold 58px monospace';
+    ctx.shadowBlur = 0;
+    // Bright overlay
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.fillText('LEVEL COMPLETE!', SCREEN_WIDTH / 2, 230);
-    ctx.globalAlpha = 1;
+    ctx.restore();
 
-    ctx.fillStyle = '#FFF';
-    ctx.font = '24px monospace';
-    ctx.fillText(`Attempts: ${attempts}`, SCREEN_WIDTH / 2, 300);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Attempts: ${attempts}`, SCREEN_WIDTH / 2, 295);
 
-    // Next level / menu
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 360, 240, 55, 'NEXT LEVEL', 'next_level', '#00C864');
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, 430, 240, 55, 'MENU', 'menu', '#666');
+    // Buttons
+    const bw = 240, bh = 52;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 350, bw, bh, 'NEXT LEVEL', 'next_level', '#00C864');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 418, bw, bh, 'MENU', 'menu', '#445566');
   }
 
   drawPauseScreen(ctx, editorTesting = false) {
     this.buttons = [];
 
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    // Title with subtle glow
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,0.3)';
+    ctx.shadowBlur = 15;
     ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 48px monospace';
+    ctx.font = 'bold 44px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('PAUSED', SCREEN_WIDTH / 2, 250);
+    ctx.fillText('PAUSED', SCREEN_WIDTH / 2, 240);
+    ctx.restore();
 
-    let btnY = 320;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'RESUME', 'resume', '#00C864');
-    btnY += 70;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'RESTART', 'restart', '#CC3333');
+    // Decorative line
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(SCREEN_WIDTH / 2 - 100, 260, 200, 1);
+    ctx.globalAlpha = 1;
+
+    const bw = 240, bh = 52, gap = 64;
+    let btnY = 300;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'RESUME', 'resume', '#00C864');
+    btnY += gap;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'RESTART', 'restart', '#CC3333');
     if (editorTesting) {
-      btnY += 70;
-      this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
+      btnY += gap;
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
     }
-    btnY += 70;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 120, btnY, 240, 55, 'MENU', 'menu', '#666');
+    btnY += gap;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'MENU', 'menu', '#445566');
   }
 
   drawCustomize(ctx, customization) {
@@ -310,16 +437,23 @@ export class UI {
 
     // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#0A0020');
+    grad.addColorStop(0, '#080018');
+    grad.addColorStop(0.5, '#0A0020');
     grad.addColorStop(1, '#1A0040');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Title
+    this._drawMenuParticles(ctx);
+
+    // Title with glow
+    ctx.save();
+    ctx.shadowColor = '#AA55FF';
+    ctx.shadowBlur = 20;
     ctx.fillStyle = '#CC88FF';
-    ctx.font = 'bold 42px monospace';
+    ctx.font = 'bold 40px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('CUSTOMIZE', SCREEN_WIDTH / 2, 50);
+    ctx.restore();
 
     // === PREVIEW ===
     const previewX = SCREEN_WIDTH / 2;
@@ -479,7 +613,7 @@ export class UI {
     }
 
     // Back button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 65, 200, 45, '← BACK', 'back_customize', '#666');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 65, 200, 44, 'BACK', 'back_customize', '#445566', 20);
   }
 
   _drawPreviewCube(ctx, cx, cy, size, color, icon, shape) {
@@ -729,23 +863,94 @@ export class UI {
     }
   }
 
-  _drawButton(ctx, x, y, w, h, text, id, color) {
-    // Check hover
+  _roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  _drawMenuParticles(ctx) {
+    for (const p of this.menuParticles) {
+      ctx.globalAlpha = p.alpha;
+      ctx.fillStyle = '#00C8FF';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  _drawButton(ctx, x, y, w, h, text, id, color, fontSize = 22) {
+    const r = 10;
+
+    // Shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.4)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetY = 3;
+    this._roundRect(ctx, x, y, w, h, r);
     ctx.fillStyle = color;
-    ctx.fillRect(x, y, w, h);
+    ctx.fill();
+    ctx.restore();
 
-    // Lighter top edge
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.fillRect(x, y, w, 3);
+    // Main fill with gradient
+    const grad = ctx.createLinearGradient(x, y, x, y + h);
+    grad.addColorStop(0, lightenColor(color, 20));
+    grad.addColorStop(0.5, color);
+    grad.addColorStop(1, darkenColor(color, 20));
+    this._roundRect(ctx, x, y, w, h, r);
+    ctx.fillStyle = grad;
+    ctx.fill();
 
-    // Text
+    // Top highlight
+    ctx.globalAlpha = 0.2;
+    this._roundRect(ctx, x, y, w, h / 2, r);
     ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 22px monospace';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Subtle border
+    this._roundRect(ctx, x, y, w, h, r);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Text with subtle shadow
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = '#FFF';
+    ctx.font = `bold ${fontSize}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, x + w / 2, y + h / 2);
+    ctx.restore();
     ctx.textBaseline = 'alphabetic';
 
     this.buttons.push({ id, x, y, w, h });
   }
+}
+
+function lightenColor(hex, amt) {
+  if (!hex || hex[0] !== '#') return hex;
+  const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amt);
+  const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amt);
+  const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+function darkenColor(hex, amt) {
+  if (!hex || hex[0] !== '#') return hex;
+  const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amt);
+  const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amt);
+  const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amt);
+  return `rgb(${r},${g},${b})`;
 }
