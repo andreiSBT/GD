@@ -548,34 +548,13 @@ class Game {
     if (this.state !== PLAYING && this.state !== EDITOR_TESTING) return;
 
     this.level.update();
-    this.player.update();
-    this.camera.update(this.player.x);
 
-    // Hold-to-jump: emit effects when auto-jumping from hold
-    if (this.player.holdJumped) {
-      Sound.playJump();
-      this.particles.emitJump(
-        this.player.x,
-        this.player.y + PLAYER_SIZE,
-        this.theme.accent
-      );
-    }
-
-    // Trail particles
-    this.particles.emitTrail(
-      this.player.x - 5,
-      this.player.y + PLAYER_SIZE / 2,
-      this.theme.accent
-    );
-    this.particles.update(dt);
-    this.shakeIntensity *= 0.9;
-
-    // Reset pending orb each frame
-    this.pendingOrbHit = null;
+    // Reset moving platform flag before collision so it's fresh this frame
     this.player.onMovingPlatform = false;
     this.player.movingPlatformRef = null;
+    this.pendingOrbHit = null;
 
-    // Collision detection
+    // Collision detection (before player.update so moving platform flag is set in time)
     const playerRect = this.player.getRect();
     const visible = this.level.getVisible(this.camera.x);
 
@@ -689,6 +668,29 @@ class Game {
         this.player.grounded = false;
       }
     }
+
+    // Now update player movement (after collision set onMovingPlatform)
+    this.player.update();
+    this.camera.update(this.player.x);
+
+    // Hold-to-jump: emit effects when auto-jumping from hold
+    if (this.player.holdJumped) {
+      Sound.playJump();
+      this.particles.emitJump(
+        this.player.x,
+        this.player.y + PLAYER_SIZE,
+        this.theme.accent
+      );
+    }
+
+    // Trail particles
+    this.particles.emitTrail(
+      this.player.x - 5,
+      this.player.y + PLAYER_SIZE / 2,
+      this.theme.accent
+    );
+    this.particles.update(dt);
+    this.shakeIntensity *= 0.9;
 
     // Player death check (wave hitting boundaries, etc.)
     if (!this.player.alive && this.state !== DEAD) {
