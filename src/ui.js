@@ -408,8 +408,8 @@ export class UI {
     ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + 16);
 
     // Attempts counter
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = '13px monospace';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'left';
     ctx.fillText(`ATTEMPT: ${attempts}`, 16, 28);
 
