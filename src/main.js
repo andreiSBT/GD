@@ -830,14 +830,14 @@ class Game {
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
 
-      // Detect new best during gameplay
-      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
+      // Track new best during gameplay (normal mode only)
+      if ((this.state === PLAYING || this.state === EDITOR_TESTING) && !this.practiceMode) {
         if (progress > this.previousBest && this.previousBest < 1 && !this.newBestTriggered) {
-          this.newBestTimer = 120; // 2 seconds at 60fps
           this.newBestTriggered = true;
+          this.newBestTimer = 120;
         }
-        if (this.newBestTimer > 0) this.newBestTimer--;
       }
+      if (this.newBestTimer > 0) this.newBestTimer--;
 
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, this.newBestTimer);
 

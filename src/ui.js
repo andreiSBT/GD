@@ -451,38 +451,79 @@ export class UI {
     // NEW BEST! popup
     if (newBestTimer > 0) {
       ctx.save();
-      // Fade in for first 15 frames, hold, fade out last 30 frames
-      let alpha = 1;
-      if (newBestTimer > 105) alpha = (120 - newBestTimer) / 15; // fade in
-      else if (newBestTimer < 30) alpha = newBestTimer / 30; // fade out
 
-      // Slide up entrance
-      const slideOffset = newBestTimer > 105 ? (120 - newBestTimer) / 15 : 1;
-      const popY = SCREEN_HEIGHT / 3 + (1 - slideOffset) * 20;
+      // Timing: fade in 15 frames, hold, fade out last 30 frames
+      let alpha = 1;
+      if (newBestTimer > 105) alpha = (120 - newBestTimer) / 15;
+      else if (newBestTimer < 30) alpha = newBestTimer / 30;
+
+      // Ease out cubic entrance + subtle breathing scale
+      const enterT = Math.min(1, (120 - newBestTimer) / 15);
+      const eased = enterT < 1 ? 1 - Math.pow(1 - enterT, 3) : 1;
+      const popY = 200 + (1 - eased) * 30;
+      const breathe = enterT >= 1 ? Math.sin((120 - newBestTimer) * 0.08) * 0.015 : 0;
+      const scale = (enterT < 1 ? 0.8 + eased * 0.2 : 1) + breathe;
 
       ctx.globalAlpha = alpha;
-      ctx.textAlign = 'center';
+      ctx.translate(SCREEN_WIDTH / 2, popY);
+      ctx.scale(scale, scale);
 
-      // Glow effect
+      // Background pill with dark backdrop
+      const pillW = 260;
+      const pillH = 72;
+      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fill();
+
+      // Gold border glow
       ctx.shadowColor = '#FFD700';
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 25;
+      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
+      ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
 
-      // "NEW BEST!" text
+      // Inner gradient highlight
+      const pillGrad = ctx.createLinearGradient(0, -pillH / 2, 0, pillH / 2);
+      pillGrad.addColorStop(0, 'rgba(255,215,0,0.08)');
+      pillGrad.addColorStop(1, 'rgba(255,215,0,0)');
+      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
+      ctx.fillStyle = pillGrad;
+      ctx.fill();
+
+      // Star decorations
+      ctx.fillStyle = 'rgba(255,215,0,0.35)';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u2605', -pillW / 2 + 24, 0);
+      ctx.fillText('\u2605', pillW / 2 - 24, 0);
+
+      // "NEW BEST!" text with glow
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 18;
       ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 32px monospace';
-      ctx.fillText('NEW BEST!', SCREEN_WIDTH / 2, popY);
+      ctx.font = 'bold 24px monospace';
+      ctx.fillText('NEW BEST!', 0, -10);
 
-      // Percentage below
-      ctx.font = 'bold 20px monospace';
-      ctx.fillStyle = '#FFFFFF';
+      // Bright overlay pass
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255,255,200,0.3)';
+      ctx.fillText('NEW BEST!', 0, -10);
+
+      // Percentage
+      ctx.shadowColor = '#FFFFFF';
       ctx.shadowBlur = 10;
-      ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, popY + 30);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText(`${Math.floor(progress * 100)}%`, 0, 18);
 
       ctx.restore();
     }
   }
 
-  drawDeathScreen(ctx, progress, attempts) {
+  drawDeathScreen(ctx, progress, attempts, isNewBest = false) {
     this.buttons = [];
 
     // Dark overlay with vignette
@@ -504,13 +545,26 @@ export class UI {
     ctx.fillText('YOU CRASHED!', SCREEN_WIDTH / 2, 230);
     ctx.restore();
 
+    // NEW BEST! label above progress
+    if (isNewBest) {
+      ctx.save();
+      ctx.shadowColor = '#FFD700';
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('NEW BEST!', SCREEN_WIDTH / 2, 270);
+      ctx.restore();
+    }
+
     // Progress
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillStyle = isNewBest ? '#FFD700' : 'rgba(255,255,255,0.9)';
     ctx.font = 'bold 24px monospace';
-    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, 290);
+    ctx.textAlign = 'center';
+    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, 295);
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '16px monospace';
-    ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 320);
+    ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 325);
 
     // Buttons
     const bw = 240, bh = 52;
