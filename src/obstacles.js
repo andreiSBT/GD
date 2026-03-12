@@ -169,6 +169,10 @@ export class Platform {
     if (feetNearTop && playerBottom <= platTop + 20) {
       return { type: 'land', y: platTop };
     }
+    // Walking onto platform from ground: feet at or above platform top = land
+    if (prevPlayerY + PLAYER_SIZE <= platTop + GRID * 0.5) {
+      return { type: 'land', y: platTop };
+    }
     return { type: 'death' };
   }
 
@@ -385,6 +389,10 @@ export class TransportPlatform extends Platform {
     // Fallback: feet near top check for slow approaches
     const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
     if (feetNearTop && playerBottom <= platTop + 20) {
+      return { type: 'land', y: platTop };
+    }
+    // Walking onto platform from ground: feet at or above platform top = land
+    if (prevPlayerY + PLAYER_SIZE <= platTop + GRID * 0.5) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
