@@ -620,8 +620,11 @@ class Game {
     }
 
     // Keep moving platforms animated during pause so timing isn't luck-based
+    // Transport platforms freeze in place during pause
     if (this.state === PAUSED) {
-      this.level.update();
+      for (const obs of this.level.obstacles) {
+        if (obs.type === 'moving' && obs.update) obs.update();
+      }
       return;
     }
 
