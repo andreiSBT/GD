@@ -54,9 +54,49 @@ export function playJump() {
   playTone(400, 0.1, 'sine', 0.25, 800);
 }
 
+let deathNodes = [];
+
+export function stopDeath() {
+  for (const n of deathNodes) {
+    try { n.gain.gain.cancelScheduledValues(0); n.gain.gain.setValueAtTime(0, 0); } catch {}
+  }
+  deathNodes = [];
+}
+
 export function playDeath() {
-  playNoise(0.3, 0.25);
-  playTone(80, 0.35, 'sine', 0.3);
+  stopDeath();
+  const c = getCtx();
+
+  // Noise burst
+  const bufferSize = c.sampleRate * 0.3;
+  const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noiseSrc = c.createBufferSource();
+  noiseSrc.buffer = buffer;
+  const noiseGain = c.createGain();
+  noiseGain.gain.setValueAtTime(0.25, c.currentTime);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3);
+  noiseSrc.connect(noiseGain);
+  noiseGain.connect(c.destination);
+  noiseSrc.start();
+  deathNodes.push({ gain: noiseGain });
+
+  // Low rumble
+  const osc = c.createOscillator();
+  const oscGain = c.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(80, c.currentTime);
+  oscGain.gain.setValueAtTime(0.3, c.currentTime);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
+  osc.connect(oscGain);
+  oscGain.connect(c.destination);
+  osc.start(c.currentTime);
+  osc.stop(c.currentTime + 0.35);
+  deathNodes.push({ gain: oscGain });
+
+  // Clean up references after sounds finish
+  setTimeout(() => { deathNodes = []; }, 400);
 }
 
 export function playCheckpoint() {

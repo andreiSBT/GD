@@ -485,6 +485,7 @@ class Game {
   }
 
   _restart() {
+    Sound.stopDeath();
     this.attempts++;
     this.coinsCollected = 0;
     this.newBestTriggered = false;
