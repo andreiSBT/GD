@@ -47,6 +47,7 @@ export class Player {
     this.gravityMult = 1;
     this.speedMult = 1;
     this.onPlatform = false;
+    this.platformRef = null;        // reference to platform player is standing on
     this.onMovingPlatform = false;
     this.movingPlatformRef = null;
     this.transportLocked = false;
@@ -88,6 +89,7 @@ export class Player {
         this.vy = JUMP_VEL * this.gravityMult * (this.mini ? 0.7 : 1);
         this.grounded = false;
         this.onPlatform = false;
+        this.platformRef = null;
         this.coyoteCounter = 0;
         this.jumpBufferCounter = 0;
         // Rotate 90 degrees per jump
@@ -103,6 +105,7 @@ export class Player {
         this.vy = 0;
         this.grounded = false;
         this.onPlatform = false;
+        this.platformRef = null;
         this.coyoteCounter = 0;
         this.jumpBufferCounter = 0;
         return true;
@@ -130,6 +133,7 @@ export class Player {
     }
     this.grounded = false;
     this.onPlatform = false;
+    this.platformRef = null;
     // Rotate 90 degrees for orb/pad bounce too
     const dir = this.gravityMult > 0 ? -1 : 1;
     this.targetRotation += dir * 90;
@@ -145,6 +149,8 @@ export class Player {
   }
 
   flipGravity() {
+    this.platformRef = null;
+    this.onPlatform = false;
     this.gravityMult *= -1;
     this.vy = JUMP_VEL * this.gravityMult * 0.5;
   }

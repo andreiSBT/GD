@@ -661,6 +661,32 @@ class Game {
       this.player.vy = 0;
       this.player.grounded = true;
       this.player.onPlatform = true;
+      this.player.platformRef = prevTransportRef;
+    }
+
+    // Stay-on-platform: if player was on a platform, check if still above it
+    const platRef = this.player.platformRef;
+    let stayingOnPlatform = false;
+    if (platRef && this.player.onPlatform && !prevTransportRef) {
+      const px = this.player.x + PLAYER_SIZE / 2; // player center x
+      const stillAbove = px > platRef.x && px < platRef.x + platRef.w;
+      if (stillAbove && this.player.grounded) {
+        // Snap to platform top, skip gravity drift
+        const snapY = this.player.gravityMult === -1 ? platRef.y + platRef.h : platRef.y - PLAYER_SIZE;
+        this.player.y = snapY;
+        this.player.vy = 0;
+        this.player.grounded = true;
+        this.player.onPlatform = true;
+        stayingOnPlatform = true;
+        if (platRef.type === 'moving') {
+          this.player.onMovingPlatform = true;
+          this.player.movingPlatformRef = platRef;
+        }
+      } else {
+        // Walked off edge
+        this.player.platformRef = null;
+        this.player.onPlatform = false;
+      }
     }
 
     // Collision detection (before player.update so moving platform flag is set in time)
@@ -674,6 +700,8 @@ class Game {
           return;
         }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
+        // Skip collision with the platform we're already standing on
+        if (stayingOnPlatform && obs === platRef) continue;
         const result = obs.checkCollision(playerRect, this.player.prevY, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
@@ -685,6 +713,7 @@ class Game {
             this.player.vy = 0;
             this.player.grounded = true;
             this.player.onPlatform = true;
+            this.player.platformRef = obs;
             if (obs.type === 'moving') {
               this.player.onMovingPlatform = true;
               this.player.movingPlatformRef = obs;

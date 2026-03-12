@@ -121,9 +121,9 @@ export class Platform {
     const forgiveness = Math.round(GRID * 0.1);
     const forgivingRect = {
       x: this.x + forgiveness,
-      y: this.y - forgiveness,
+      y: this.y + forgiveness,
       w: this.w - forgiveness * 2,
-      h: this.h + forgiveness,
+      h: this.h - forgiveness,
     };
     if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
@@ -339,9 +339,9 @@ export class TransportPlatform extends Platform {
     const forgiveness = Math.round(GRID * 0.1);
     const forgivingRect = {
       x: this.x + forgiveness,
-      y: this.y - forgiveness,
+      y: this.y + forgiveness,
       w: this.w - forgiveness * 2,
-      h: this.h + forgiveness,
+      h: this.h - forgiveness,
     };
     if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
