@@ -218,8 +218,6 @@ export class Player {
     if (this.dashing) {
       // During dash: maintain velocity, no gravity
       this.y += this.vy;
-    } else if (this.grounded) {
-      this.vy = 0;
     } else {
       this.vy += GRAVITY * this.gravityMult;
       this.y += this.vy;
@@ -313,8 +311,6 @@ export class Player {
     const grav = BALL_GRAVITY * this.gravityMult * (this.mini ? 0.7 : 1);
     if (this.dashing) {
       this.y += this.vy;
-    } else if (this.grounded) {
-      this.vy = 0;
     } else {
       this.vy += grav;
       this.y += this.vy;

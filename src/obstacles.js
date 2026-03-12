@@ -121,9 +121,9 @@ export class Platform {
     const forgiveness = Math.round(GRID * 0.1);
     const forgivingRect = {
       x: this.x + forgiveness,
-      y: this.y + forgiveness,
+      y: this.y - forgiveness,
       w: this.w - forgiveness * 2,
-      h: this.h - forgiveness,
+      h: this.h + forgiveness,
     };
     if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
@@ -167,10 +167,6 @@ export class Platform {
     // Fallback: feet near top check for slow approaches
     const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
     if (feetNearTop && playerBottom <= platTop + 20) {
-      return { type: 'land', y: platTop };
-    }
-    // Walking onto platform from ground: feet at or above platform top = land
-    if (prevPlayerY + PLAYER_SIZE <= platTop + GRID * 0.5) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
@@ -343,9 +339,9 @@ export class TransportPlatform extends Platform {
     const forgiveness = Math.round(GRID * 0.1);
     const forgivingRect = {
       x: this.x + forgiveness,
-      y: this.y + forgiveness,
+      y: this.y - forgiveness,
       w: this.w - forgiveness * 2,
-      h: this.h - forgiveness,
+      h: this.h + forgiveness,
     };
     if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
@@ -389,10 +385,6 @@ export class TransportPlatform extends Platform {
     // Fallback: feet near top check for slow approaches
     const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
     if (feetNearTop && playerBottom <= platTop + 20) {
-      return { type: 'land', y: platTop };
-    }
-    // Walking onto platform from ground: feet at or above platform top = land
-    if (prevPlayerY + PLAYER_SIZE <= platTop + GRID * 0.5) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
