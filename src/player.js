@@ -97,10 +97,10 @@ export class Player {
       }
       return false;
     } else if (this.mode === MODE_BALL) {
-      // Ball: click flips gravity
+      // Ball: click flips gravity instantly (no jump impulse)
       if (this.grounded || this.coyoteCounter > 0) {
         this.gravityMult *= -1;
-        this.vy = JUMP_VEL * this.gravityMult * 0.5 * (this.mini ? 0.7 : 1);
+        this.vy = 0;
         this.grounded = false;
         this.onPlatform = false;
         this.coyoteCounter = 0;
