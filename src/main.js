@@ -393,8 +393,10 @@ class Game {
       this.editorStartCheckpoint = null;
       this.state = EDITOR;
     } else if (action === 'retry' || action === 'restart') {
-      this._restart();
+      Sound.stopDeath();
       Sound.stopMusic();
+      this._restart();
+      Sound.resumeAudio();
       Sound.playMusic(this.level.id);
     } else if (action === 'menu') {
       Sound.stopMusic();
@@ -664,13 +666,14 @@ class Game {
           return;
         }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
-        const result = obs.checkCollision(playerRect, this.player.prevY);
+        const result = obs.checkCollision(playerRect, this.player.prevY, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
             this._die();
             return;
           } else if (result.type === 'land') {
-            this.player.y = result.y - PLAYER_SIZE;
+            // Inverted gravity: land on bottom of platform (player top at platBottom)
+            this.player.y = this.player.gravityMult === -1 ? result.y : result.y - PLAYER_SIZE;
             this.player.vy = 0;
             this.player.grounded = true;
             this.player.onPlatform = true;

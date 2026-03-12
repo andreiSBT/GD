@@ -117,7 +117,7 @@ export class Platform {
     this.h = gh * GRID;
   }
 
-  checkCollision(playerRect, prevPlayerY) {
+  checkCollision(playerRect, prevPlayerY, gravityMult = 1) {
     const forgiveness = Math.round(GRID * 0.1);
     const forgivingRect = {
       x: this.x + forgiveness,
@@ -128,6 +128,30 @@ export class Platform {
     if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
+    const platBottom = this.y + this.h;
+
+    // Inverted gravity: player rises and lands on bottom of platform
+    if (gravityMult === -1) {
+      const playerTop = playerRect.y;
+      const wasBelow = prevPlayerY >= platBottom - forgiveness;
+      if (wasBelow) {
+        return { type: 'land', y: platBottom };
+      }
+      // Rising approach: player is moving up (y decreasing) and near platform bottom
+      const currentY = playerRect.y - 4;
+      const rising = currentY < prevPlayerY;
+      if (rising && currentY + PLAYER_SIZE >= platBottom - forgiveness) {
+        return { type: 'land', y: platBottom };
+      }
+      // Fallback: head near bottom check
+      const headNearBottom = Math.abs(playerTop - platBottom) < forgiveness + 4;
+      if (headNearBottom && playerTop >= platBottom - 20) {
+        return { type: 'land', y: platBottom };
+      }
+      return { type: 'death' };
+    }
+
+    // Normal gravity
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
     // If player was above last frame, always land
     if (wasAbove) {
@@ -311,7 +335,7 @@ export class TransportPlatform extends Platform {
     return currentFrame < this.unlockFrame;
   }
 
-  checkCollision(playerRect, prevPlayerY) {
+  checkCollision(playerRect, prevPlayerY, gravityMult = 1) {
     const forgiveness = Math.round(GRID * 0.1);
     const forgivingRect = {
       x: this.x + forgiveness,
@@ -322,6 +346,30 @@ export class TransportPlatform extends Platform {
     if (!rectsOverlap(playerRect, forgivingRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
+    const platBottom = this.y + this.h;
+
+    // Inverted gravity: player rises and lands on bottom of platform
+    if (gravityMult === -1) {
+      const playerTop = playerRect.y;
+      const wasBelow = prevPlayerY >= platBottom - forgiveness;
+      if (wasBelow) {
+        return { type: 'land', y: platBottom };
+      }
+      // Rising approach: player is moving up (y decreasing) and near platform bottom
+      const currentY = playerRect.y - 4;
+      const rising = currentY < prevPlayerY;
+      if (rising && currentY + PLAYER_SIZE >= platBottom - forgiveness) {
+        return { type: 'land', y: platBottom };
+      }
+      // Fallback: head near bottom check
+      const headNearBottom = Math.abs(playerTop - platBottom) < forgiveness + 4;
+      if (headNearBottom && playerTop >= platBottom - 20) {
+        return { type: 'land', y: platBottom };
+      }
+      return { type: 'death' };
+    }
+
+    // Normal gravity
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
     // If player was above last frame, always land
     if (wasAbove) {
