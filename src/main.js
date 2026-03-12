@@ -488,6 +488,11 @@ class Game {
 
   _restart() {
     Sound.stopDeath();
+    // Ensure music is playing (may have been paused during death/pause)
+    if (!Sound.isMusicPlaying() && this.level) {
+      Sound.resumeAudio();
+      Sound.playMusic(this.level.id);
+    }
     this.attempts++;
     this.coinsCollected = 0;
     this.newBestTriggered = false;
