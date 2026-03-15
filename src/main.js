@@ -671,7 +671,7 @@ class Game {
       const px = this.player.x + PLAYER_SIZE / 2; // player center x
       const stillAbove = px > platRef.x && px < platRef.x + platRef.w;
       if (stillAbove && this.player.grounded) {
-        // Snap to platform top, skip gravity drift
+        // Snap to platform top
         const snapY = this.player.gravityMult === -1 ? platRef.y + platRef.h : platRef.y - PLAYER_SIZE;
         this.player.y = snapY;
         this.player.vy = 0;
@@ -710,6 +710,7 @@ class Game {
           } else if (result.type === 'land') {
             // Inverted gravity: land on bottom of platform (player top at platBottom)
             this.player.y = this.player.gravityMult === -1 ? result.y : result.y - PLAYER_SIZE;
+            this.player.prevY = this.player.y; // prevent interpolation jitter on landing
             this.player.vy = 0;
             this.player.grounded = true;
             this.player.onPlatform = true;
