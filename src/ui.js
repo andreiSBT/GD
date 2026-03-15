@@ -1215,7 +1215,7 @@ export class UI {
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     this._drawMenuParticles(ctx);
 
-    const { tab, friends, requests, searchResults, searchQuery, messages, chatFriend, myLevels, shareTarget, notification } = friendsData;
+    const { tab, friends, requests, searchResults, searchQuery, messages, chatFriend, myLevels, shareTarget, notification, inputActive } = friendsData;
 
     // Title with glow
     ctx.save();
@@ -1308,9 +1308,9 @@ export class UI {
     } else if (tab === 'requests') {
       this._drawFriendRequests(ctx, requests, contentY);
     } else if (tab === 'search') {
-      this._drawFriendSearch(ctx, searchResults, searchQuery, contentY);
+      this._drawFriendSearch(ctx, searchResults, searchQuery, contentY, inputActive === 'search');
     } else if (tab === 'chat') {
-      this._drawFriendChat(ctx, messages, chatFriend, contentY);
+      this._drawFriendChat(ctx, messages, chatFriend, contentY, inputActive === 'chat');
     } else if (tab === 'share_select') {
       this._drawShareLevelSelect(ctx, myLevels, shareTarget, contentY);
     }
@@ -1431,36 +1431,39 @@ export class UI {
     }
   }
 
-  _drawFriendSearch(ctx, results, query, startY) {
-    // Search box with glow
+  _drawFriendSearch(ctx, results, query, startY, htmlInputActive) {
     const boxW = 400, boxH = 42;
     const boxX = (SCREEN_WIDTH - boxW) / 2;
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,200,255,0.2)';
-    ctx.shadowBlur = 10;
-    this._roundRect(ctx, boxX, startY, boxW, boxH, 10);
-    ctx.fillStyle = 'rgba(0,10,30,0.6)';
-    ctx.fill();
-    ctx.restore();
+    // Only draw the canvas search box when HTML input is NOT overlaying it
+    if (!htmlInputActive) {
+      // Search box with glow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,200,255,0.2)';
+      ctx.shadowBlur = 10;
+      this._roundRect(ctx, boxX, startY, boxW, boxH, 10);
+      ctx.fillStyle = 'rgba(0,10,30,0.6)';
+      ctx.fill();
+      ctx.restore();
 
-    this._roundRect(ctx, boxX, startY, boxW, boxH, 10);
-    ctx.strokeStyle = query ? 'rgba(0,200,255,0.5)' : 'rgba(0,200,255,0.25)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+      this._roundRect(ctx, boxX, startY, boxW, boxH, 10);
+      ctx.strokeStyle = query ? 'rgba(0,200,255,0.5)' : 'rgba(0,200,255,0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Search icon
+      ctx.fillStyle = 'rgba(0,200,255,0.5)';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('>', boxX + 12, startY + 27);
+
+      ctx.fillStyle = query ? '#FFF' : 'rgba(255,255,255,0.3)';
+      ctx.font = '15px monospace';
+      ctx.fillText(query || 'Type username to search...', boxX + 30, startY + 27);
+    }
 
     // Register search box as clickable to focus input
     this.buttons.push({ id: 'friends_focus_search', x: boxX, y: startY, w: boxW, h: boxH });
-
-    // Search icon
-    ctx.fillStyle = 'rgba(0,200,255,0.5)';
-    ctx.font = '16px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('>', boxX + 12, startY + 27);
-
-    ctx.fillStyle = query ? '#FFF' : 'rgba(255,255,255,0.3)';
-    ctx.font = '15px monospace';
-    ctx.fillText(query || 'Type username to search...', boxX + 30, startY + 27);
 
     // Search button
     this._drawButton(ctx, boxX + boxW + 12, startY, 100, boxH, 'SEARCH', 'friends_do_search', '#44CC44', 15);
@@ -1510,7 +1513,7 @@ export class UI {
     }
   }
 
-  _drawFriendChat(ctx, messages, chatFriend, startY) {
+  _drawFriendChat(ctx, messages, chatFriend, startY, htmlInputActive) {
     // Chat header with avatar
     if (chatFriend) {
       this._drawAvatar(ctx, SCREEN_WIDTH / 2 - 80, startY + 2, 14, chatFriend.name, '#00AAFF');
@@ -1602,31 +1605,33 @@ export class UI {
       }
     }
 
-    // Input area - message box with glow
+    // Input area - message box
     const inputY = SCREEN_HEIGHT - 65;
     const inputW = 390;
     const inputX = (SCREEN_WIDTH - inputW) / 2 - 60;
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,170,255,0.15)';
-    ctx.shadowBlur = 8;
-    this._roundRect(ctx, inputX, inputY, inputW, 40, 10);
-    ctx.fillStyle = 'rgba(0,10,30,0.5)';
-    ctx.fill();
-    ctx.restore();
-    this._roundRect(ctx, inputX, inputY, inputW, 40, 10);
-    ctx.strokeStyle = 'rgba(0,170,255,0.35)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+    if (!htmlInputActive) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,170,255,0.15)';
+      ctx.shadowBlur = 8;
+      this._roundRect(ctx, inputX, inputY, inputW, 40, 10);
+      ctx.fillStyle = 'rgba(0,10,30,0.5)';
+      ctx.fill();
+      ctx.restore();
+      this._roundRect(ctx, inputX, inputY, inputW, 40, 10);
+      ctx.strokeStyle = 'rgba(0,170,255,0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      const msgInput = chatFriend?._inputText || '';
+      ctx.fillStyle = msgInput ? '#FFF' : 'rgba(255,255,255,0.3)';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(msgInput || 'Type a message...', inputX + 14, inputY + 25);
+    }
 
     // Register chat input box as clickable
     this.buttons.push({ id: 'friends_focus_chat', x: inputX, y: inputY, w: inputW, h: 40 });
-
-    const msgInput = chatFriend?._inputText || '';
-    ctx.fillStyle = msgInput ? '#FFF' : 'rgba(255,255,255,0.3)';
-    ctx.font = '14px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(msgInput || 'Type a message...', inputX + 14, inputY + 25);
 
     // Send button
     this._drawButton(ctx, inputX + inputW + 10, inputY, 100, 40, 'SEND', 'friends_send_msg', '#00AA44', 15);

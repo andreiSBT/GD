@@ -79,6 +79,7 @@ class Game {
       shareTarget: null,
       notification: null,
       unreadCount: 0,
+      inputActive: null, // 'search' or 'chat' when HTML input is visible
     };
     this._friendsNotifTimer = null;
 
@@ -612,6 +613,7 @@ class Game {
       input.id = 'friends-input';
       input.type = 'text';
       input.autocomplete = 'off';
+      input.style.display = 'none';
       document.body.appendChild(input);
     }
 
@@ -642,9 +644,10 @@ class Game {
       input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 14px;background:rgba(0,10,30,0.95);color:#fff;border:1px solid rgba(0,170,255,0.35);border-radius:10px;font:${Math.round(14 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
     }
 
-    input.value = '';
+    input.value = mode === 'search' ? (this.friendsData.searchQuery || '') : '';
     input.placeholder = mode === 'search' ? 'Search username...' : 'Type a message...';
     input.style.display = 'block';
+    this.friendsData.inputActive = mode;
     input.focus();
 
     // Remove old listeners
@@ -674,6 +677,7 @@ class Game {
   }
 
   _hideFriendsInput() {
+    this.friendsData.inputActive = null;
     const input = document.getElementById('friends-input');
     if (input) {
       input.style.display = 'none';
