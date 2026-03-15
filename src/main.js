@@ -471,6 +471,10 @@ class Game {
       fd.tab = 'search';
       fd.searchResults = null;
       this._showFriendsInput('search');
+    } else if (action === 'friends_focus_search') {
+      this._showFriendsInput('search');
+    } else if (action === 'friends_focus_chat') {
+      this._showFriendsInput('chat');
     } else if (action === 'friends_do_search') {
       if (fd.searchQuery.trim()) {
         searchUsers(fd.searchQuery.trim()).then(r => { fd.searchResults = r; });
@@ -608,9 +612,36 @@ class Game {
       input.id = 'friends-input';
       input.type = 'text';
       input.autocomplete = 'off';
-      input.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:380px;max-width:90vw;padding:10px 14px;background:rgba(0,10,30,0.9);color:#fff;border:1px solid rgba(0,170,255,0.4);border-radius:8px;font:16px monospace;outline:none;z-index:100;';
       document.body.appendChild(input);
     }
+
+    // Position input over the canvas element based on mode
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = rect.width / SCREEN_WIDTH;
+    const scaleY = rect.height / SCREEN_HEIGHT;
+
+    if (mode === 'search') {
+      // Match the search box position from drawFriendSearch: contentY=145, boxW=400, centered
+      const boxW = 400, boxH = 42;
+      const boxX = (SCREEN_WIDTH - boxW) / 2;
+      const boxY = 145; // contentY
+      const screenLeft = rect.left + boxX * scaleX;
+      const screenTop = rect.top + boxY * scaleY;
+      const screenW = boxW * scaleX;
+      const screenH = boxH * scaleY;
+      input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 30px;background:transparent;color:#fff;border:none;border-radius:10px;font:${Math.round(15 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
+    } else {
+      // Chat input: match the input box from drawFriendChat
+      const inputW = 390;
+      const inputX = (SCREEN_WIDTH - inputW) / 2 - 60;
+      const inputY = SCREEN_HEIGHT - 65;
+      const screenLeft = rect.left + inputX * scaleX;
+      const screenTop = rect.top + inputY * scaleY;
+      const screenW = inputW * scaleX;
+      const screenH = 40 * scaleY;
+      input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 14px;background:transparent;color:#fff;border:none;border-radius:10px;font:${Math.round(14 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
+    }
+
     input.value = '';
     input.placeholder = mode === 'search' ? 'Search username...' : 'Type a message...';
     input.style.display = 'block';

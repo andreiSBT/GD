@@ -1449,6 +1449,9 @@ export class UI {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
+    // Register search box as clickable to focus input
+    this.buttons.push({ id: 'friends_focus_search', x: boxX, y: startY, w: boxW, h: boxH });
+
     // Search icon
     ctx.fillStyle = 'rgba(0,200,255,0.5)';
     ctx.font = '16px monospace';
@@ -1615,6 +1618,9 @@ export class UI {
     ctx.strokeStyle = 'rgba(0,170,255,0.35)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // Register chat input box as clickable
+    this.buttons.push({ id: 'friends_focus_chat', x: inputX, y: inputY, w: inputW, h: 40 });
 
     const msgInput = chatFriend?._inputText || '';
     ctx.fillStyle = msgInput ? '#FFF' : 'rgba(255,255,255,0.3)';
