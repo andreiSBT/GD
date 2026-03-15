@@ -1308,7 +1308,7 @@ export class UI {
     } else if (tab === 'requests') {
       this._drawFriendRequests(ctx, requests, contentY);
     } else if (tab === 'search') {
-      this._drawFriendSearch(ctx, searchResults, searchQuery, contentY, inputActive === 'search');
+      this._drawFriendSearch(ctx, searchResults, searchQuery, contentY, inputActive === 'search', friendsData.sentRequests);
     } else if (tab === 'chat') {
       this._drawFriendChat(ctx, messages, chatFriend, contentY, inputActive === 'chat');
     } else if (tab === 'share_select') {
@@ -1431,7 +1431,7 @@ export class UI {
     }
   }
 
-  _drawFriendSearch(ctx, results, query, startY, htmlInputActive) {
+  _drawFriendSearch(ctx, results, query, startY, htmlInputActive, sentRequests) {
     const boxW = 400, boxH = 42;
     const boxX = (SCREEN_WIDTH - boxW) / 2;
 
@@ -1506,7 +1506,7 @@ export class UI {
         ctx.textAlign = 'left';
         ctx.fillText(u.display_name, listX + 54, iy + itemH / 2 + 5);
 
-        if (u._requestSent) {
+        if (sentRequests && sentRequests.has(u.user_id)) {
           // Disabled grayed-out "SENT" label (no button, not clickable)
           const bx = listX + listW - 135, by = iy + 8, bw = 120, bh = 38;
           ctx.save();

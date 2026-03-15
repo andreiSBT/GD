@@ -80,6 +80,7 @@ class Game {
       notification: null,
       unreadCount: 0,
       inputActive: null, // 'search' or 'chat' when HTML input is visible
+      sentRequests: new Set(), // user_ids that already got a friend request
     };
     this._friendsNotifTimer = null;
 
@@ -483,11 +484,11 @@ class Game {
     } else if (action.startsWith('friends_add_')) {
       const idx = parseInt(action.split('_')[2]);
       const user = fd.searchResults?.[idx];
-      if (user && !user._requestSent) {
-        user._requestSent = true;
+      if (user && !fd.sentRequests.has(user.user_id)) {
+        fd.sentRequests.add(user.user_id);
         sendFriendRequest(user.user_id).then(res => {
-          if (res.error) {
-            user._requestSent = false;
+          if (res.error && res.error !== 'Already friends' && res.error !== 'Request already sent') {
+            fd.sentRequests.delete(user.user_id);
             this._showFriendsNotif(res.error, 'error');
           }
         });
