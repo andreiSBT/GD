@@ -119,13 +119,14 @@ export class Platform {
 
   checkCollision(playerRect, prevPlayerY, gravityMult = 1) {
     const forgiveness = Math.round(GRID * 0.1);
-    const forgivingRect = {
+    // Collision rect: narrow on x (side forgiveness), extended above for re-detection
+    const sideRect = {
       x: this.x + forgiveness,
-      y: this.y + forgiveness,
+      y: this.y - 6,
       w: this.w - forgiveness * 2,
-      h: this.h - forgiveness,
+      h: this.h + 6,
     };
-    if (!rectsOverlap(playerRect, forgivingRect)) return null;
+    if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
     const platBottom = this.y + this.h;
@@ -137,13 +138,11 @@ export class Platform {
       if (wasBelow) {
         return { type: 'land', y: platBottom };
       }
-      // Rising approach: player is moving up (y decreasing) and near platform bottom
       const currentY = playerRect.y - 4;
       const rising = currentY < prevPlayerY;
       if (rising && currentY + PLAYER_SIZE >= platBottom - forgiveness) {
         return { type: 'land', y: platBottom };
       }
-      // Fallback: head near bottom check
       const headNearBottom = Math.abs(playerTop - platBottom) < forgiveness + 4;
       if (headNearBottom && playerTop >= platBottom - 20) {
         return { type: 'land', y: platBottom };
@@ -151,22 +150,22 @@ export class Platform {
       return { type: 'death' };
     }
 
-    // Normal gravity
+    // Normal gravity: check if player is on top of platform
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
-    // If player was above last frame, always land
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
-    // Handle diagonal/arc approaches (e.g., after jump pad):
-    // If player is falling and their top is above/near the platform top, land
-    const currentY = playerRect.y - 4; // undo inset to get raw player y
+    // Falling onto platform
+    const currentY = playerRect.y - 4;
     const falling = currentY > prevPlayerY;
     if (falling && currentY <= platTop + forgiveness) {
       return { type: 'land', y: platTop };
     }
-    // Fallback: feet near top check for slow approaches
-    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
-    if (feetNearTop && playerBottom <= platTop + 20) {
+    // Already standing on platform (feet near top, within 6px above) - re-land
+    // Only if player was also near the top last frame (prevents side approach false land)
+    const prevBottom = prevPlayerY + PLAYER_SIZE;
+    if (playerBottom >= platTop - 6 && playerBottom <= platTop + forgiveness + 2 &&
+        prevBottom >= platTop - 6 && prevBottom <= platTop + forgiveness + 2) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
@@ -337,13 +336,14 @@ export class TransportPlatform extends Platform {
 
   checkCollision(playerRect, prevPlayerY, gravityMult = 1) {
     const forgiveness = Math.round(GRID * 0.1);
-    const forgivingRect = {
+    // Collision rect: narrow on x (side forgiveness), extended above for re-detection
+    const sideRect = {
       x: this.x + forgiveness,
-      y: this.y + forgiveness,
+      y: this.y - 6,
       w: this.w - forgiveness * 2,
-      h: this.h - forgiveness,
+      h: this.h + 6,
     };
-    if (!rectsOverlap(playerRect, forgivingRect)) return null;
+    if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
     const platTop = this.y;
     const platBottom = this.y + this.h;
@@ -355,13 +355,11 @@ export class TransportPlatform extends Platform {
       if (wasBelow) {
         return { type: 'land', y: platBottom };
       }
-      // Rising approach: player is moving up (y decreasing) and near platform bottom
       const currentY = playerRect.y - 4;
       const rising = currentY < prevPlayerY;
       if (rising && currentY + PLAYER_SIZE >= platBottom - forgiveness) {
         return { type: 'land', y: platBottom };
       }
-      // Fallback: head near bottom check
       const headNearBottom = Math.abs(playerTop - platBottom) < forgiveness + 4;
       if (headNearBottom && playerTop >= platBottom - 20) {
         return { type: 'land', y: platBottom };
@@ -369,22 +367,22 @@ export class TransportPlatform extends Platform {
       return { type: 'death' };
     }
 
-    // Normal gravity
+    // Normal gravity: check if player is on top of platform
     const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
-    // If player was above last frame, always land
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
-    // Handle diagonal/arc approaches (e.g., after jump pad):
-    // If player is falling and their top is above/near the platform top, land
-    const currentY = playerRect.y - 4; // undo inset to get raw player y
+    // Falling onto platform
+    const currentY = playerRect.y - 4;
     const falling = currentY > prevPlayerY;
     if (falling && currentY <= platTop + forgiveness) {
       return { type: 'land', y: platTop };
     }
-    // Fallback: feet near top check for slow approaches
-    const feetNearTop = Math.abs(playerBottom - platTop) < forgiveness + 4;
-    if (feetNearTop && playerBottom <= platTop + 20) {
+    // Already standing on platform (feet near top, within 6px above) - re-land
+    // Only if player was also near the top last frame (prevents side approach false land)
+    const prevBottom = prevPlayerY + PLAYER_SIZE;
+    if (playerBottom >= platTop - 6 && playerBottom <= platTop + forgiveness + 2 &&
+        prevBottom >= platTop - 6 && prevBottom <= platTop + forgiveness + 2) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
