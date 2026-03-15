@@ -1139,6 +1139,70 @@ export class UI {
   }
 
   // ====== FRIENDS SCREEN ======
+  _drawAvatar(ctx, x, y, radius, name, color) {
+    // Glow
+    ctx.save();
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.25;
+    ctx.fill();
+    ctx.restore();
+
+    // Circle bg
+    const agrad = ctx.createRadialGradient(x - radius * 0.3, y - radius * 0.3, 0, x, y, radius);
+    agrad.addColorStop(0, lightenColor(color, 40));
+    agrad.addColorStop(1, darkenColor(color, 30));
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = agrad;
+    ctx.fill();
+
+    // Border
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Letter
+    const letter = (name || '?')[0].toUpperCase();
+    ctx.fillStyle = '#FFF';
+    ctx.font = `bold ${Math.round(radius * 1.1)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(letter, x, y + 1);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  _drawEmptyState(ctx, icon, text, subtext, centerY) {
+    // Icon circle
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    ctx.beginPath();
+    ctx.arc(SCREEN_WIDTH / 2, centerY - 10, 36, 0, Math.PI * 2);
+    ctx.fillStyle = '#00AAFF';
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(icon, SCREEN_WIDTH / 2, centerY - 2);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '16px monospace';
+    ctx.fillText(text, SCREEN_WIDTH / 2, centerY + 40);
+
+    if (subtext) {
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = '13px monospace';
+      ctx.fillText(subtext, SCREEN_WIDTH / 2, centerY + 62);
+    }
+  }
+
   drawFriends(ctx, friendsData) {
     this.buttons = [];
 
@@ -1153,46 +1217,91 @@ export class UI {
 
     const { tab, friends, requests, searchResults, searchQuery, messages, chatFriend, myLevels, shareTarget, notification } = friendsData;
 
-    // Title
+    // Title with glow
     ctx.save();
     ctx.shadowColor = '#00AAFF';
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 25;
     ctx.fillStyle = '#00AAFF';
-    ctx.font = 'bold 40px monospace';
+    ctx.font = 'bold 42px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('FRIENDS', SCREEN_WIDTH / 2, 50);
+    ctx.fillText('FRIENDS', SCREEN_WIDTH / 2, 48);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    // Bright inner text
+    ctx.save();
+    ctx.fillStyle = '#FFF';
+    ctx.globalAlpha = 0.85;
+    ctx.font = 'bold 42px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('FRIENDS', SCREEN_WIDTH / 2, 48);
     ctx.restore();
 
-    // Tab buttons
+    // Decorative glow line under title
+    const lineW = 240;
+    ctx.save();
+    ctx.shadowColor = '#00AAFF';
+    ctx.shadowBlur = 8;
+    ctx.globalAlpha = 0.3;
+    ctx.fillStyle = '#00AAFF';
+    ctx.fillRect(SCREEN_WIDTH / 2 - lineW / 2, 66, lineW, 1.5);
+    ctx.restore();
+
+    // Friend count subtitle
+    if (tab === 'list' || tab === 'requests' || tab === 'search') {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${friends.length} friend${friends.length !== 1 ? 's' : ''} online`, SCREEN_WIDTH / 2, 80);
+    }
+
+    // Tab buttons with active indicator
     const tabs = [
-      { id: 'friends_tab_list', label: 'FRIENDS', color: tab === 'list' ? '#00AAFF' : '#334455' },
-      { id: 'friends_tab_requests', label: `REQUESTS${requests.length > 0 ? ' (' + requests.length + ')' : ''}`, color: tab === 'requests' ? '#FF8844' : '#334455' },
-      { id: 'friends_tab_search', label: 'SEARCH', color: tab === 'search' ? '#44CC44' : '#334455' },
+      { id: 'friends_tab_list', label: 'FRIENDS', color: tab === 'list' ? '#00AAFF' : '#334455', active: tab === 'list' },
+      { id: 'friends_tab_requests', label: `REQUESTS${requests.length > 0 ? ' (' + requests.length + ')' : ''}`, color: tab === 'requests' ? '#FF8844' : '#334455', active: tab === 'requests' },
+      { id: 'friends_tab_search', label: 'SEARCH', color: tab === 'search' ? '#44CC44' : '#334455', active: tab === 'search' },
     ];
     const tabW = 160, tabH = 36, tabGap = 12;
     const tabTotalW = tabs.length * tabW + (tabs.length - 1) * tabGap;
     const tabStartX = (SCREEN_WIDTH - tabTotalW) / 2;
     for (let i = 0; i < tabs.length; i++) {
       const tx = tabStartX + i * (tabW + tabGap);
-      this._drawButton(ctx, tx, 72, tabW, tabH, tabs[i].label, tabs[i].id, tabs[i].color, 14);
+      this._drawButton(ctx, tx, 92, tabW, tabH, tabs[i].label, tabs[i].id, tabs[i].color, 14);
+      // Active tab glow underline
+      if (tabs[i].active) {
+        ctx.save();
+        ctx.shadowColor = tabs[i].color;
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = tabs[i].color;
+        ctx.fillRect(tx + 20, 92 + tabH + 2, tabW - 40, 2);
+        ctx.restore();
+      }
     }
 
-    // Notification toast
+    // Notification toast with glow
     if (notification) {
       ctx.save();
-      ctx.globalAlpha = 0.9;
-      this._roundRect(ctx, SCREEN_WIDTH / 2 - 180, SCREEN_HEIGHT - 50, 360, 36, 8);
-      ctx.fillStyle = notification.type === 'error' ? '#882222' : '#226622';
+      const isErr = notification.type === 'error';
+      const toastColor = isErr ? '#FF4444' : '#44DD66';
+      ctx.shadowColor = toastColor;
+      ctx.shadowBlur = 12;
+      ctx.globalAlpha = 0.92;
+      this._roundRect(ctx, SCREEN_WIDTH / 2 - 200, SCREEN_HEIGHT - 55, 400, 40, 10);
+      ctx.fillStyle = isErr ? '#441111' : '#113322';
       ctx.fill();
+      this._roundRect(ctx, SCREEN_WIDTH / 2 - 200, SCREEN_HEIGHT - 55, 400, 40, 10);
+      ctx.strokeStyle = toastColor;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
       ctx.globalAlpha = 1;
       ctx.fillStyle = '#FFF';
-      ctx.font = '14px monospace';
+      ctx.font = 'bold 14px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(notification.text, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 28);
+      ctx.fillText(notification.text, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
       ctx.restore();
     }
 
-    const contentY = 125;
+    const contentY = 145;
 
     if (tab === 'list') {
       this._drawFriendsList(ctx, friends, contentY);
@@ -1213,246 +1322,377 @@ export class UI {
 
   _drawFriendsList(ctx, friends, startY) {
     if (friends.length === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('No friends yet. Search for players!', SCREEN_WIDTH / 2, startY + 80);
+      this._drawEmptyState(ctx, '?', 'No friends yet', 'Search for players to add them!', startY + 100);
       return;
     }
 
-    const itemH = 56, gap = 8;
-    const listW = 500;
+    const itemH = 60, gap = 8;
+    const listW = 520;
     const listX = (SCREEN_WIDTH - listW) / 2;
 
     for (let i = 0; i < friends.length && i < 7; i++) {
       const f = friends[i];
       const iy = startY + i * (itemH + gap);
+      const avatarColors = ['#00AAFF', '#FF6644', '#44CC88', '#CC44AA', '#FFAA22', '#8866FF', '#44DDDD'];
 
-      // Row bg
-      this._roundRect(ctx, listX, iy, listW, itemH, 10);
-      ctx.fillStyle = 'rgba(0,100,200,0.12)';
+      // Row bg with subtle glow
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,140,255,0.15)';
+      ctx.shadowBlur = 8;
+      this._roundRect(ctx, listX, iy, listW, itemH, 12);
+      ctx.fillStyle = 'rgba(0,60,120,0.18)';
       ctx.fill();
-      this._roundRect(ctx, listX, iy, listW, itemH, 10);
-      ctx.strokeStyle = 'rgba(0,170,255,0.2)';
+      ctx.restore();
+
+      // Border with gradient
+      this._roundRect(ctx, listX, iy, listW, itemH, 12);
+      ctx.strokeStyle = 'rgba(0,170,255,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      // Inner highlight
+      ctx.save();
+      ctx.globalAlpha = 0.04;
+      this._roundRect(ctx, listX, iy, listW, itemH / 2, 12);
+      ctx.fillStyle = '#FFF';
+      ctx.fill();
+      ctx.restore();
+
+      // Avatar
+      this._drawAvatar(ctx, listX + 32, iy + itemH / 2, 18, f.name, avatarColors[i % avatarColors.length]);
+
       // Name
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 18px monospace';
+      ctx.font = 'bold 17px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(f.name, listX + 16, iy + 34);
+      ctx.fillText(f.name, listX + 58, iy + itemH / 2 + 5);
 
       // Chat button
-      this._drawButton(ctx, listX + listW - 200, iy + 8, 85, 40, 'CHAT', `friends_chat_${i}`, '#0088CC', 14);
+      this._drawButton(ctx, listX + listW - 205, iy + 10, 90, 40, 'CHAT', `friends_chat_${i}`, '#0088CC', 14);
       // Remove button
-      this._drawButton(ctx, listX + listW - 100, iy + 8, 85, 40, 'REMOVE', `friends_remove_${i}`, '#663333', 14);
+      this._drawButton(ctx, listX + listW - 100, iy + 10, 85, 40, 'REMOVE', `friends_remove_${i}`, '#663333', 14);
     }
   }
 
   _drawFriendRequests(ctx, requests, startY) {
     if (requests.length === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('No pending requests.', SCREEN_WIDTH / 2, startY + 80);
+      this._drawEmptyState(ctx, '!', 'No pending requests', 'Friend requests will appear here', startY + 100);
       return;
     }
 
-    const itemH = 56, gap = 8;
-    const listW = 500;
+    // Section header
+    ctx.fillStyle = 'rgba(255,136,68,0.6)';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'left';
+    const listW = 520;
     const listX = (SCREEN_WIDTH - listW) / 2;
+    ctx.fillText(`${requests.length} PENDING REQUEST${requests.length !== 1 ? 'S' : ''}`, listX + 4, startY - 4);
+
+    const itemH = 60, gap = 8;
 
     for (let i = 0; i < requests.length && i < 7; i++) {
       const r = requests[i];
       const iy = startY + i * (itemH + gap);
 
-      // Row bg
-      this._roundRect(ctx, listX, iy, listW, itemH, 10);
-      ctx.fillStyle = 'rgba(200,100,0,0.12)';
+      // Row bg with warm glow
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,136,68,0.12)';
+      ctx.shadowBlur = 8;
+      this._roundRect(ctx, listX, iy, listW, itemH, 12);
+      ctx.fillStyle = 'rgba(120,60,0,0.15)';
       ctx.fill();
-      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.restore();
+
+      this._roundRect(ctx, listX, iy, listW, itemH, 12);
       ctx.strokeStyle = 'rgba(255,136,68,0.25)';
       ctx.lineWidth = 1;
       ctx.stroke();
 
+      // Inner highlight
+      ctx.save();
+      ctx.globalAlpha = 0.04;
+      this._roundRect(ctx, listX, iy, listW, itemH / 2, 12);
+      ctx.fillStyle = '#FFF';
+      ctx.fill();
+      ctx.restore();
+
+      // Avatar
+      this._drawAvatar(ctx, listX + 32, iy + itemH / 2, 18, r.name, '#FF8844');
+
       // Name
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 18px monospace';
+      ctx.font = 'bold 17px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(r.name, listX + 16, iy + 34);
+      ctx.fillText(r.name, listX + 58, iy + itemH / 2 + 5);
 
       // Accept / Decline
-      this._drawButton(ctx, listX + listW - 210, iy + 8, 95, 40, 'ACCEPT', `friends_accept_${i}`, '#22AA44', 14);
-      this._drawButton(ctx, listX + listW - 100, iy + 8, 85, 40, 'DECLINE', `friends_decline_${i}`, '#883333', 14);
+      this._drawButton(ctx, listX + listW - 215, iy + 10, 100, 40, 'ACCEPT', `friends_accept_${i}`, '#22AA44', 14);
+      this._drawButton(ctx, listX + listW - 100, iy + 10, 85, 40, 'DECLINE', `friends_decline_${i}`, '#883333', 14);
     }
   }
 
   _drawFriendSearch(ctx, results, query, startY) {
-    // Search box visual
-    const boxW = 400, boxH = 40;
+    // Search box with glow
+    const boxW = 400, boxH = 42;
     const boxX = (SCREEN_WIDTH - boxW) / 2;
 
-    this._roundRect(ctx, boxX, startY, boxW, boxH, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,200,255,0.2)';
+    ctx.shadowBlur = 10;
+    this._roundRect(ctx, boxX, startY, boxW, boxH, 10);
+    ctx.fillStyle = 'rgba(0,10,30,0.6)';
     ctx.fill();
-    this._roundRect(ctx, boxX, startY, boxW, boxH, 8);
-    ctx.strokeStyle = 'rgba(0,200,255,0.4)';
-    ctx.lineWidth = 1;
+    ctx.restore();
+
+    this._roundRect(ctx, boxX, startY, boxW, boxH, 10);
+    ctx.strokeStyle = query ? 'rgba(0,200,255,0.5)' : 'rgba(0,200,255,0.25)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    ctx.fillStyle = query ? '#FFF' : 'rgba(255,255,255,0.3)';
+    // Search icon
+    ctx.fillStyle = 'rgba(0,200,255,0.5)';
     ctx.font = '16px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(query || 'Type username to search...', boxX + 12, startY + 26);
+    ctx.fillText('>', boxX + 12, startY + 27);
+
+    ctx.fillStyle = query ? '#FFF' : 'rgba(255,255,255,0.3)';
+    ctx.font = '15px monospace';
+    ctx.fillText(query || 'Type username to search...', boxX + 30, startY + 27);
 
     // Search button
     this._drawButton(ctx, boxX + boxW + 12, startY, 100, boxH, 'SEARCH', 'friends_do_search', '#44CC44', 15);
 
     // Results
-    const resultY = startY + 60;
+    const resultY = startY + 65;
     if (results && results.length > 0) {
-      const itemH = 50, gap = 6;
-      const listW = 500;
+      // Results header
+      ctx.fillStyle = 'rgba(68,204,68,0.5)';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'left';
+      const listW = 520;
       const listX = (SCREEN_WIDTH - listW) / 2;
+      ctx.fillText(`${results.length} RESULT${results.length !== 1 ? 'S' : ''} FOUND`, listX + 4, resultY - 6);
+
+      const itemH = 54, gap = 6;
 
       for (let i = 0; i < results.length && i < 8; i++) {
         const u = results[i];
         const iy = resultY + i * (itemH + gap);
 
-        this._roundRect(ctx, listX, iy, listW, itemH, 8);
-        ctx.fillStyle = 'rgba(0,200,0,0.08)';
+        ctx.save();
+        ctx.shadowColor = 'rgba(68,204,68,0.08)';
+        ctx.shadowBlur = 6;
+        this._roundRect(ctx, listX, iy, listW, itemH, 10);
+        ctx.fillStyle = 'rgba(0,80,40,0.12)';
         ctx.fill();
+        ctx.restore();
+
+        this._roundRect(ctx, listX, iy, listW, itemH, 10);
+        ctx.strokeStyle = 'rgba(68,204,68,0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Avatar
+        this._drawAvatar(ctx, listX + 30, iy + itemH / 2, 16, u.display_name, '#44CC88');
 
         ctx.fillStyle = '#FFF';
-        ctx.font = '16px monospace';
+        ctx.font = '15px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(u.display_name, listX + 16, iy + 32);
+        ctx.fillText(u.display_name, listX + 54, iy + itemH / 2 + 5);
 
-        this._drawButton(ctx, listX + listW - 130, iy + 6, 115, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
+        this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
       }
     } else if (results && results.length === 0 && query) {
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '16px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('No players found.', SCREEN_WIDTH / 2, resultY + 40);
+      this._drawEmptyState(ctx, '?', 'No players found', 'Try a different username', resultY + 60);
     }
   }
 
   _drawFriendChat(ctx, messages, chatFriend, startY) {
-    // Chat header
+    // Chat header with avatar
+    if (chatFriend) {
+      this._drawAvatar(ctx, SCREEN_WIDTH / 2 - 80, startY + 2, 14, chatFriend.name, '#00AAFF');
+    }
+    ctx.save();
+    ctx.shadowColor = '#00AAFF';
+    ctx.shadowBlur = 10;
     ctx.fillStyle = '#00AAFF';
-    ctx.font = 'bold 22px monospace';
+    ctx.font = 'bold 20px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(chatFriend ? chatFriend.name : 'Chat', SCREEN_WIDTH / 2, startY + 5);
+    ctx.fillText(chatFriend ? chatFriend.name : 'Chat', SCREEN_WIDTH / 2 - 50 + (chatFriend ? 0 : 50), startY + 8);
+    ctx.restore();
 
     // Share level button
-    this._drawButton(ctx, SCREEN_WIDTH - 200, startY - 15, 140, 34, 'SHARE LEVEL', 'friends_share_level', '#CC6600', 13);
+    this._drawButton(ctx, SCREEN_WIDTH - 200, startY - 12, 140, 34, 'SHARE LEVEL', 'friends_share_level', '#CC6600', 13);
 
     // Message area
-    const msgY = startY + 25;
+    const msgY = startY + 28;
     const msgH = SCREEN_HEIGHT - msgY - 100;
-    const msgW = 550;
+    const msgW = 560;
     const msgX = (SCREEN_WIDTH - msgW) / 2;
 
-    this._roundRect(ctx, msgX, msgY, msgW, msgH, 10);
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    // Message area bg with border
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,100,200,0.1)';
+    ctx.shadowBlur = 12;
+    this._roundRect(ctx, msgX, msgY, msgW, msgH, 12);
+    ctx.fillStyle = 'rgba(0,8,20,0.4)';
     ctx.fill();
+    ctx.restore();
+    this._roundRect(ctx, msgX, msgY, msgW, msgH, 12);
+    ctx.strokeStyle = 'rgba(0,100,200,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
     if (messages.length === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '14px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('No messages yet. Say hello!', SCREEN_WIDTH / 2, msgY + msgH / 2);
+      this._drawEmptyState(ctx, '~', 'No messages yet', 'Say hello!', msgY + msgH / 2 - 10);
     } else {
-      // Draw messages from bottom up
-      const lineH = 32;
-      const maxVisible = Math.floor(msgH / lineH);
+      // Draw messages with chat bubbles
+      const lineH = 38;
+      const maxVisible = Math.floor((msgH - 16) / lineH);
       const visibleMsgs = messages.slice(-maxVisible);
       for (let i = 0; i < visibleMsgs.length; i++) {
         const m = visibleMsgs[i];
         const my = msgY + 10 + i * lineH;
 
         if (m.type === 'level') {
-          // Level share message
-          ctx.fillStyle = m.mine ? 'rgba(0,150,255,0.15)' : 'rgba(255,136,0,0.15)';
-          this._roundRect(ctx, msgX + 8, my, msgW - 16, lineH - 4, 6);
+          // Level share bubble
+          const bubbleW = msgW - 40;
+          const bubbleX = msgX + 20;
+          ctx.save();
+          ctx.shadowColor = m.mine ? 'rgba(0,120,255,0.15)' : 'rgba(255,136,0,0.15)';
+          ctx.shadowBlur = 6;
+          this._roundRect(ctx, bubbleX, my, bubbleW, lineH - 4, 8);
+          ctx.fillStyle = m.mine ? 'rgba(0,80,180,0.2)' : 'rgba(180,80,0,0.2)';
           ctx.fill();
+          ctx.restore();
+          this._roundRect(ctx, bubbleX, my, bubbleW, lineH - 4, 8);
+          ctx.strokeStyle = m.mine ? 'rgba(0,150,255,0.2)' : 'rgba(255,136,0,0.2)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
           ctx.fillStyle = '#FFD700';
           ctx.font = 'bold 13px monospace';
           ctx.textAlign = m.mine ? 'right' : 'left';
-          const lx = m.mine ? msgX + msgW - 140 : msgX + 16;
-          ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 20);
-          // Play button
-          this._drawButton(ctx, m.mine ? msgX + msgW - 120 : msgX + msgW - 140, my + 2, 110, 26, 'PLAY', `friends_play_level_${i}`, '#00AA44', 12);
+          const lx = m.mine ? bubbleX + bubbleW - 130 : bubbleX + 10;
+          ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 22);
+          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 118 : bubbleX + bubbleW - 128, my + 4, 110, 26, 'PLAY', `friends_play_level_${i}`, '#00AA44', 12);
         } else {
-          ctx.fillStyle = m.mine ? '#66BBFF' : '#AADDAA';
-          ctx.font = '14px monospace';
-          ctx.textAlign = m.mine ? 'right' : 'left';
-          const tx = m.mine ? msgX + msgW - 16 : msgX + 16;
-          const prefix = m.mine ? '' : `${chatFriend?.name || '?'}: `;
-          ctx.fillText(prefix + m.content, tx, my + 20);
+          // Chat bubble
+          const text = (m.mine ? '' : `${chatFriend?.name || '?'}: `) + m.content;
+          ctx.font = '13px monospace';
+          const textW = Math.min(ctx.measureText(text).width + 24, msgW - 60);
+          const bubbleX = m.mine ? msgX + msgW - textW - 16 : msgX + 16;
+
+          this._roundRect(ctx, bubbleX, my, textW, lineH - 8, 8);
+          ctx.fillStyle = m.mine ? 'rgba(0,80,180,0.25)' : 'rgba(60,120,60,0.2)';
+          ctx.fill();
+          this._roundRect(ctx, bubbleX, my, textW, lineH - 8, 8);
+          ctx.strokeStyle = m.mine ? 'rgba(0,150,255,0.15)' : 'rgba(100,200,100,0.15)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = m.mine ? '#88CCFF' : '#AADDAA';
+          ctx.font = '13px monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(text, bubbleX + 10, my + 20);
         }
       }
     }
 
-    // Input area - message box
+    // Input area - message box with glow
     const inputY = SCREEN_HEIGHT - 65;
-    const inputW = 380;
+    const inputW = 390;
     const inputX = (SCREEN_WIDTH - inputW) / 2 - 60;
 
-    this._roundRect(ctx, inputX, inputY, inputW, 38, 8);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,170,255,0.15)';
+    ctx.shadowBlur = 8;
+    this._roundRect(ctx, inputX, inputY, inputW, 40, 10);
+    ctx.fillStyle = 'rgba(0,10,30,0.5)';
     ctx.fill();
-    this._roundRect(ctx, inputX, inputY, inputW, 38, 8);
-    ctx.strokeStyle = 'rgba(0,170,255,0.3)';
-    ctx.lineWidth = 1;
+    ctx.restore();
+    this._roundRect(ctx, inputX, inputY, inputW, 40, 10);
+    ctx.strokeStyle = 'rgba(0,170,255,0.35)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
     const msgInput = chatFriend?._inputText || '';
     ctx.fillStyle = msgInput ? '#FFF' : 'rgba(255,255,255,0.3)';
     ctx.font = '14px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(msgInput || 'Type a message...', inputX + 10, inputY + 24);
+    ctx.fillText(msgInput || 'Type a message...', inputX + 14, inputY + 25);
 
     // Send button
-    this._drawButton(ctx, inputX + inputW + 10, inputY, 100, 38, 'SEND', 'friends_send_msg', '#00AA44', 15);
+    this._drawButton(ctx, inputX + inputW + 10, inputY, 100, 40, 'SEND', 'friends_send_msg', '#00AA44', 15);
   }
 
   _drawShareLevelSelect(ctx, myLevels, shareTarget, startY) {
+    // Header with glow
+    ctx.save();
+    ctx.shadowColor = '#FF8844';
+    ctx.shadowBlur = 10;
     ctx.fillStyle = '#FF8844';
-    ctx.font = 'bold 22px monospace';
+    ctx.font = 'bold 20px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(`Share a level with ${shareTarget?.name || '...'}`, SCREEN_WIDTH / 2, startY + 5);
+    ctx.restore();
+
+    // Decorative line
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#FF8844';
+    ctx.fillRect(SCREEN_WIDTH / 2 - 100, startY + 16, 200, 1);
+    ctx.restore();
 
     if (!myLevels || myLevels.length === 0) {
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '16px monospace';
-      ctx.fillText('No saved levels to share.', SCREEN_WIDTH / 2, startY + 80);
+      this._drawEmptyState(ctx, '~', 'No saved levels to share', 'Create levels in the editor first', startY + 100);
       return;
     }
 
-    const itemH = 50, gap = 8;
-    const listW = 450;
+    const itemH = 54, gap = 8;
+    const listW = 480;
     const listX = (SCREEN_WIDTH - listW) / 2;
 
     for (let i = 0; i < myLevels.length && i < 7; i++) {
       const lv = myLevels[i];
       const iy = startY + 30 + i * (itemH + gap);
 
-      this._roundRect(ctx, listX, iy, listW, itemH, 8);
-      ctx.fillStyle = 'rgba(200,100,0,0.12)';
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,136,68,0.1)';
+      ctx.shadowBlur = 6;
+      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.fillStyle = 'rgba(120,60,0,0.15)';
       ctx.fill();
+      ctx.restore();
+
+      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.strokeStyle = 'rgba(255,136,68,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Level icon
+      ctx.save();
+      ctx.fillStyle = 'rgba(255,136,68,0.3)';
+      ctx.beginPath();
+      ctx.arc(listX + 28, iy + itemH / 2, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FF8844';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${i + 1}`, listX + 28, iy + itemH / 2);
+      ctx.textBaseline = 'alphabetic';
+      ctx.restore();
 
       ctx.fillStyle = '#FFF';
-      ctx.font = '16px monospace';
+      ctx.font = 'bold 15px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(lv.name, listX + 16, iy + 22);
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = '12px monospace';
-      ctx.fillText(`${lv.objectCount} objects`, listX + 16, iy + 40);
+      ctx.fillText(lv.name, listX + 52, iy + 22);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '11px monospace';
+      ctx.fillText(`${lv.objectCount} objects`, listX + 52, iy + 40);
 
-      this._drawButton(ctx, listX + listW - 110, iy + 6, 95, 38, 'SEND', `friends_send_level_${i}`, '#CC6600', 14);
+      this._drawButton(ctx, listX + listW - 110, iy + 8, 95, 38, 'SEND', `friends_send_level_${i}`, '#CC6600', 14);
     }
   }
 }
