@@ -1507,11 +1507,21 @@ export class UI {
         ctx.fillText(u.display_name, listX + 54, iy + itemH / 2 + 5);
 
         if (u._requestSent) {
-          // Disabled "SENT" button
+          // Disabled grayed-out "SENT" label (no button, not clickable)
+          const bx = listX + listW - 135, by = iy + 8, bw = 120, bh = 38;
           ctx.save();
-          ctx.globalAlpha = 0.35;
-          this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'SENT', `friends_add_sent`, '#334455', 13);
+          ctx.globalAlpha = 0.3;
+          this._roundRect(ctx, bx, by, bw, bh, 10);
+          ctx.fillStyle = '#334455';
+          ctx.fill();
+          ctx.globalAlpha = 0.5;
+          ctx.fillStyle = '#FFF';
+          ctx.font = 'bold 13px monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('SENT', bx + bw / 2, by + bh / 2);
           ctx.restore();
+          ctx.textBaseline = 'alphabetic';
         } else {
           this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
         }
