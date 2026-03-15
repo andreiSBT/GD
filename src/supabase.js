@@ -205,7 +205,7 @@ export async function signOut() {
   const client = getClient();
   if (!client) return;
 
-  await client.auth.signOut();
+  await client.auth.signOut({ scope: 'local' });
   currentAuthUser = null;
   if (onAuthChangeCallback) onAuthChangeCallback(null);
 }
