@@ -134,6 +134,10 @@ export class UI {
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'STATS', 'stats', '#C8A000');
 
+    // Friends button
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'FRIENDS', 'friends', '#0088CC');
+
     // Account button (top right)
     const username = getUsername();
     if (username) {
@@ -1132,6 +1136,324 @@ export class UI {
     ctx.textBaseline = 'alphabetic';
 
     this.buttons.push({ id, x, y, w, h });
+  }
+
+  // ====== FRIENDS SCREEN ======
+  drawFriends(ctx, friendsData) {
+    this.buttons = [];
+
+    // Background
+    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    grad.addColorStop(0, '#000818');
+    grad.addColorStop(0.5, '#001030');
+    grad.addColorStop(1, '#001848');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawMenuParticles(ctx);
+
+    const { tab, friends, requests, searchResults, searchQuery, messages, chatFriend, myLevels, shareTarget, notification } = friendsData;
+
+    // Title
+    ctx.save();
+    ctx.shadowColor = '#00AAFF';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#00AAFF';
+    ctx.font = 'bold 40px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('FRIENDS', SCREEN_WIDTH / 2, 50);
+    ctx.restore();
+
+    // Tab buttons
+    const tabs = [
+      { id: 'friends_tab_list', label: 'FRIENDS', color: tab === 'list' ? '#00AAFF' : '#334455' },
+      { id: 'friends_tab_requests', label: `REQUESTS${requests.length > 0 ? ' (' + requests.length + ')' : ''}`, color: tab === 'requests' ? '#FF8844' : '#334455' },
+      { id: 'friends_tab_search', label: 'SEARCH', color: tab === 'search' ? '#44CC44' : '#334455' },
+    ];
+    const tabW = 160, tabH = 36, tabGap = 12;
+    const tabTotalW = tabs.length * tabW + (tabs.length - 1) * tabGap;
+    const tabStartX = (SCREEN_WIDTH - tabTotalW) / 2;
+    for (let i = 0; i < tabs.length; i++) {
+      const tx = tabStartX + i * (tabW + tabGap);
+      this._drawButton(ctx, tx, 72, tabW, tabH, tabs[i].label, tabs[i].id, tabs[i].color, 14);
+    }
+
+    // Notification toast
+    if (notification) {
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      this._roundRect(ctx, SCREEN_WIDTH / 2 - 180, SCREEN_HEIGHT - 50, 360, 36, 8);
+      ctx.fillStyle = notification.type === 'error' ? '#882222' : '#226622';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#FFF';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(notification.text, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 28);
+      ctx.restore();
+    }
+
+    const contentY = 125;
+
+    if (tab === 'list') {
+      this._drawFriendsList(ctx, friends, contentY);
+    } else if (tab === 'requests') {
+      this._drawFriendRequests(ctx, requests, contentY);
+    } else if (tab === 'search') {
+      this._drawFriendSearch(ctx, searchResults, searchQuery, contentY);
+    } else if (tab === 'chat') {
+      this._drawFriendChat(ctx, messages, chatFriend, contentY);
+    } else if (tab === 'share_select') {
+      this._drawShareLevelSelect(ctx, myLevels, shareTarget, contentY);
+    }
+
+    // Back button
+    const backTarget = (tab === 'chat' || tab === 'share_select') ? 'friends_back_to_list' : 'friends_back';
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - 60, 130, 44, 'BACK', backTarget, '#445566', 20);
+  }
+
+  _drawFriendsList(ctx, friends, startY) {
+    if (friends.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No friends yet. Search for players!', SCREEN_WIDTH / 2, startY + 80);
+      return;
+    }
+
+    const itemH = 56, gap = 8;
+    const listW = 500;
+    const listX = (SCREEN_WIDTH - listW) / 2;
+
+    for (let i = 0; i < friends.length && i < 7; i++) {
+      const f = friends[i];
+      const iy = startY + i * (itemH + gap);
+
+      // Row bg
+      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.fillStyle = 'rgba(0,100,200,0.12)';
+      ctx.fill();
+      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.strokeStyle = 'rgba(0,170,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Name
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(f.name, listX + 16, iy + 34);
+
+      // Chat button
+      this._drawButton(ctx, listX + listW - 200, iy + 8, 85, 40, 'CHAT', `friends_chat_${i}`, '#0088CC', 14);
+      // Remove button
+      this._drawButton(ctx, listX + listW - 100, iy + 8, 85, 40, 'REMOVE', `friends_remove_${i}`, '#663333', 14);
+    }
+  }
+
+  _drawFriendRequests(ctx, requests, startY) {
+    if (requests.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No pending requests.', SCREEN_WIDTH / 2, startY + 80);
+      return;
+    }
+
+    const itemH = 56, gap = 8;
+    const listW = 500;
+    const listX = (SCREEN_WIDTH - listW) / 2;
+
+    for (let i = 0; i < requests.length && i < 7; i++) {
+      const r = requests[i];
+      const iy = startY + i * (itemH + gap);
+
+      // Row bg
+      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.fillStyle = 'rgba(200,100,0,0.12)';
+      ctx.fill();
+      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      ctx.strokeStyle = 'rgba(255,136,68,0.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Name
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(r.name, listX + 16, iy + 34);
+
+      // Accept / Decline
+      this._drawButton(ctx, listX + listW - 210, iy + 8, 95, 40, 'ACCEPT', `friends_accept_${i}`, '#22AA44', 14);
+      this._drawButton(ctx, listX + listW - 100, iy + 8, 85, 40, 'DECLINE', `friends_decline_${i}`, '#883333', 14);
+    }
+  }
+
+  _drawFriendSearch(ctx, results, query, startY) {
+    // Search box visual
+    const boxW = 400, boxH = 40;
+    const boxX = (SCREEN_WIDTH - boxW) / 2;
+
+    this._roundRect(ctx, boxX, startY, boxW, boxH, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+    this._roundRect(ctx, boxX, startY, boxW, boxH, 8);
+    ctx.strokeStyle = 'rgba(0,200,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = query ? '#FFF' : 'rgba(255,255,255,0.3)';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(query || 'Type username to search...', boxX + 12, startY + 26);
+
+    // Search button
+    this._drawButton(ctx, boxX + boxW + 12, startY, 100, boxH, 'SEARCH', 'friends_do_search', '#44CC44', 15);
+
+    // Results
+    const resultY = startY + 60;
+    if (results && results.length > 0) {
+      const itemH = 50, gap = 6;
+      const listW = 500;
+      const listX = (SCREEN_WIDTH - listW) / 2;
+
+      for (let i = 0; i < results.length && i < 8; i++) {
+        const u = results[i];
+        const iy = resultY + i * (itemH + gap);
+
+        this._roundRect(ctx, listX, iy, listW, itemH, 8);
+        ctx.fillStyle = 'rgba(0,200,0,0.08)';
+        ctx.fill();
+
+        ctx.fillStyle = '#FFF';
+        ctx.font = '16px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(u.display_name, listX + 16, iy + 32);
+
+        this._drawButton(ctx, listX + listW - 130, iy + 6, 115, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
+      }
+    } else if (results && results.length === 0 && query) {
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No players found.', SCREEN_WIDTH / 2, resultY + 40);
+    }
+  }
+
+  _drawFriendChat(ctx, messages, chatFriend, startY) {
+    // Chat header
+    ctx.fillStyle = '#00AAFF';
+    ctx.font = 'bold 22px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(chatFriend ? chatFriend.name : 'Chat', SCREEN_WIDTH / 2, startY + 5);
+
+    // Share level button
+    this._drawButton(ctx, SCREEN_WIDTH - 200, startY - 15, 140, 34, 'SHARE LEVEL', 'friends_share_level', '#CC6600', 13);
+
+    // Message area
+    const msgY = startY + 25;
+    const msgH = SCREEN_HEIGHT - msgY - 100;
+    const msgW = 550;
+    const msgX = (SCREEN_WIDTH - msgW) / 2;
+
+    this._roundRect(ctx, msgX, msgY, msgW, msgH, 10);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.fill();
+
+    if (messages.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No messages yet. Say hello!', SCREEN_WIDTH / 2, msgY + msgH / 2);
+    } else {
+      // Draw messages from bottom up
+      const lineH = 32;
+      const maxVisible = Math.floor(msgH / lineH);
+      const visibleMsgs = messages.slice(-maxVisible);
+      for (let i = 0; i < visibleMsgs.length; i++) {
+        const m = visibleMsgs[i];
+        const my = msgY + 10 + i * lineH;
+
+        if (m.type === 'level') {
+          // Level share message
+          ctx.fillStyle = m.mine ? 'rgba(0,150,255,0.15)' : 'rgba(255,136,0,0.15)';
+          this._roundRect(ctx, msgX + 8, my, msgW - 16, lineH - 4, 6);
+          ctx.fill();
+          ctx.fillStyle = '#FFD700';
+          ctx.font = 'bold 13px monospace';
+          ctx.textAlign = m.mine ? 'right' : 'left';
+          const lx = m.mine ? msgX + msgW - 140 : msgX + 16;
+          ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 20);
+          // Play button
+          this._drawButton(ctx, m.mine ? msgX + msgW - 120 : msgX + msgW - 140, my + 2, 110, 26, 'PLAY', `friends_play_level_${i}`, '#00AA44', 12);
+        } else {
+          ctx.fillStyle = m.mine ? '#66BBFF' : '#AADDAA';
+          ctx.font = '14px monospace';
+          ctx.textAlign = m.mine ? 'right' : 'left';
+          const tx = m.mine ? msgX + msgW - 16 : msgX + 16;
+          const prefix = m.mine ? '' : `${chatFriend?.name || '?'}: `;
+          ctx.fillText(prefix + m.content, tx, my + 20);
+        }
+      }
+    }
+
+    // Input area - message box
+    const inputY = SCREEN_HEIGHT - 65;
+    const inputW = 380;
+    const inputX = (SCREEN_WIDTH - inputW) / 2 - 60;
+
+    this._roundRect(ctx, inputX, inputY, inputW, 38, 8);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+    this._roundRect(ctx, inputX, inputY, inputW, 38, 8);
+    ctx.strokeStyle = 'rgba(0,170,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    const msgInput = chatFriend?._inputText || '';
+    ctx.fillStyle = msgInput ? '#FFF' : 'rgba(255,255,255,0.3)';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(msgInput || 'Type a message...', inputX + 10, inputY + 24);
+
+    // Send button
+    this._drawButton(ctx, inputX + inputW + 10, inputY, 100, 38, 'SEND', 'friends_send_msg', '#00AA44', 15);
+  }
+
+  _drawShareLevelSelect(ctx, myLevels, shareTarget, startY) {
+    ctx.fillStyle = '#FF8844';
+    ctx.font = 'bold 22px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Share a level with ${shareTarget?.name || '...'}`, SCREEN_WIDTH / 2, startY + 5);
+
+    if (!myLevels || myLevels.length === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '16px monospace';
+      ctx.fillText('No saved levels to share.', SCREEN_WIDTH / 2, startY + 80);
+      return;
+    }
+
+    const itemH = 50, gap = 8;
+    const listW = 450;
+    const listX = (SCREEN_WIDTH - listW) / 2;
+
+    for (let i = 0; i < myLevels.length && i < 7; i++) {
+      const lv = myLevels[i];
+      const iy = startY + 30 + i * (itemH + gap);
+
+      this._roundRect(ctx, listX, iy, listW, itemH, 8);
+      ctx.fillStyle = 'rgba(200,100,0,0.12)';
+      ctx.fill();
+
+      ctx.fillStyle = '#FFF';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(lv.name, listX + 16, iy + 22);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = '12px monospace';
+      ctx.fillText(`${lv.objectCount} objects`, listX + 16, iy + 40);
+
+      this._drawButton(ctx, listX + listW - 110, iy + 6, 95, 38, 'SEND', `friends_send_level_${i}`, '#CC6600', 14);
+    }
   }
 }
 

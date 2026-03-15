@@ -40,14 +40,52 @@
  *      UNIQUE(user_id, slot_id)
  *    );
  *
+ *    -- Profiles table (for friend search)
+ *    CREATE TABLE profiles (
+ *      user_id uuid PRIMARY KEY,
+ *      username text NOT NULL,
+ *      display_name text NOT NULL,
+ *      updated_at timestamptz DEFAULT now()
+ *    );
+ *    CREATE INDEX idx_profiles_username ON profiles(username);
+ *
+ *    -- Friends table
+ *    CREATE TABLE friends (
+ *      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ *      user_id uuid NOT NULL,
+ *      friend_id uuid NOT NULL,
+ *      status text NOT NULL DEFAULT 'pending',
+ *      created_at timestamptz DEFAULT now(),
+ *      UNIQUE(user_id, friend_id)
+ *    );
+ *
+ *    -- Friend messages table
+ *    CREATE TABLE friend_messages (
+ *      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ *      sender_id uuid NOT NULL,
+ *      receiver_id uuid NOT NULL,
+ *      content text NOT NULL DEFAULT '',
+ *      message_type text NOT NULL DEFAULT 'text',
+ *      level_data jsonb,
+ *      read bool DEFAULT false,
+ *      created_at timestamptz DEFAULT now()
+ *    );
+ *    CREATE INDEX idx_messages_receiver ON friend_messages(receiver_id, read);
+ *
  *    -- Enable RLS and add policies for all tables
  *    ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
  *    ALTER TABLE customizations ENABLE ROW LEVEL SECURITY;
  *    ALTER TABLE editor_levels ENABLE ROW LEVEL SECURITY;
+ *    ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ *    ALTER TABLE friends ENABLE ROW LEVEL SECURITY;
+ *    ALTER TABLE friend_messages ENABLE ROW LEVEL SECURITY;
  *
  *    CREATE POLICY "Allow all" ON progress FOR ALL USING (true) WITH CHECK (true);
  *    CREATE POLICY "Allow all" ON customizations FOR ALL USING (true) WITH CHECK (true);
  *    CREATE POLICY "Allow all" ON editor_levels FOR ALL USING (true) WITH CHECK (true);
+ *    CREATE POLICY "Allow all" ON profiles FOR ALL USING (true) WITH CHECK (true);
+ *    CREATE POLICY "Allow all" ON friends FOR ALL USING (true) WITH CHECK (true);
+ *    CREATE POLICY "Allow all" ON friend_messages FOR ALL USING (true) WITH CHECK (true);
  *
  * 3. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
  */
@@ -387,4 +425,245 @@ export async function deleteEditorLevelFromCloud(slotId) {
 
 export function isConfigured() {
   return !!(supabaseUrl && supabaseKey);
+}
+
+// === FRIENDS SYSTEM ===
+
+// Ensure user profile exists in profiles table (for search)
+export async function ensureProfile() {
+  const client = getClient();
+  if (!client || !currentAuthUser) return;
+  const username = getUsername();
+  if (!username) return;
+  try {
+    await client.from('profiles').upsert({
+      user_id: currentAuthUser.id,
+      username: username.toLowerCase(),
+      display_name: username,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+  } catch (e) {
+    console.warn('[Friends] ensureProfile failed:', e.message);
+  }
+}
+
+// Search users by username
+export async function searchUsers(query) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return [];
+  try {
+    const { data, error } = await client
+      .from('profiles')
+      .select('user_id, display_name')
+      .ilike('username', `%${query.toLowerCase()}%`)
+      .neq('user_id', currentAuthUser.id)
+      .limit(20);
+    if (error) { console.warn('[Friends] search error:', error.message); return []; }
+    return data || [];
+  } catch (e) {
+    console.warn('[Friends] search failed:', e.message);
+    return [];
+  }
+}
+
+// Send friend request
+export async function sendFriendRequest(friendId) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return { error: 'Not logged in' };
+  try {
+    // Check if request already exists
+    const { data: existing } = await client.from('friends')
+      .select('id, status')
+      .or(`and(user_id.eq.${currentAuthUser.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentAuthUser.id})`)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      if (existing[0].status === 'accepted') return { error: 'Already friends' };
+      return { error: 'Request already sent' };
+    }
+    const { error } = await client.from('friends').insert({
+      user_id: currentAuthUser.id,
+      friend_id: friendId,
+      status: 'pending',
+    });
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+// Accept friend request
+export async function acceptFriendRequest(requestId) {
+  const client = getClient();
+  if (!client) return;
+  try {
+    await client.from('friends').update({ status: 'accepted' }).eq('id', requestId);
+  } catch (e) {
+    console.warn('[Friends] accept failed:', e.message);
+  }
+}
+
+// Decline/remove friend request or friendship
+export async function removeFriend(requestId) {
+  const client = getClient();
+  if (!client) return;
+  try {
+    await client.from('friends').delete().eq('id', requestId);
+  } catch (e) {
+    console.warn('[Friends] remove failed:', e.message);
+  }
+}
+
+// Get accepted friends list
+export async function getFriends() {
+  const client = getClient();
+  if (!client || !currentAuthUser) return [];
+  try {
+    const uid = currentAuthUser.id;
+    // Get all accepted friendships where I'm either side
+    const { data, error } = await client.from('friends')
+      .select('id, user_id, friend_id, status')
+      .eq('status', 'accepted')
+      .or(`user_id.eq.${uid},friend_id.eq.${uid}`);
+    if (error || !data) return [];
+    // Collect friend user_ids
+    const friendIds = data.map(r => r.user_id === uid ? r.friend_id : r.user_id);
+    if (friendIds.length === 0) return [];
+    // Fetch display names
+    const { data: profiles } = await client.from('profiles')
+      .select('user_id, display_name')
+      .in('user_id', friendIds);
+    const nameMap = {};
+    if (profiles) for (const p of profiles) nameMap[p.user_id] = p.display_name;
+    return data.map(r => {
+      const fid = r.user_id === uid ? r.friend_id : r.user_id;
+      return { id: r.id, friendId: fid, name: nameMap[fid] || 'Unknown' };
+    });
+  } catch (e) {
+    console.warn('[Friends] getFriends failed:', e.message);
+    return [];
+  }
+}
+
+// Get pending friend requests (incoming)
+export async function getFriendRequests() {
+  const client = getClient();
+  if (!client || !currentAuthUser) return [];
+  try {
+    const { data, error } = await client.from('friends')
+      .select('id, user_id')
+      .eq('friend_id', currentAuthUser.id)
+      .eq('status', 'pending');
+    if (error || !data) return [];
+    if (data.length === 0) return [];
+    const senderIds = data.map(r => r.user_id);
+    const { data: profiles } = await client.from('profiles')
+      .select('user_id, display_name')
+      .in('user_id', senderIds);
+    const nameMap = {};
+    if (profiles) for (const p of profiles) nameMap[p.user_id] = p.display_name;
+    return data.map(r => ({ id: r.id, senderId: r.user_id, name: nameMap[r.user_id] || 'Unknown' }));
+  } catch (e) {
+    console.warn('[Friends] getRequests failed:', e.message);
+    return [];
+  }
+}
+
+// Send a message to a friend
+export async function sendMessage(receiverId, content, type = 'text', levelData = null) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return { error: 'Not logged in' };
+  try {
+    const { error } = await client.from('friend_messages').insert({
+      sender_id: currentAuthUser.id,
+      receiver_id: receiverId,
+      content: content,
+      message_type: type,
+      level_data: levelData,
+    });
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+// Get messages with a specific friend
+export async function getMessages(friendId) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return [];
+  try {
+    const uid = currentAuthUser.id;
+    const { data, error } = await client.from('friend_messages')
+      .select('*')
+      .or(`and(sender_id.eq.${uid},receiver_id.eq.${friendId}),and(sender_id.eq.${friendId},receiver_id.eq.${uid})`)
+      .order('created_at', { ascending: true })
+      .limit(50);
+    if (error || !data) return [];
+    // Mark received messages as read
+    await client.from('friend_messages')
+      .update({ read: true })
+      .eq('sender_id', friendId)
+      .eq('receiver_id', uid)
+      .eq('read', false);
+    return data.map(m => ({
+      id: m.id,
+      senderId: m.sender_id,
+      content: m.content,
+      type: m.message_type,
+      levelData: m.level_data,
+      createdAt: m.created_at,
+      mine: m.sender_id === uid,
+    }));
+  } catch (e) {
+    console.warn('[Friends] getMessages failed:', e.message);
+    return [];
+  }
+}
+
+// Get unread message count
+export async function getUnreadCount() {
+  const client = getClient();
+  if (!client || !currentAuthUser) return 0;
+  try {
+    const { count, error } = await client.from('friend_messages')
+      .select('id', { count: 'exact', head: true })
+      .eq('receiver_id', currentAuthUser.id)
+      .eq('read', false);
+    if (error) return 0;
+    return count || 0;
+  } catch (e) { return 0; }
+}
+
+// Get user's editor levels (for sharing)
+export async function getMyEditorLevels() {
+  const client = getClient();
+  if (!client || !currentAuthUser) return [];
+  try {
+    const { data, error } = await client.from('editor_levels')
+      .select('slot_id, name, object_count')
+      .eq('user_id', currentAuthUser.id)
+      .order('updated_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map(r => ({ slotId: r.slot_id, name: r.name, objectCount: r.object_count }));
+  } catch (e) { return []; }
+}
+
+// Get a shared level's data
+export async function getSharedLevel(userId, slotId) {
+  const client = getClient();
+  if (!client) return null;
+  try {
+    const { data, error } = await client.from('editor_levels')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('slot_id', slotId)
+      .single();
+    if (error || !data) return null;
+    return {
+      name: data.name,
+      themeId: data.theme_id,
+      objects: data.objects,
+    };
+  } catch (e) { return null; }
 }

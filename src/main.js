@@ -9,7 +9,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel } from './supabase.js';
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
@@ -21,6 +21,7 @@ const PAUSED = 'paused';
 const STATS = 'stats';
 const EDITOR = 'editor';
 const EDITOR_TESTING = 'editor_testing';
+const FRIENDS = 'friends';
 
 class Game {
   constructor() {
@@ -64,6 +65,22 @@ class Game {
     };
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
+
+    // Friends system state
+    this.friendsData = {
+      tab: 'list',
+      friends: [],
+      requests: [],
+      searchResults: null,
+      searchQuery: '',
+      messages: [],
+      chatFriend: null,
+      myLevels: [],
+      shareTarget: null,
+      notification: null,
+      unreadCount: 0,
+    };
+    this._friendsNotifTimer = null;
 
     // Load customization from localStorage (cloud sync after auth init)
     this.customization = this._loadCustomization();
@@ -156,6 +173,15 @@ class Game {
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
+        } else if (this.state === FRIENDS) {
+          if (this.friendsData.tab === 'chat' || this.friendsData.tab === 'share_select') {
+            this.friendsData.tab = 'list';
+            this._hideFriendsInput();
+            this._loadFriendsData();
+          } else {
+            this._hideFriendsInput();
+            this.state = MENU;
+          }
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.shakeIntensity = 0;
@@ -189,7 +215,7 @@ class Game {
         return;
       }
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
@@ -417,8 +443,210 @@ class Game {
       this.editor.showBrowser();
     } else if (action === 'account') {
       this._showAccountOverlay();
+    } else if (action === 'friends') {
+      if (!getAuthUser()) {
+        this._showAccountOverlay();
+        return;
+      }
+      this.state = FRIENDS;
+      this.friendsData.tab = 'list';
+      this._loadFriendsData();
     } else if (action === 'back') {
       this.state = MENU;
+    } else if (action.startsWith('friends_')) {
+      this._handleFriendsAction(action);
+    }
+  }
+
+  _handleFriendsAction(action) {
+    const fd = this.friendsData;
+
+    if (action === 'friends_tab_list') {
+      fd.tab = 'list';
+      this._loadFriendsData();
+    } else if (action === 'friends_tab_requests') {
+      fd.tab = 'requests';
+      this._loadFriendsData();
+    } else if (action === 'friends_tab_search') {
+      fd.tab = 'search';
+      fd.searchResults = null;
+      this._showFriendsInput('search');
+    } else if (action === 'friends_do_search') {
+      if (fd.searchQuery.trim()) {
+        searchUsers(fd.searchQuery.trim()).then(r => { fd.searchResults = r; });
+      }
+    } else if (action.startsWith('friends_add_')) {
+      const idx = parseInt(action.split('_')[2]);
+      const user = fd.searchResults?.[idx];
+      if (user) {
+        sendFriendRequest(user.user_id).then(res => {
+          this._showFriendsNotif(res.error ? res.error : 'Friend request sent!', res.error ? 'error' : 'success');
+        });
+      }
+    } else if (action.startsWith('friends_accept_')) {
+      const idx = parseInt(action.split('_')[2]);
+      const req = fd.requests[idx];
+      if (req) {
+        acceptFriendRequest(req.id).then(() => {
+          this._showFriendsNotif('Friend added!', 'success');
+          this._loadFriendsData();
+        });
+      }
+    } else if (action.startsWith('friends_decline_')) {
+      const idx = parseInt(action.split('_')[2]);
+      const req = fd.requests[idx];
+      if (req) {
+        removeFriend(req.id).then(() => {
+          this._showFriendsNotif('Request declined.', 'success');
+          this._loadFriendsData();
+        });
+      }
+    } else if (action.startsWith('friends_remove_')) {
+      const idx = parseInt(action.split('_')[2]);
+      const friend = fd.friends[idx];
+      if (friend) {
+        removeFriend(friend.id).then(() => {
+          this._showFriendsNotif('Friend removed.', 'success');
+          this._loadFriendsData();
+        });
+      }
+    } else if (action.startsWith('friends_chat_')) {
+      const idx = parseInt(action.split('_')[2]);
+      const friend = fd.friends[idx];
+      if (friend) {
+        fd.chatFriend = { ...friend, _inputText: '' };
+        fd.tab = 'chat';
+        fd.messages = [];
+        getMessages(friend.friendId).then(m => { fd.messages = m; });
+        this._showFriendsInput('chat');
+      }
+    } else if (action === 'friends_send_msg') {
+      if (fd.chatFriend && fd.chatFriend._inputText?.trim()) {
+        const text = fd.chatFriend._inputText.trim();
+        fd.chatFriend._inputText = '';
+        this._hideFriendsInput();
+        sendMessage(fd.chatFriend.friendId, text).then(() => {
+          getMessages(fd.chatFriend.friendId).then(m => { fd.messages = m; });
+        });
+        this._showFriendsInput('chat');
+      }
+    } else if (action === 'friends_share_level') {
+      if (fd.chatFriend) {
+        fd.shareTarget = fd.chatFriend;
+        fd.tab = 'share_select';
+        getMyEditorLevels().then(levels => { fd.myLevels = levels; });
+      }
+    } else if (action.startsWith('friends_send_level_')) {
+      const idx = parseInt(action.split('_')[3]);
+      const lv = fd.myLevels[idx];
+      if (lv && fd.shareTarget) {
+        sendMessage(fd.shareTarget.friendId, lv.name, 'level', { slotId: lv.slotId, userId: getAuthUser().id }).then(() => {
+          this._showFriendsNotif('Level shared!', 'success');
+          fd.tab = 'chat';
+          getMessages(fd.chatFriend.friendId).then(m => { fd.messages = m; });
+          this._showFriendsInput('chat');
+        });
+      }
+    } else if (action.startsWith('friends_play_level_')) {
+      const idx = parseInt(action.split('_')[3]);
+      const msg = fd.messages[idx];
+      if (msg && msg.type === 'level' && msg.levelData) {
+        getSharedLevel(msg.levelData.userId, msg.levelData.slotId).then(level => {
+          if (level) {
+            const lvl = createLevelFromData({
+              name: level.name,
+              themeId: level.themeId,
+              objects: level.objects,
+            });
+            if (lvl) {
+              this.editorLevelData = { name: level.name, themeId: level.themeId, objects: level.objects };
+              this.level = lvl;
+              this.theme = THEMES[level.themeId] || THEMES[1];
+              this.practiceMode = false;
+              this.attempts = 0;
+              this.player.reset(0);
+              this.camera.reset();
+              this.particles.reset();
+              this.state = PLAYING;
+              Sound.playMusic(1);
+            }
+          } else {
+            this._showFriendsNotif('Level not found.', 'error');
+          }
+        });
+      }
+    } else if (action === 'friends_back') {
+      this._hideFriendsInput();
+      this.state = MENU;
+    } else if (action === 'friends_back_to_list') {
+      fd.tab = 'list';
+      this._hideFriendsInput();
+      this._loadFriendsData();
+    }
+  }
+
+  async _loadFriendsData() {
+    await ensureProfile();
+    const [friends, requests] = await Promise.all([getFriends(), getFriendRequests()]);
+    this.friendsData.friends = friends;
+    this.friendsData.requests = requests;
+  }
+
+  _showFriendsNotif(text, type = 'success') {
+    this.friendsData.notification = { text, type };
+    if (this._friendsNotifTimer) clearTimeout(this._friendsNotifTimer);
+    this._friendsNotifTimer = setTimeout(() => {
+      this.friendsData.notification = null;
+      this._friendsNotifTimer = null;
+    }, 3000);
+  }
+
+  _showFriendsInput(mode) {
+    let input = document.getElementById('friends-input');
+    if (!input) {
+      input = document.createElement('input');
+      input.id = 'friends-input';
+      input.type = 'text';
+      input.autocomplete = 'off';
+      input.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);width:380px;max-width:90vw;padding:10px 14px;background:rgba(0,10,30,0.9);color:#fff;border:1px solid rgba(0,170,255,0.4);border-radius:8px;font:16px monospace;outline:none;z-index:100;';
+      document.body.appendChild(input);
+    }
+    input.value = '';
+    input.placeholder = mode === 'search' ? 'Search username...' : 'Type a message...';
+    input.style.display = 'block';
+    input.focus();
+
+    // Remove old listeners
+    input._onInput = () => {
+      if (mode === 'search') {
+        this.friendsData.searchQuery = input.value;
+      } else if (mode === 'chat' && this.friendsData.chatFriend) {
+        this.friendsData.chatFriend._inputText = input.value;
+      }
+    };
+    input._onKeydown = (e) => {
+      if (e.key === 'Enter') {
+        if (mode === 'search') {
+          this._handleFriendsAction('friends_do_search');
+        } else if (mode === 'chat') {
+          this._handleFriendsAction('friends_send_msg');
+          input.value = '';
+        }
+      }
+    };
+    input.removeEventListener('input', input._prevOnInput);
+    input.removeEventListener('keydown', input._prevOnKeydown);
+    input.addEventListener('input', input._onInput);
+    input.addEventListener('keydown', input._onKeydown);
+    input._prevOnInput = input._onInput;
+    input._prevOnKeydown = input._onKeydown;
+  }
+
+  _hideFriendsInput() {
+    const input = document.getElementById('friends-input');
+    if (input) {
+      input.style.display = 'none';
+      input.blur();
     }
   }
 
@@ -890,6 +1118,8 @@ class Game {
       this.ui.drawCustomize(ctx, this.customization);
     } else if (this.state === STATS) {
       this.ui.drawStats(ctx, this.progress);
+    } else if (this.state === FRIENDS) {
+      this.ui.drawFriends(ctx, this.friendsData);
     } else {
       // Use interpolated camera for smooth rendering between physics steps
       // When paused or dead, don't interpolate — use final position to avoid jitter
@@ -1034,6 +1264,7 @@ class Game {
       const { error } = await signIn(u, p);
       loginError.style.color = '#FF4444';
       if (error) { loginError.textContent = error; return; }
+      ensureProfile();
       await this._syncFromCloud();
       updateView();
     });
@@ -1052,6 +1283,7 @@ class Game {
       const { error } = await signUp(u, p);
       regError.style.color = '#FF4444';
       if (error) { regError.textContent = error; return; }
+      ensureProfile();
       await this._syncFromCloud();
       updateView();
     });
