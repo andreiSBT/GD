@@ -941,6 +941,7 @@ class Game {
         // Snap to platform top
         const snapY = this.player.gravityMult === -1 ? platRef.y + platRef.h : platRef.y - PLAYER_SIZE;
         this.player.y = snapY;
+        this.player.prevY = snapY;
         this.player.vy = 0;
         this.player.grounded = true;
         this.player.onPlatform = true;
@@ -950,9 +951,11 @@ class Game {
           this.player.movingPlatformRef = platRef;
         }
       } else {
-        // Walked off edge
+        // Walked off edge - start falling
         this.player.platformRef = null;
         this.player.onPlatform = false;
+        this.player.grounded = false;
+        this.player.coyoteCounter = 6; // allow late jump
       }
     }
 
