@@ -1506,7 +1506,15 @@ export class UI {
         ctx.textAlign = 'left';
         ctx.fillText(u.display_name, listX + 54, iy + itemH / 2 + 5);
 
-        this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
+        if (u._requestSent) {
+          // Disabled "SENT" button
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'SENT', `friends_add_sent`, '#334455', 13);
+          ctx.restore();
+        } else {
+          this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
+        }
       }
     } else if (results && results.length === 0 && query) {
       this._drawEmptyState(ctx, '?', 'No players found', 'Try a different username', resultY + 60);

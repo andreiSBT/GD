@@ -483,9 +483,13 @@ class Game {
     } else if (action.startsWith('friends_add_')) {
       const idx = parseInt(action.split('_')[2]);
       const user = fd.searchResults?.[idx];
-      if (user) {
+      if (user && !user._requestSent) {
+        user._requestSent = true;
         sendFriendRequest(user.user_id).then(res => {
-          this._showFriendsNotif(res.error ? res.error : 'Friend request sent!', res.error ? 'error' : 'success');
+          if (res.error) {
+            user._requestSent = false;
+            this._showFriendsNotif(res.error, 'error');
+          }
         });
       }
     } else if (action.startsWith('friends_accept_')) {
