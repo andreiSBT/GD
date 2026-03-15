@@ -629,7 +629,7 @@ class Game {
       const screenTop = rect.top + boxY * scaleY;
       const screenW = boxW * scaleX;
       const screenH = boxH * scaleY;
-      input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 30px;background:transparent;color:#fff;border:none;border-radius:10px;font:${Math.round(15 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
+      input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 30px;background:rgba(0,10,30,0.95);color:#fff;border:1px solid rgba(0,200,255,0.4);border-radius:10px;font:${Math.round(15 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
     } else {
       // Chat input: match the input box from drawFriendChat
       const inputW = 390;
@@ -639,7 +639,7 @@ class Game {
       const screenTop = rect.top + inputY * scaleY;
       const screenW = inputW * scaleX;
       const screenH = 40 * scaleY;
-      input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 14px;background:transparent;color:#fff;border:none;border-radius:10px;font:${Math.round(14 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
+      input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 14px;background:rgba(0,10,30,0.95);color:#fff;border:1px solid rgba(0,170,255,0.35);border-radius:10px;font:${Math.round(14 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;`;
     }
 
     input.value = '';
