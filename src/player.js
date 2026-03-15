@@ -34,10 +34,10 @@ export class Player {
     this.reset(0);
   }
 
-  reset(startX) {
+  reset(startX, startY) {
     this.x = startX;
     this.prevX = startX;
-    this.y = GROUND_Y - PLAYER_SIZE;
+    this.y = startY != null ? startY : GROUND_Y - PLAYER_SIZE;
     this.vy = 0;
     this.prevY = this.y;
     this.alive = true;

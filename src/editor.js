@@ -945,6 +945,7 @@ export class Editor {
     };
     if (this.startPos) {
       data.startX = this.startPos.gx;
+      data.startY = this.startPos.gy;
     }
     return data;
   }

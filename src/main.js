@@ -712,11 +712,12 @@ class Game {
     this.practiceMode = true;
     this.attempts = 0;
     const startPixelX = (levelData.startX || 0) * GRID;
+    const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
     // Set start pos as a persistent checkpoint so player always respawns here
-    if (startPixelX > 0) {
+    if (startPixelX > 0 || levelData.startY != null) {
       this.editorStartCheckpoint = {
         x: startPixelX,
-        y: GROUND_Y - PLAYER_SIZE,
+        y: startPixelY,
         gravityMult: 1,
         speedMult: 1,
         mode: MODE_CUBE,
@@ -726,7 +727,7 @@ class Game {
       this.editorStartCheckpoint = null;
       this.lastCheckpoint = null;
     }
-    this.player.reset(startPixelX);
+    this.player.reset(startPixelX, startPixelY);
     this.level.resetFrom(startPixelX);
     this.state = EDITOR_TESTING;
     this.deathTimer = 0;
@@ -792,8 +793,7 @@ class Game {
     }
 
     if (this.practiceMode && this.lastCheckpoint) {
-      this.player.reset(this.lastCheckpoint.x);
-      this.player.y = this.lastCheckpoint.y;
+      this.player.reset(this.lastCheckpoint.x, this.lastCheckpoint.y);
       this.player.gravityMult = this.lastCheckpoint.gravityMult;
       this.player.speedMult = this.lastCheckpoint.speedMult;
       this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
@@ -803,8 +803,7 @@ class Game {
       this.camera.reset(this.lastCheckpoint.x);
     } else if (this.editorStartCheckpoint) {
       // Editor start pos - always respawn here
-      this.player.reset(this.editorStartCheckpoint.x);
-      this.player.y = this.editorStartCheckpoint.y;
+      this.player.reset(this.editorStartCheckpoint.x, this.editorStartCheckpoint.y);
       this.level.resetFrom(this.editorStartCheckpoint.x);
       this.lastCheckpoint = { ...this.editorStartCheckpoint };
       this.camera.reset(this.editorStartCheckpoint.x);
