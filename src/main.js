@@ -1086,30 +1086,6 @@ class Game {
       this.pendingOrbHit = null;
     }
 
-    // Check platform fall-off
-    if (this.player.onPlatform && this.player.grounded) {
-      let stillOn = false;
-      for (const obs of visible) {
-        if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
-          const below = {
-            x: this.player.x + 4,
-            y: this.player.y + PLAYER_SIZE,
-            w: PLAYER_SIZE - 8,
-            h: 4,
-          };
-          if (below.x < obs.x + obs.w && below.x + below.w > obs.x &&
-              below.y < obs.y + obs.h && below.y + below.h > obs.y) {
-            stillOn = true;
-            break;
-          }
-        }
-      }
-      if (!stillOn) {
-        this.player.onPlatform = false;
-        this.player.grounded = false;
-      }
-    }
-
     // Now update player movement (after collision set onMovingPlatform)
     this.player.update();
     this.camera.update(this.player.x);
