@@ -9,7 +9,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel } from './supabase.js';
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
@@ -611,6 +611,18 @@ class Game {
     } else if (action === 'friends_back') {
       this._hideFriendsInput();
       this.state = MENU;
+    } else if (action.startsWith('friends_del_msg_')) {
+      const idx = parseInt(action.split('_')[3]);
+      const msg = fd.messages[idx];
+      if (msg && msg.mine && msg.id) {
+        deleteMessage(msg.id).then(res => {
+          if (!res.error) {
+            fd.messages.splice(idx, 1);
+          } else {
+            this._showFriendsNotif('Failed to delete.', 'error');
+          }
+        });
+      }
     } else if (action === 'friends_back_to_list') {
       fd.tab = 'list';
       this._hideFriendsInput();

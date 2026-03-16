@@ -1619,6 +1619,17 @@ export class UI {
           const lx = m.mine ? bubbleX + bubbleW - 130 : bubbleX + 10;
           ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 22);
           this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 118 : bubbleX + bubbleW - 128, my + 4, 110, 26, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', 12);
+          // Delete button on own messages
+          if (m.mine) {
+            const delX = bubbleX + 4, delY = my + 6;
+            ctx.fillStyle = 'rgba(255,60,60,0.5)';
+            ctx.font = 'bold 12px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✕', delX + 10, delY + 10);
+            ctx.textBaseline = 'alphabetic';
+            this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: 20, h: 20 });
+          }
         } else {
           // Chat bubble
           const text = (m.mine ? '' : `${chatFriend?.name || '?'}: `) + m.content;
@@ -1638,6 +1649,17 @@ export class UI {
           ctx.font = '13px monospace';
           ctx.textAlign = 'left';
           ctx.fillText(text, bubbleX + 10, my + 20);
+          // Delete button on own messages
+          if (m.mine) {
+            const delX = bubbleX - 22, delY = my + 2;
+            ctx.fillStyle = 'rgba(255,60,60,0.4)';
+            ctx.font = 'bold 12px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('✕', delX + 8, delY + 12);
+            ctx.textBaseline = 'alphabetic';
+            this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: 16, h: 24 });
+          }
         }
       }
     }

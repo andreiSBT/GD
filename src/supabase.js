@@ -588,6 +588,22 @@ export async function sendMessage(receiverId, content, type = 'text', levelData 
   }
 }
 
+// Delete a message (only own messages)
+export async function deleteMessage(messageId) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return { error: 'Not logged in' };
+  try {
+    const { error } = await client.from('friend_messages')
+      .delete()
+      .eq('id', messageId)
+      .eq('sender_id', currentAuthUser.id);
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 // Get messages with a specific friend
 export async function getMessages(friendId) {
   const client = getClient();
