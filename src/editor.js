@@ -828,6 +828,7 @@ export class Editor {
       name: this.levelName,
       themeId: this.themeId,
       objects: this.objects,
+      startPos: this.startPos || null,
       updatedAt: Date.now()
     };
     localStorage.setItem('gd_editor_slot_' + slotId, JSON.stringify(data));
@@ -854,6 +855,7 @@ export class Editor {
       this.themeId = data.themeId || 1;
       this.theme = THEMES[this.themeId];
       this.objects = data.objects || [];
+      this.startPos = data.startPos || null;
       this._rebuildLive();
       this.history = [];
       this.historyIndex = -1;
@@ -877,6 +879,7 @@ export class Editor {
     this.theme = THEMES[1];
     this.objects = [];
     this.liveObstacles = [];
+    this.startPos = null;
     this.history = [];
     this.historyIndex = -1;
     this.cameraX = 0;

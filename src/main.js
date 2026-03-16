@@ -787,9 +787,24 @@ class Game {
     this.previousBest = 0;
     this.newBestTimer = 0;
     this.newBestTriggered = false;
-    this.editorStartCheckpoint = null;
-    this.lastCheckpoint = null;
-    this.player.reset(0);
+    // Use start pos if set (same as test mode)
+    const startPixelX = (levelData.startX || 0) * GRID;
+    const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    if (startPixelX > 0 || levelData.startY != null) {
+      this.editorStartCheckpoint = {
+        x: startPixelX,
+        y: startPixelY,
+        gravityMult: 1,
+        speedMult: 1,
+        mode: MODE_CUBE,
+      };
+      this.lastCheckpoint = { ...this.editorStartCheckpoint };
+    } else {
+      this.editorStartCheckpoint = null;
+      this.lastCheckpoint = null;
+    }
+    this.player.reset(startPixelX, startPixelY);
+    this.level.resetFrom(startPixelX);
     this.state = PLAYING;
     this.deathTimer = 0;
     this.shakeIntensity = 0;
