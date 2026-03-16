@@ -1109,6 +1109,7 @@ class Game {
         }
       } else if (obs.type === 'end') {
         if (obs.checkCollision(playerRect) === 'complete') {
+          this.currentProgress = 1;
           this.state = COMPLETE;
           Sound.stopMusic();
           Sound.playComplete();
