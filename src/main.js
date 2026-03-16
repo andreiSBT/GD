@@ -576,37 +576,43 @@ class Game {
     } else if (action.startsWith('friends_play_level_')) {
       const idx = parseInt(action.split('_')[3]);
       const msg = fd.messages[idx];
-      console.log('[Friends] PLAY action:', action, 'idx:', idx, 'msg:', msg, 'messages count:', fd.messages.length);
+      console.log('[Friends] PLAY action:', action, 'idx:', idx, 'msg type:', msg?.type, 'has levelData:', !!msg?.levelData, 'messages count:', fd.messages.length);
       if (msg && msg.type === 'level' && msg.levelData) {
         const ld = msg.levelData;
-        console.log('[Friends] PLAY level data:', JSON.stringify(ld).slice(0, 200));
+        console.log('[Friends] PLAY level data keys:', Object.keys(ld), 'objects count:', ld.objects?.length);
         // Level data is embedded directly in the message
         if (ld.objects && ld.objects.length > 0) {
-          const lvl = createLevelFromData({
-            name: ld.name || msg.content,
-            themeId: ld.themeId || 1,
-            objects: ld.objects,
-          });
-          if (lvl) {
-            this._hideFriendsInput();
-            this.editorLevelData = { name: ld.name || msg.content, themeId: ld.themeId || 1, objects: ld.objects };
-            this.level = lvl;
-            this.theme = THEMES[ld.themeId] || THEMES[1];
-            this.practiceMode = false;
-            this.attempts = 0;
-            this.player.reset(0);
-            this.camera.reset();
-            this.particles.reset();
-            this.state = PLAYING;
-            Sound.playMusic(1);
-          } else {
-            this._showFriendsNotif('Failed to load level.', 'error');
+          try {
+            const lvl = createLevelFromData({
+              name: ld.name || msg.content,
+              themeId: ld.themeId || 1,
+              objects: ld.objects,
+            });
+            if (lvl) {
+              this._hideFriendsInput();
+              this.editorLevelData = { name: ld.name || msg.content, themeId: ld.themeId || 1, objects: ld.objects };
+              this.level = lvl;
+              this.theme = THEMES[ld.themeId] || THEMES[1];
+              this.practiceMode = false;
+              this.attempts = 0;
+              this.player.reset(0);
+              this.camera.reset();
+              this.particles.clear();
+              this.state = PLAYING;
+              Sound.playMusic(1);
+            } else {
+              this._showFriendsNotif('Failed to load level.', 'error');
+            }
+          } catch (err) {
+            console.error('[Friends] Error loading shared level:', err);
+            this._showFriendsNotif('Error loading level: ' + err.message, 'error');
           }
         } else {
           // Old format without embedded data
           this._showFriendsNotif('Old format. Re-share level.', 'error');
         }
       } else {
+        console.warn('[Friends] PLAY: msg not found or missing data. msg:', JSON.stringify(msg)?.slice(0, 300));
         this._showFriendsNotif('No level data in this message.', 'error');
       }
     } else if (action === 'friends_back') {

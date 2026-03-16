@@ -1595,7 +1595,7 @@ export class UI {
       this._drawEmptyState(ctx, '~', 'No messages yet', 'Say hello!', msgY + msgH / 2 - 10);
     } else {
       // Draw messages with chat bubbles
-      const lineH = 38;
+      const lineH = IS_MOBILE ? 50 : 38;
       const maxVisible = Math.floor((msgH - 16) / lineH);
       const startIdx = Math.max(0, messages.length - maxVisible);
       const visibleMsgs = messages.slice(startIdx);
@@ -1608,25 +1608,28 @@ export class UI {
           // Level share bubble
           const bubbleW = msgW - 40;
           const bubbleX = msgX + 20;
+          const bubbleH = lineH - 4;
           ctx.save();
           ctx.shadowColor = m.mine ? 'rgba(0,120,255,0.15)' : 'rgba(255,136,0,0.15)';
           ctx.shadowBlur = 6;
-          this._roundRect(ctx, bubbleX, my, bubbleW, lineH - 4, 8);
+          this._roundRect(ctx, bubbleX, my, bubbleW, bubbleH, 8);
           ctx.fillStyle = m.mine ? 'rgba(0,80,180,0.2)' : 'rgba(180,80,0,0.2)';
           ctx.fill();
           ctx.restore();
-          this._roundRect(ctx, bubbleX, my, bubbleW, lineH - 4, 8);
+          this._roundRect(ctx, bubbleX, my, bubbleW, bubbleH, 8);
           ctx.strokeStyle = m.mine ? 'rgba(0,150,255,0.2)' : 'rgba(255,136,0,0.2)';
           ctx.lineWidth = 1;
           ctx.stroke();
 
           ctx.fillStyle = '#FFD700';
-          ctx.font = 'bold 13px monospace';
+          ctx.font = `bold ${IS_MOBILE ? 15 : 13}px monospace`;
           ctx.textAlign = m.mine ? 'right' : 'left';
-          const lx = m.mine ? bubbleX + bubbleW - 130 : bubbleX + 10;
-          ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 22);
-          const playBtnH = IS_MOBILE ? 32 : 26;
-          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 125 : bubbleX + bubbleW - 135, my + 2, IS_MOBILE ? 120 : 110, playBtnH, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', IS_MOBILE ? 14 : 12);
+          const lx = m.mine ? bubbleX + bubbleW - (IS_MOBILE ? 140 : 130) : bubbleX + 10;
+          ctx.fillText(`[LEVEL] ${m.content}`, lx, my + bubbleH / 2 + 4);
+          const playBtnH = IS_MOBILE ? 40 : 26;
+          const playBtnW = IS_MOBILE ? 130 : 110;
+          const playBtnY = my + Math.floor((bubbleH - playBtnH) / 2);
+          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - playBtnW - 5 : bubbleX + bubbleW - playBtnW - 15, playBtnY, playBtnW, playBtnH, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', IS_MOBILE ? 16 : 12);
           // Delete button on own messages
           if (m.mine) {
             const delS = IS_MOBILE ? 30 : 20;
@@ -1642,22 +1645,24 @@ export class UI {
         } else {
           // Chat bubble
           const text = (m.mine ? '' : `${chatFriend?.name || '?'}: `) + m.content;
-          ctx.font = '13px monospace';
+          const chatFont = IS_MOBILE ? 15 : 13;
+          ctx.font = `${chatFont}px monospace`;
           const textW = Math.min(ctx.measureText(text).width + 24, msgW - 60);
           const bubbleX = m.mine ? msgX + msgW - textW - 16 : msgX + 16;
+          const chatBubbleH = lineH - 8;
 
-          this._roundRect(ctx, bubbleX, my, textW, lineH - 8, 8);
+          this._roundRect(ctx, bubbleX, my, textW, chatBubbleH, 8);
           ctx.fillStyle = m.mine ? 'rgba(0,80,180,0.25)' : 'rgba(60,120,60,0.2)';
           ctx.fill();
-          this._roundRect(ctx, bubbleX, my, textW, lineH - 8, 8);
+          this._roundRect(ctx, bubbleX, my, textW, chatBubbleH, 8);
           ctx.strokeStyle = m.mine ? 'rgba(0,150,255,0.15)' : 'rgba(100,200,100,0.15)';
           ctx.lineWidth = 1;
           ctx.stroke();
 
           ctx.fillStyle = m.mine ? '#88CCFF' : '#AADDAA';
-          ctx.font = '13px monospace';
+          ctx.font = `${chatFont}px monospace`;
           ctx.textAlign = 'left';
-          ctx.fillText(text, bubbleX + 10, my + 20);
+          ctx.fillText(text, bubbleX + 10, my + chatBubbleH / 2 + 4);
           // Delete button on own messages
           if (m.mine) {
             const delS2 = IS_MOBILE ? 30 : 16;
