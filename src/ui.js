@@ -1533,16 +1533,26 @@ export class UI {
 
   _drawFriendChat(ctx, messages, chatFriend, startY, htmlInputActive) {
     // Chat header with avatar
+    const chatName = chatFriend ? chatFriend.name : 'Chat';
+    ctx.font = 'bold 20px monospace';
+    const nameW = ctx.measureText(chatName).width;
+    const headerCenterX = SCREEN_WIDTH / 2;
+    const avatarR = 12;
+    const avatarGap = 8;
+    const totalHeaderW = avatarR * 2 + avatarGap + nameW;
+    const avatarX = headerCenterX - totalHeaderW / 2 + avatarR;
+    const nameX = avatarX + avatarR + avatarGap;
+
     if (chatFriend) {
-      this._drawAvatar(ctx, SCREEN_WIDTH / 2 - 80, startY + 2, 14, chatFriend.name, '#00AAFF');
+      this._drawAvatar(ctx, avatarX, startY + 4, avatarR, chatFriend.name, '#00AAFF');
     }
     ctx.save();
     ctx.shadowColor = '#00AAFF';
     ctx.shadowBlur = 10;
     ctx.fillStyle = '#00AAFF';
     ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(chatFriend ? chatFriend.name : 'Chat', SCREEN_WIDTH / 2 - 50 + (chatFriend ? 0 : 50), startY + 8);
+    ctx.textAlign = 'left';
+    ctx.fillText(chatName, nameX, startY + 10);
     ctx.restore();
 
     // Share level button

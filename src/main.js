@@ -574,6 +574,7 @@ class Game {
       const idx = parseInt(action.split('_')[3]);
       const msg = fd.messages[idx];
       if (msg && msg.type === 'level' && msg.levelData) {
+        this._showFriendsNotif('Loading level...', 'success');
         getSharedLevel(msg.levelData.userId, msg.levelData.slotId).then(level => {
           if (level) {
             const lvl = createLevelFromData({
@@ -582,6 +583,7 @@ class Game {
               objects: level.objects,
             });
             if (lvl) {
+              this._hideFriendsInput();
               this.editorLevelData = { name: level.name, themeId: level.themeId, objects: level.objects };
               this.level = lvl;
               this.theme = THEMES[level.themeId] || THEMES[1];
@@ -592,11 +594,15 @@ class Game {
               this.particles.reset();
               this.state = PLAYING;
               Sound.playMusic(1);
+            } else {
+              this._showFriendsNotif('Failed to load level data.', 'error');
             }
           } else {
-            this._showFriendsNotif('Level not found.', 'error');
+            this._showFriendsNotif('Level not found on server.', 'error');
           }
         });
+      } else {
+        this._showFriendsNotif('No level data in this message.', 'error');
       }
     } else if (action === 'friends_back') {
       this._hideFriendsInput();
