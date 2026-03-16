@@ -1,6 +1,6 @@
 /** Level loader and camera system */
 
-import { GRID, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
+import { GRID, PLAYER_SIZE, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
 import { createObstacle } from './obstacles.js';
 import level1 from './levels/level1.js';
 import level2 from './levels/level2.js';
@@ -70,7 +70,9 @@ export class Level {
 
   getProgress(playerX) {
     if (this.endX <= 0) return 0;
-    return Math.min(1, Math.max(0, playerX / this.endX));
+    // Player reaches end marker when playerX + PLAYER_SIZE >= endX
+    const effectiveEnd = this.endX - PLAYER_SIZE;
+    return Math.min(1, Math.max(0, playerX / effectiveEnd));
   }
 
   update() {
