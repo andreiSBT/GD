@@ -756,7 +756,7 @@ class Game {
     const startPixelX = (levelData.startX || 0) * GRID;
     const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
     // Set start pos as a persistent checkpoint so player always respawns here
-    if (startPixelX > 0 || levelData.startY != null) {
+    if (levelData.startX != null || levelData.startY != null) {
       this.editorStartCheckpoint = {
         x: startPixelX,
         y: startPixelY,
@@ -790,7 +790,7 @@ class Game {
     // Use start pos if set (same as test mode)
     const startPixelX = (levelData.startX || 0) * GRID;
     const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
-    if (startPixelX > 0 || levelData.startY != null) {
+    if (levelData.startX != null || levelData.startY != null) {
       this.editorStartCheckpoint = {
         x: startPixelX,
         y: startPixelY,
