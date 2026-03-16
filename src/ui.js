@@ -413,7 +413,7 @@ export class UI {
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.font = 'bold 13px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + 16);
+    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + 16);
 
     // Attempts counter
     ctx.fillStyle = '#FFFFFF';
