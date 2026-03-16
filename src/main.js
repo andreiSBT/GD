@@ -996,6 +996,13 @@ class Game {
       this.player.grounded = true;
       this.player.onPlatform = true;
       this.player.platformRef = prevTransportRef;
+      // During wait phase, slide player toward platform center
+      if (prevTransportRef.waitFrames < prevTransportRef.waitTotal) {
+        const centerX = prevTransportRef.x + prevTransportRef.w / 2 - PLAYER_SIZE / 2;
+        const diff = centerX - this.player.x;
+        // Smoothly move toward center over the wait period
+        this.player.x += diff * 0.2;
+      }
     }
 
     // Collision detection (before player.update so moving platform flag is set in time)

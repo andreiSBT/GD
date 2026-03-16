@@ -289,6 +289,8 @@ export class TransportPlatform extends Platform {
     this.progress = 0; // 0 to 1, linear progress toward end
     this.arrived = false;
     this.arrivedFrames = 0; // frames since arrival (for grace period)
+    this.waitFrames = 0; // delay before movement starts (0.2s = 12 frames)
+    this.waitTotal = 12; // frames to wait before moving
     this.deltaX = 0;
     this.deltaY = 0;
 
@@ -307,6 +309,13 @@ export class TransportPlatform extends Platform {
     const prevX = this.x;
     const prevY = this.y;
     if (this.active && !this.arrived) {
+      // Wait before starting to move
+      if (this.waitFrames < this.waitTotal) {
+        this.waitFrames++;
+        this.deltaX = 0;
+        this.deltaY = 0;
+        return;
+      }
       this.progress += 1 / this.totalFrames;
       if (this.progress >= 1) {
         this.progress = 1;
@@ -328,6 +337,7 @@ export class TransportPlatform extends Platform {
     this.progress = 0;
     this.arrived = false;
     this.arrivedFrames = 0;
+    this.waitFrames = 0;
     this.x = this.startX;
     this.y = this.startY;
     this.deltaX = 0;
