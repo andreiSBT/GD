@@ -57,8 +57,14 @@ export function playJump() {
 let deathNodes = [];
 
 export function stopDeath() {
+  const c = getCtx();
+  const now = c.currentTime;
   for (const n of deathNodes) {
-    try { n.gain.gain.cancelScheduledValues(0); n.gain.gain.setValueAtTime(0, 0); } catch {}
+    try {
+      n.gain.gain.cancelScheduledValues(now);
+      n.gain.gain.setValueAtTime(0, now);
+      if (n.source) n.source.stop(0);
+    } catch {}
   }
   deathNodes = [];
 }
@@ -80,7 +86,7 @@ export function playDeath() {
   noiseSrc.connect(noiseGain);
   noiseGain.connect(c.destination);
   noiseSrc.start();
-  deathNodes.push({ gain: noiseGain });
+  deathNodes.push({ gain: noiseGain, source: noiseSrc });
 
   // Low rumble
   const osc = c.createOscillator();
@@ -93,7 +99,7 @@ export function playDeath() {
   oscGain.connect(c.destination);
   osc.start(c.currentTime);
   osc.stop(c.currentTime + 0.35);
-  deathNodes.push({ gain: oscGain });
+  deathNodes.push({ gain: oscGain, source: osc });
 
   // Clean up references after sounds finish
   setTimeout(() => { deathNodes = []; }, 400);
