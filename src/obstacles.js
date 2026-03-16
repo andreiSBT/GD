@@ -288,6 +288,7 @@ export class TransportPlatform extends Platform {
     this.active = false; // only moves when player is on it
     this.progress = 0; // 0 to 1, linear progress toward end
     this.arrived = false;
+    this.arrivedFrames = 0; // frames since arrival (for grace period)
     this.deltaX = 0;
     this.deltaY = 0;
 
@@ -310,7 +311,11 @@ export class TransportPlatform extends Platform {
       if (this.progress >= 1) {
         this.progress = 1;
         this.arrived = true;
+        this.arrivedFrames = 0;
       }
+    }
+    if (this.arrived) {
+      this.arrivedFrames++;
     }
     this.x = this.startX + (this.endX - this.startX) * this.progress;
     this.y = this.startY + (this.endY - this.startY) * this.progress;
@@ -322,6 +327,7 @@ export class TransportPlatform extends Platform {
     this.active = false;
     this.progress = 0;
     this.arrived = false;
+    this.arrivedFrames = 0;
     this.x = this.startX;
     this.y = this.startY;
     this.deltaX = 0;
