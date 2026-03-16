@@ -972,6 +972,11 @@ class Game {
       this.player.movingPlatformRef.active &&
       !this.player.movingPlatformRef.arrived) ? this.player.movingPlatformRef : null;
 
+    // Save moving platform ref to force-snap player each frame
+    const prevMovingRef = (this.player.movingPlatformRef &&
+      this.player.movingPlatformRef.type === 'moving' &&
+      this.player.grounded) ? this.player.movingPlatformRef : null;
+
     // Detect transport just arrived: was locked, now arrived → skip ramp, full speed immediately
     const transportJustArrived = this.player.transportLocked &&
       this.player.movingPlatformRef?.type === 'transport' &&
@@ -1005,6 +1010,17 @@ class Game {
         // Smoothly move toward center over the wait period
         this.player.x += diff * 0.2;
       }
+    }
+
+    // Force-snap player to moving platform if they were on it and haven't jumped
+    if (prevMovingRef && !prevTransportRef && this.player.vy >= 0) {
+      this.player.y = prevMovingRef.y - PLAYER_SIZE;
+      this.player.prevY = this.player.y;
+      this.player.vy = 0;
+      this.player.grounded = true;
+      this.player.onPlatform = true;
+      this.player.onMovingPlatform = true;
+      this.player.movingPlatformRef = prevMovingRef;
     }
 
     // Collision detection (before player.update so moving platform flag is set in time)
