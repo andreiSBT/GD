@@ -39,6 +39,8 @@
         width: 100vw;
         height: 100vh;
         height: 100dvh;
+        /* Prevent long-press context menu on mobile */
+        -webkit-touch-callout: none;
       }
     </style>
   </head>
@@ -216,6 +218,25 @@
         font-size: 11px;
         letter-spacing: 1px;
         margin-bottom: 24px;
+      }
+      /* Mobile polish */
+      @media (max-width: 600px), (max-height: 450px) {
+        .acc-panel {
+          padding: 24px 20px 20px;
+          max-width: 95%;
+          border-radius: 16px;
+          max-height: 90dvh;
+          overflow-y: auto;
+        }
+        .acc-panel h2 { font-size: 22px; margin-bottom: 16px; }
+        .acc-input { font-size: 16px; padding: 16px; margin-bottom: 12px; }
+        .acc-input::placeholder { font-size: 15px; }
+        .acc-error { font-size: 14px; }
+        .acc-btn { padding: 16px; font-size: 17px; min-height: 50px; }
+        .acc-link { font-size: 15px; padding: 8px 0; }
+        .acc-avatar { width: 50px; height: 50px; font-size: 24px; }
+        .acc-username { font-size: 20px; }
+        .acc-sync-badge { font-size: 12px; padding: 8px 14px; }
       }
     </style>
     <script type="module" src="/src/main.js"></script>

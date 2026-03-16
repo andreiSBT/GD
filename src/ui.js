@@ -1,6 +1,6 @@
 /** UI screens: menu, level select, HUD, death screen, complete screen */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE } from './settings.js';
 import { getLevelCount } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
@@ -121,7 +121,7 @@ export class UI {
     ctx.fillText('A  S I D E - S C R O L L I N G  R H Y T H M  G A M E', SCREEN_WIDTH / 2, 190);
 
     // Menu buttons
-    const bw = 260, bh = 56, gap = 60;
+    const bw = IS_MOBILE ? 300 : 260, bh = IS_MOBILE ? 60 : 56, gap = IS_MOBILE ? 64 : 60;
     const bx = SCREEN_WIDTH / 2 - bw / 2;
     let by = 250;
     this._drawButton(ctx, bx, by, bw, bh, 'LEVELS', 'levels', '#00C864');
@@ -140,17 +140,19 @@ export class UI {
 
     // Account button (top right)
     const username = getUsername();
+    const accH = IS_MOBILE ? 48 : 38;
+    const accFont = IS_MOBILE ? 18 : 16;
     if (username) {
-      this._drawButton(ctx, SCREEN_WIDTH - 200, 12, 180, 38, username, 'account', '#224466', 16);
+      this._drawButton(ctx, SCREEN_WIDTH - 210, 10, 190, accH, username, 'account', '#224466', accFont);
     } else {
-      this._drawButton(ctx, SCREEN_WIDTH - 140, 12, 120, 38, 'ACCOUNT', 'account', '#224466', 16);
+      this._drawButton(ctx, SCREEN_WIDTH - 150, 10, 130, accH, 'ACCOUNT', 'account', '#224466', accFont);
     }
 
     // Controls hint
     ctx.fillStyle = '#334455';
     ctx.font = '14px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SPACE / CLICK to jump   •   ESC for menu', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
+    ctx.fillText(IS_MOBILE ? 'TAP to jump' : 'SPACE / CLICK to jump   •   ESC for menu', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
   }
 
   drawLevelSelect(ctx, progress) {
@@ -275,19 +277,20 @@ export class UI {
       }
 
       // Normal and Practice buttons inside card
-      const btnW = 110;
-      const btnH = 40;
+      const btnW = IS_MOBILE ? 115 : 110;
+      const btnH = IS_MOBILE ? 50 : 40;
       const btnGap = 10;
-      const btnY = y + cardH - btnH - 16;
+      const btnY = y + cardH - btnH - 12;
       const btnX1 = x + (cardW - btnW * 2 - btnGap) / 2;
       const btnX2 = btnX1 + btnW + btnGap;
 
-      this._drawButton(ctx, btnX1, btnY, btnW, btnH, 'NORMAL', `normal_${i}`, '#00C864', 15);
-      this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', 15);
+      this._drawButton(ctx, btnX1, btnY, btnW, btnH, 'NORMAL', `normal_${i}`, '#00C864', IS_MOBILE ? 17 : 15);
+      this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', IS_MOBILE ? 17 : 15);
     }
 
     // Back button
-    this._drawButton(ctx, 30, SCREEN_HEIGHT - 65, 130, 44, 'BACK', 'back', '#445566', 20);
+    const backH = IS_MOBILE ? 52 : 44;
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, IS_MOBILE ? 150 : 130, backH, 'BACK', 'back', '#445566', 20);
   }
 
   drawStats(ctx, progress) {
@@ -438,7 +441,7 @@ export class UI {
     }
 
     // Pause button (top right) — rounded
-    const pbS = 44;
+    const pbS = IS_MOBILE ? 52 : 44;
     const pbX = SCREEN_WIDTH - pbS - 10;
     const pbY = 8;
     this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
@@ -552,9 +555,9 @@ export class UI {
     ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 325);
 
     // Buttons
-    const bw = 240, bh = 52;
+    const bw = IS_MOBILE ? 280 : 240, bh = IS_MOBILE ? 58 : 52;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365, bw, bh, 'RETRY', 'retry', '#00C864');
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 432, bw, bh, 'MENU', 'menu', '#445566');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365 + bh + 15, bw, bh, 'MENU', 'menu', '#445566');
   }
 
   drawCompleteScreen(ctx, attempts, theme) {
@@ -590,9 +593,9 @@ export class UI {
     ctx.fillText(`Attempts: ${attempts}`, SCREEN_WIDTH / 2, 295);
 
     // Buttons
-    const bw = 240, bh = 52;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 350, bw, bh, 'NEXT LEVEL', 'next_level', '#00C864');
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 418, bw, bh, 'MENU', 'menu', '#445566');
+    const cbw = IS_MOBILE ? 280 : 240, cbh = IS_MOBILE ? 58 : 52;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, 350, cbw, cbh, 'NEXT LEVEL', 'next_level', '#00C864');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, 350 + cbh + 15, cbw, cbh, 'MENU', 'menu', '#445566');
   }
 
   drawPauseScreen(ctx, editorTesting = false) {
@@ -617,17 +620,17 @@ export class UI {
     ctx.fillRect(SCREEN_WIDTH / 2 - 100, 260, 200, 1);
     ctx.globalAlpha = 1;
 
-    const bw = 240, bh = 52, gap = 64;
+    const pbw = IS_MOBILE ? 280 : 240, pbh = IS_MOBILE ? 58 : 52, pgap = IS_MOBILE ? 68 : 64;
     let btnY = 300;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'RESUME', 'resume', '#00C864');
-    btnY += gap;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'RESTART', 'restart', '#CC3333');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESUME', 'resume', '#00C864');
+    btnY += pgap;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESTART', 'restart', '#CC3333');
     if (editorTesting) {
-      btnY += gap;
-      this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
+      btnY += pgap;
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
     }
-    btnY += gap;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, btnY, bw, bh, 'MENU', 'menu', '#445566');
+    btnY += pgap;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'MENU', 'menu', '#445566');
   }
 
   drawCustomize(ctx, customization) {
@@ -689,8 +692,8 @@ export class UI {
     ctx.textAlign = 'center';
     ctx.fillText('COLOR', SCREEN_WIDTH / 2, sectionY1);
 
-    const colorSize = 38;
-    const colorGap = 10;
+    const colorSize = IS_MOBILE ? 48 : 38;
+    const colorGap = IS_MOBILE ? 8 : 10;
     const colorTotalW = PLAYER_COLORS.length * (colorSize + colorGap) - colorGap;
     const colorStartX = (SCREEN_WIDTH - colorTotalW) / 2;
 
@@ -699,7 +702,8 @@ export class UI {
       const cy = sectionY1 + 10;
 
       ctx.fillStyle = PLAYER_COLORS[i];
-      ctx.fillRect(cx, cy, colorSize, colorSize);
+      this._roundRect(ctx, cx, cy, colorSize, colorSize, 6);
+      ctx.fill();
 
       if (i === colorIndex) {
         ctx.strokeStyle = '#FFF';
@@ -711,14 +715,14 @@ export class UI {
     }
 
     // === TRAIL COLOR SECTION ===
-    const sectionY2 = 270;
+    const sectionY2 = IS_MOBILE ? 285 : 270;
     ctx.fillStyle = '#AA77DD';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('TRAIL', SCREEN_WIDTH / 2, sectionY2);
 
-    const trailSize = 38;
-    const trailGap = 10;
+    const trailSize = IS_MOBILE ? 48 : 38;
+    const trailGap = IS_MOBILE ? 8 : 10;
     const trailTotalW = PLAYER_TRAIL_COLORS.length * (trailSize + trailGap) - trailGap;
     const trailStartX = (SCREEN_WIDTH - trailTotalW) / 2;
 
@@ -728,13 +732,15 @@ export class UI {
 
       const tc = PLAYER_TRAIL_COLORS[i] || PLAYER_COLORS[colorIndex];
       ctx.fillStyle = tc;
-      ctx.fillRect(tx, ty, trailSize, trailSize);
+      this._roundRect(ctx, tx, ty, trailSize, trailSize, 6);
+      ctx.fill();
 
       if (i === 0) {
         ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(tx, ty, trailSize, trailSize);
+        this._roundRect(ctx, tx, ty, trailSize, trailSize, 6);
+        ctx.fill();
         ctx.fillStyle = '#FFF';
-        ctx.font = '10px monospace';
+        ctx.font = `${IS_MOBILE ? 12 : 10}px monospace`;
         ctx.textAlign = 'center';
         ctx.fillText('AUTO', tx + trailSize / 2, ty + trailSize / 2 + 4);
       }
@@ -749,14 +755,14 @@ export class UI {
     }
 
     // === SHAPE SECTION ===
-    const sectionY3 = 365;
+    const sectionY3 = IS_MOBILE ? 395 : 365;
     ctx.fillStyle = '#AA77DD';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('SHAPE', SCREEN_WIDTH / 2, sectionY3);
 
-    const shapeSize = 55;
-    const shapeGap = 14;
+    const shapeSize = IS_MOBILE ? 60 : 55;
+    const shapeGap = IS_MOBILE ? 10 : 14;
     const shapeTotalW = CUBE_SHAPES.length * (shapeSize + shapeGap) - shapeGap;
     const shapeStartX = (SCREEN_WIDTH - shapeTotalW) / 2;
 
@@ -781,14 +787,14 @@ export class UI {
     }
 
     // === ICON SECTION ===
-    const sectionY4 = 475;
+    const sectionY4 = IS_MOBILE ? 520 : 475;
     ctx.fillStyle = '#AA77DD';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('ICON', SCREEN_WIDTH / 2, sectionY4);
 
-    const iconSize = 55;
-    const iconGap = 14;
+    const iconSize = IS_MOBILE ? 60 : 55;
+    const iconGap = IS_MOBILE ? 10 : 14;
     const iconTotalW = CUBE_ICONS.length * (iconSize + iconGap) - iconGap;
     const iconStartX = (SCREEN_WIDTH - iconTotalW) / 2;
 
@@ -813,7 +819,8 @@ export class UI {
     }
 
     // Back button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 65, 200, 44, 'BACK', 'back_customize', '#445566', 20);
+    const custBackH = IS_MOBILE ? 52 : 44;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - custBackH - 16, 220, custBackH, 'BACK', 'back_customize', '#445566', 20);
   }
 
   _drawPreviewCube(ctx, cx, cy, size, color, icon, shape) {
