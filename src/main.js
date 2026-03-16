@@ -290,7 +290,7 @@ class Game {
 
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
-          this.state === STATS || this.state === PAUSED || this.state === COMPLETE) {
+          this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           Sound.playSelect();
