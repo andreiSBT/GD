@@ -465,9 +465,11 @@ class Game {
 
     if (action === 'friends_tab_list') {
       fd.tab = 'list';
+      this._hideFriendsInput();
       this._loadFriendsData();
     } else if (action === 'friends_tab_requests') {
       fd.tab = 'requests';
+      this._hideFriendsInput();
       this._loadFriendsData();
     } else if (action === 'friends_tab_search') {
       fd.tab = 'search';
