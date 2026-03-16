@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { Editor } from './editor.js';
@@ -578,6 +578,7 @@ class Game {
       const msg = fd.messages[idx];
       if (msg && msg.type === 'level' && msg.levelData) {
         const ld = msg.levelData;
+        console.log('[Friends] PLAY level data keys:', Object.keys(ld), 'has objects:', !!ld.objects);
         // Level data is embedded directly in the message
         if (ld.objects && ld.objects.length > 0) {
           const lvl = createLevelFromData({
@@ -601,32 +602,8 @@ class Game {
             this._showFriendsNotif('Failed to load level.', 'error');
           }
         } else {
-          // Legacy format: try fetching from server
-          if (ld.userId && ld.slotId) {
-            this._showFriendsNotif('Loading level...', 'success');
-            getSharedLevel(ld.userId, ld.slotId).then(level => {
-              if (level) {
-                const lvl = createLevelFromData({ name: level.name, themeId: level.themeId, objects: level.objects });
-                if (lvl) {
-                  this._hideFriendsInput();
-                  this.editorLevelData = { name: level.name, themeId: level.themeId, objects: level.objects };
-                  this.level = lvl;
-                  this.theme = THEMES[level.themeId] || THEMES[1];
-                  this.practiceMode = false;
-                  this.attempts = 0;
-                  this.player.reset(0);
-                  this.camera.reset();
-                  this.particles.reset();
-                  this.state = PLAYING;
-                  Sound.playMusic(1);
-                }
-              } else {
-                this._showFriendsNotif('Level not found.', 'error');
-              }
-            });
-          } else {
-            this._showFriendsNotif('No level data available.', 'error');
-          }
+          // Old format without embedded data
+          this._showFriendsNotif('Old format. Re-share level.', 'error');
         }
       } else {
         this._showFriendsNotif('No level data in this message.', 'error');
@@ -1221,6 +1198,25 @@ class Game {
     }
 
     ctx.restore();
+
+    // Portrait mode overlay — hint to rotate
+    if (this.isPortrait) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,20,0.92)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      ctx.fillStyle = '#00C8FF';
+      ctx.font = 'bold 36px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('ROTATE YOUR DEVICE', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 30);
+      // Rotate icon
+      ctx.font = '60px monospace';
+      ctx.fillText('\u21BB', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 40);
+      ctx.fillStyle = '#4A6A8A';
+      ctx.font = '16px monospace';
+      ctx.fillText('This game is best played in landscape', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 90);
+      ctx.restore();
+    }
   }
 
   _resizeCanvas() {
@@ -1229,6 +1225,9 @@ class Game {
     const windowH = vv ? vv.height : window.innerHeight;
     const windowRatio = windowW / windowH;
     const dpr = window.devicePixelRatio || 1;
+
+    // Track portrait mode for rotate hint on mobile
+    this.isPortrait = IS_MOBILE && windowRatio < 1;
 
     // Minimum aspect ratio (~4:3) - below this, show black bars instead of squishing
     const MIN_RATIO = 1.33;
