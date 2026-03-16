@@ -1277,6 +1277,7 @@ class Game {
       loginError.style.color = '#FF4444';
       if (error) { loginError.textContent = error; return; }
       ensureProfile();
+      this._clearLocalData();
       await this._syncFromCloud();
       updateView();
     });
@@ -1302,6 +1303,7 @@ class Game {
 
     document.getElementById('acc-logout').addEventListener('click', async () => {
       await signOut();
+      this._clearLocalData();
       updateView();
     });
 
@@ -1326,6 +1328,33 @@ class Game {
       this.customization = cloud;
       localStorage.setItem('gd_customization', JSON.stringify(cloud));
       this._applyCustomization();
+    }
+  }
+
+  _clearLocalData() {
+    // Clear all game data from localStorage
+    localStorage.removeItem('gd_progress');
+    localStorage.removeItem('gd_customization');
+    localStorage.removeItem('gd_editor_attempts');
+    // Clear editor slots
+    try {
+      const slots = JSON.parse(localStorage.getItem('gd_editor_slots') || '[]');
+      for (const slot of slots) {
+        localStorage.removeItem('gd_editor_slot_' + slot.id);
+      }
+    } catch {}
+    localStorage.removeItem('gd_editor_slots');
+    // Reset in-memory state
+    this.progress = {
+      1: { attempts: 0, bestProgress: 0, completed: false },
+      2: { attempts: 0, bestProgress: 0, completed: false },
+      3: { attempts: 0, bestProgress: 0, completed: false },
+    };
+    this.customization = this._loadCustomization();
+    this._applyCustomization();
+    if (this.editor) {
+      this.editor.objects = [];
+      this.editor.currentSlot = null;
     }
   }
 
