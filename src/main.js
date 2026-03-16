@@ -966,11 +966,11 @@ class Game {
       }
     }
 
-    // For active transport: keep player fully locked until arrived
+    // For active transport: keep player locked (including arrived grace period)
     const prevTransportRef = (this.player.movingPlatformRef &&
       this.player.movingPlatformRef.type === 'transport' &&
       this.player.movingPlatformRef.active &&
-      !this.player.movingPlatformRef.arrived) ? this.player.movingPlatformRef : null;
+      (!this.player.movingPlatformRef.arrived || this.player.movingPlatformRef.arrivedFrames < 12)) ? this.player.movingPlatformRef : null;
 
     // Save moving platform ref to force-snap player each frame
     const prevMovingRef = (this.player.movingPlatformRef &&
@@ -993,34 +993,44 @@ class Game {
       this.player.transportExitRamp = 1;
     }
 
-    // If player was on active transport, force-keep them fully locked
+    // If player was on active transport, force-keep them locked
     if (prevTransportRef) {
       this.player.onMovingPlatform = true;
       this.player.movingPlatformRef = prevTransportRef;
-      this.player.transportLocked = true;
       this.player.y = prevTransportRef.y - PLAYER_SIZE;
       this.player.vy = 0;
       this.player.grounded = true;
       this.player.onPlatform = true;
       this.player.platformRef = prevTransportRef;
-      // During wait phase, slide player toward platform center
-      if (prevTransportRef.waitFrames < prevTransportRef.waitTotal) {
-        const centerX = prevTransportRef.x + prevTransportRef.w / 2 - PLAYER_SIZE / 2;
-        const diff = centerX - this.player.x;
-        // Smoothly move toward center over the wait period
-        this.player.x += diff * 0.2;
+      if (prevTransportRef.arrived) {
+        // Arrived: keep on platform but don't lock x, let player walk off
+        this.player.transportLocked = false;
+      } else {
+        this.player.transportLocked = true;
+        // During wait phase, slide player toward platform center
+        if (prevTransportRef.waitFrames < prevTransportRef.waitTotal) {
+          const centerX = prevTransportRef.x + prevTransportRef.w / 2 - PLAYER_SIZE / 2;
+          const diff = centerX - this.player.x;
+          this.player.x += diff * 0.2;
+        }
       }
     }
 
     // Force-snap player to moving platform if they were on it and haven't jumped
+    // Also check horizontal bounds so jumping past the platform doesn't snap back
     if (prevMovingRef && !prevTransportRef && this.player.vy >= 0) {
-      this.player.y = prevMovingRef.y - PLAYER_SIZE;
-      this.player.prevY = this.player.y;
-      this.player.vy = 0;
-      this.player.grounded = true;
-      this.player.onPlatform = true;
-      this.player.onMovingPlatform = true;
-      this.player.movingPlatformRef = prevMovingRef;
+      const px = this.player.x;
+      const platLeft = prevMovingRef.x;
+      const platRight = prevMovingRef.x + prevMovingRef.w;
+      if (px + PLAYER_SIZE > platLeft && px < platRight) {
+        this.player.y = prevMovingRef.y - PLAYER_SIZE;
+        this.player.prevY = this.player.y;
+        this.player.vy = 0;
+        this.player.grounded = true;
+        this.player.onPlatform = true;
+        this.player.onMovingPlatform = true;
+        this.player.movingPlatformRef = prevMovingRef;
+      }
     }
 
     // Collision detection (before player.update so moving platform flag is set in time)
