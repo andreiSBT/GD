@@ -934,6 +934,8 @@ class Game {
     // Collision detection (before player.update so moving platform flag is set in time)
     const playerRect = this.player.getRect();
     const visible = this.level.getVisible(this.camera.x);
+    const wasOnPlatform = this.player.onPlatform;
+    this.player.onPlatform = false;
 
     for (const obs of visible) {
       if (obs.type === 'spike') {
@@ -1056,6 +1058,12 @@ class Game {
       this.pendingOrbHit.obs.markActivated();
       this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, this.theme.accent);
       this.pendingOrbHit = null;
+    }
+
+    // Walked off platform edge: start falling
+    if (wasOnPlatform && !this.player.onPlatform) {
+      this.player.grounded = false;
+      this.player.coyoteCounter = 6;
     }
 
     // Now update player movement (after collision set onMovingPlatform)
