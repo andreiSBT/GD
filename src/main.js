@@ -546,18 +546,29 @@ class Game {
       if (fd.chatFriend) {
         fd.shareTarget = fd.chatFriend;
         fd.tab = 'share_select';
-        getMyEditorLevels().then(levels => { fd.myLevels = levels; });
+        this._hideFriendsInput();
       }
     } else if (action.startsWith('friends_send_level_')) {
-      const idx = parseInt(action.split('_')[3]);
-      const lv = fd.myLevels[idx];
-      if (lv && fd.shareTarget) {
-        sendMessage(fd.shareTarget.friendId, lv.name, 'level', { slotId: lv.slotId, userId: getAuthUser().id }).then(() => {
-          this._showFriendsNotif('Level shared!', 'success');
-          fd.tab = 'chat';
-          getMessages(fd.chatFriend.friendId).then(m => { fd.messages = m; });
-          this._showFriendsInput('chat');
-        });
+      // Find the button to get the slotId
+      const btnId = action;
+      const btn = this.ui.buttons.find(b => b.id === btnId);
+      const slotId = btn?.slotId;
+      if (slotId && fd.shareTarget) {
+        // Read level data from localStorage
+        try {
+          const raw = localStorage.getItem('gd_editor_slot_' + slotId);
+          const slots = JSON.parse(localStorage.getItem('gd_editor_slots') || '[]');
+          const slotMeta = slots.find(s => s.id === slotId);
+          const name = slotMeta?.name || 'Untitled';
+          if (raw) {
+            sendMessage(fd.shareTarget.friendId, name, 'level', { slotId, userId: getAuthUser().id }).then(() => {
+              this._showFriendsNotif('Level shared!', 'success');
+              fd.tab = 'chat';
+              getMessages(fd.chatFriend.friendId).then(m => { fd.messages = m; });
+              this._showFriendsInput('chat');
+            });
+          }
+        } catch {}
       }
     } else if (action.startsWith('friends_play_level_')) {
       const idx = parseInt(action.split('_')[3]);

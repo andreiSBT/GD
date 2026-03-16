@@ -1656,72 +1656,116 @@ export class UI {
   }
 
   _drawShareLevelSelect(ctx, myLevels, shareTarget, startY) {
-    // Header with glow
+    // Read local editor slots
+    let slots = [];
+    try {
+      const raw = localStorage.getItem('gd_editor_slots');
+      if (raw) slots = JSON.parse(raw);
+      slots.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    } catch {}
+
+    // Title with glow (matches editor browse style)
     ctx.save();
-    ctx.shadowColor = '#FF8844';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = '#CC6600';
+    ctx.shadowBlur = 20;
     ctx.fillStyle = '#FF8844';
-    ctx.font = 'bold 20px monospace';
+    ctx.font = 'bold 32px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`Share a level with ${shareTarget?.name || '...'}`, SCREEN_WIDTH / 2, startY + 5);
+    ctx.fillText('SHARE LEVEL', SCREEN_WIDTH / 2, startY + 5);
+    ctx.shadowBlur = 0;
     ctx.restore();
+
+    // Subtitle
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Send to ${shareTarget?.name || '...'}`, SCREEN_WIDTH / 2, startY + 28);
 
     // Decorative line
-    ctx.save();
-    ctx.globalAlpha = 0.2;
-    ctx.fillStyle = '#FF8844';
-    ctx.fillRect(SCREEN_WIDTH / 2 - 100, startY + 16, 200, 1);
-    ctx.restore();
+    const lineGrad = ctx.createLinearGradient(SCREEN_WIDTH * 0.25, 0, SCREEN_WIDTH * 0.75, 0);
+    lineGrad.addColorStop(0, 'transparent');
+    lineGrad.addColorStop(0.3, 'rgba(255,136,68,0.4)');
+    lineGrad.addColorStop(0.7, 'rgba(255,136,68,0.4)');
+    lineGrad.addColorStop(1, 'transparent');
+    ctx.strokeStyle = lineGrad;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(SCREEN_WIDTH * 0.25, startY + 40);
+    ctx.lineTo(SCREEN_WIDTH * 0.75, startY + 40);
+    ctx.stroke();
 
-    if (!myLevels || myLevels.length === 0) {
-      this._drawEmptyState(ctx, '~', 'No saved levels to share', 'Create levels in the editor first', startY + 100);
+    if (slots.length === 0) {
+      this._drawEmptyState(ctx, '~', 'No saved levels', 'Create levels in the editor first', startY + 120);
       return;
     }
 
-    const itemH = 54, gap = 8;
-    const listW = 480;
-    const listX = (SCREEN_WIDTH - listW) / 2;
+    const cardW = Math.min(500, SCREEN_WIDTH - 60);
+    const cardH = 70;
+    const gap = 12;
+    const cardX = (SCREEN_WIDTH - cardW) / 2;
+    const listStartY = startY + 52;
 
-    for (let i = 0; i < myLevels.length && i < 7; i++) {
-      const lv = myLevels[i];
-      const iy = startY + 30 + i * (itemH + gap);
+    for (let i = 0; i < slots.length && i < 6; i++) {
+      const slot = slots[i];
+      const cy = listStartY + i * (cardH + gap);
 
-      ctx.save();
-      ctx.shadowColor = 'rgba(255,136,68,0.1)';
-      ctx.shadowBlur = 6;
-      this._roundRect(ctx, listX, iy, listW, itemH, 10);
-      ctx.fillStyle = 'rgba(120,60,0,0.15)';
+      // Card bg (matches editor browse style)
+      const cardGrad = ctx.createLinearGradient(cardX, cy, cardX, cy + cardH);
+      cardGrad.addColorStop(0, 'rgba(25,25,45,0.95)');
+      cardGrad.addColorStop(1, 'rgba(18,18,35,0.95)');
+      ctx.fillStyle = cardGrad;
+      this._roundRect(ctx, cardX, cy, cardW, cardH, 10);
       ctx.fill();
-      ctx.restore();
 
-      this._roundRect(ctx, listX, iy, listW, itemH, 10);
+      // Card border
       ctx.strokeStyle = 'rgba(255,136,68,0.2)';
       ctx.lineWidth = 1;
+      this._roundRect(ctx, cardX, cy, cardW, cardH, 10);
       ctx.stroke();
 
-      // Level icon
+      // Level name
+      ctx.fillStyle = '#EEE';
+      ctx.font = 'bold 19px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(slot.name || 'Untitled', cardX + 16, cy + 28);
+
+      // Object count + date
+      ctx.fillStyle = '#668';
+      ctx.font = '13px monospace';
+      const objText = (slot.objectCount || 0) + ' objects';
+      const dateText = slot.updatedAt ? new Date(slot.updatedAt).toLocaleDateString() : '';
+      ctx.fillText(objText + '  •  ' + dateText, cardX + 16, cy + 50);
+
+      // Send/share button (replaces play + delete)
+      const btnX = cardX + cardW - 60;
+      const btnY = cy + 10;
+      const btnW = 50;
+      const btnH = cardH - 20;
+
       ctx.save();
-      ctx.fillStyle = 'rgba(255,136,68,0.3)';
-      ctx.beginPath();
-      ctx.arc(listX + 28, iy + itemH / 2, 14, 0, Math.PI * 2);
+      ctx.shadowColor = '#FF8844';
+      ctx.shadowBlur = 6;
+      ctx.fillStyle = 'rgba(120,50,0,0.7)';
+      this._roundRect(ctx, btnX, btnY, btnW, btnH, 8);
       ctx.fill();
-      ctx.fillStyle = '#FF8844';
-      ctx.font = 'bold 14px monospace';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${i + 1}`, listX + 28, iy + itemH / 2);
-      ctx.textBaseline = 'alphabetic';
       ctx.restore();
 
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 15px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(lv.name, listX + 52, iy + 22);
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
-      ctx.font = '11px monospace';
-      ctx.fillText(`${lv.objectCount} objects`, listX + 52, iy + 40);
+      ctx.strokeStyle = 'rgba(255,136,68,0.4)';
+      ctx.lineWidth = 1;
+      this._roundRect(ctx, btnX, btnY, btnW, btnH, 8);
+      ctx.stroke();
 
-      this._drawButton(ctx, listX + listW - 110, iy + 8, 95, 38, 'SEND', `friends_send_level_${i}`, '#CC6600', 14);
+      // Share arrow icon (↗)
+      ctx.fillStyle = '#FF8844';
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('↗', btnX + btnW / 2, btnY + btnH / 2);
+      ctx.textBaseline = 'alphabetic';
+
+      this.buttons.push({ id: `friends_send_level_${i}`, x: btnX, y: btnY, w: btnW, h: btnH });
+      // Also store slot id for the handler
+      this.buttons[this.buttons.length - 1].slotId = slot.id;
     }
   }
 }
