@@ -1359,13 +1359,13 @@ export class UI {
       ctx.restore();
 
       // Avatar
-      this._drawAvatar(ctx, listX + 32, iy + itemH / 2, 18, f.name, avatarColors[i % avatarColors.length]);
+      this._drawAvatar(ctx, listX + 30, iy + itemH / 2, 16, f.name, avatarColors[i % avatarColors.length]);
 
       // Name
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 17px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(f.name, listX + 58, iy + itemH / 2 + 5);
+      ctx.fillText(f.name, listX + 56, iy + itemH / 2 + 5);
 
       // Chat button
       this._drawButton(ctx, listX + listW - 205, iy + 10, 90, 40, 'CHAT', `friends_chat_${i}`, '#0088CC', 14);
@@ -1417,13 +1417,13 @@ export class UI {
       ctx.restore();
 
       // Avatar
-      this._drawAvatar(ctx, listX + 32, iy + itemH / 2, 18, r.name, '#FF8844');
+      this._drawAvatar(ctx, listX + 30, iy + itemH / 2, 16, r.name, '#FF8844');
 
       // Name
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 17px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(r.name, listX + 58, iy + itemH / 2 + 5);
+      ctx.fillText(r.name, listX + 56, iy + itemH / 2 + 5);
 
       // Accept / Decline
       this._drawButton(ctx, listX + listW - 215, iy + 10, 100, 40, 'ACCEPT', `friends_accept_${i}`, '#22AA44', 14);
@@ -1573,9 +1573,11 @@ export class UI {
       // Draw messages with chat bubbles
       const lineH = 38;
       const maxVisible = Math.floor((msgH - 16) / lineH);
-      const visibleMsgs = messages.slice(-maxVisible);
+      const startIdx = Math.max(0, messages.length - maxVisible);
+      const visibleMsgs = messages.slice(startIdx);
       for (let i = 0; i < visibleMsgs.length; i++) {
         const m = visibleMsgs[i];
+        const realIdx = startIdx + i; // actual index in messages array
         const my = msgY + 10 + i * lineH;
 
         if (m.type === 'level') {
@@ -1599,7 +1601,7 @@ export class UI {
           ctx.textAlign = m.mine ? 'right' : 'left';
           const lx = m.mine ? bubbleX + bubbleW - 130 : bubbleX + 10;
           ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 22);
-          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 118 : bubbleX + bubbleW - 128, my + 4, 110, 26, 'PLAY', `friends_play_level_${i}`, '#00AA44', 12);
+          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 118 : bubbleX + bubbleW - 128, my + 4, 110, 26, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', 12);
         } else {
           // Chat bubble
           const text = (m.mine ? '' : `${chatFriend?.name || '?'}: `) + m.content;
