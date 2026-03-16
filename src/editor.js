@@ -912,6 +912,7 @@ export class Editor {
           name: cl.name,
           themeId: cl.themeId,
           objects: cl.objects,
+          startPos: localData?.startPos || null, // preserve local startPos
           updatedAt: cl.updatedAt
         };
         localStorage.setItem('gd_editor_slot_' + cl.slotId, JSON.stringify(data));
