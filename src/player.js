@@ -210,7 +210,8 @@ export class Player {
     }
 
     // Hold-to-jump: in cube/ball mode, auto-jump on landing while holding
-    if ((this.mode === MODE_CUBE || this.mode === MODE_BALL) && this.holding && this.grounded && !this.dashing) {
+    // Don't auto-jump while on a moving/transport platform
+    if ((this.mode === MODE_CUBE || this.mode === MODE_BALL) && this.holding && this.grounded && !this.dashing && !this.onMovingPlatform) {
       this.holdJumped = this.jump();
     } else {
       this.holdJumped = false;

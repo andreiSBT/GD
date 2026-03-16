@@ -959,6 +959,8 @@ class Game {
     // Move player with platform BEFORE collision detection
     if (this.player.movingPlatformRef && this.player.grounded) {
       this.player.y += this.player.movingPlatformRef.deltaY;
+      // Keep prevY in sync so collision doesn't think player approached from side
+      this.player.prevY += this.player.movingPlatformRef.deltaY;
       if (this.player.transportLocked) {
         this.player.x += this.player.movingPlatformRef.deltaX;
       }
