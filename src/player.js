@@ -154,7 +154,7 @@ export class Player {
     this.grounded = false;
     this.coyoteCounter = 0;
     this.gravityMult *= -1;
-    this.vy = JUMP_VEL * this.gravityMult * 0.5;
+    this.vy = 0;
   }
 
   update() {
