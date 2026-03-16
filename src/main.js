@@ -554,14 +554,17 @@ class Game {
       const btn = this.ui.buttons.find(b => b.id === btnId);
       const slotId = btn?.slotId;
       if (slotId && fd.shareTarget) {
-        // Read level data from localStorage
+        // Read full level data from localStorage and embed in message
         try {
           const raw = localStorage.getItem('gd_editor_slot_' + slotId);
-          const slots = JSON.parse(localStorage.getItem('gd_editor_slots') || '[]');
-          const slotMeta = slots.find(s => s.id === slotId);
-          const name = slotMeta?.name || 'Untitled';
           if (raw) {
-            sendMessage(fd.shareTarget.friendId, name, 'level', { slotId, userId: getAuthUser().id }).then(() => {
+            const levelData = JSON.parse(raw);
+            const name = levelData.name || 'Untitled';
+            sendMessage(fd.shareTarget.friendId, name, 'level', {
+              name: levelData.name,
+              themeId: levelData.themeId,
+              objects: levelData.objects,
+            }).then(() => {
               this._showFriendsNotif('Level shared!', 'success');
               fd.tab = 'chat';
               getMessages(fd.chatFriend.friendId).then(m => { fd.messages = m; });
@@ -574,33 +577,57 @@ class Game {
       const idx = parseInt(action.split('_')[3]);
       const msg = fd.messages[idx];
       if (msg && msg.type === 'level' && msg.levelData) {
-        this._showFriendsNotif('Loading level...', 'success');
-        getSharedLevel(msg.levelData.userId, msg.levelData.slotId).then(level => {
-          if (level) {
-            const lvl = createLevelFromData({
-              name: level.name,
-              themeId: level.themeId,
-              objects: level.objects,
-            });
-            if (lvl) {
-              this._hideFriendsInput();
-              this.editorLevelData = { name: level.name, themeId: level.themeId, objects: level.objects };
-              this.level = lvl;
-              this.theme = THEMES[level.themeId] || THEMES[1];
-              this.practiceMode = false;
-              this.attempts = 0;
-              this.player.reset(0);
-              this.camera.reset();
-              this.particles.reset();
-              this.state = PLAYING;
-              Sound.playMusic(1);
-            } else {
-              this._showFriendsNotif('Failed to load level data.', 'error');
-            }
+        const ld = msg.levelData;
+        // Level data is embedded directly in the message
+        if (ld.objects && ld.objects.length > 0) {
+          const lvl = createLevelFromData({
+            name: ld.name || msg.content,
+            themeId: ld.themeId || 1,
+            objects: ld.objects,
+          });
+          if (lvl) {
+            this._hideFriendsInput();
+            this.editorLevelData = { name: ld.name || msg.content, themeId: ld.themeId || 1, objects: ld.objects };
+            this.level = lvl;
+            this.theme = THEMES[ld.themeId] || THEMES[1];
+            this.practiceMode = false;
+            this.attempts = 0;
+            this.player.reset(0);
+            this.camera.reset();
+            this.particles.reset();
+            this.state = PLAYING;
+            Sound.playMusic(1);
           } else {
-            this._showFriendsNotif('Level not found on server.', 'error');
+            this._showFriendsNotif('Failed to load level.', 'error');
           }
-        });
+        } else {
+          // Legacy format: try fetching from server
+          if (ld.userId && ld.slotId) {
+            this._showFriendsNotif('Loading level...', 'success');
+            getSharedLevel(ld.userId, ld.slotId).then(level => {
+              if (level) {
+                const lvl = createLevelFromData({ name: level.name, themeId: level.themeId, objects: level.objects });
+                if (lvl) {
+                  this._hideFriendsInput();
+                  this.editorLevelData = { name: level.name, themeId: level.themeId, objects: level.objects };
+                  this.level = lvl;
+                  this.theme = THEMES[level.themeId] || THEMES[1];
+                  this.practiceMode = false;
+                  this.attempts = 0;
+                  this.player.reset(0);
+                  this.camera.reset();
+                  this.particles.reset();
+                  this.state = PLAYING;
+                  Sound.playMusic(1);
+                }
+              } else {
+                this._showFriendsNotif('Level not found.', 'error');
+              }
+            });
+          } else {
+            this._showFriendsNotif('No level data available.', 'error');
+          }
+        }
       } else {
         this._showFriendsNotif('No level data in this message.', 'error');
       }
