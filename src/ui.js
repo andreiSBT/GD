@@ -380,7 +380,8 @@ export class UI {
     }
 
     // Back button
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT - 80, 200, 48, 'BACK', 'back_stats', '#445566', 20);
+    const statsBkH = IS_MOBILE ? 56 : 48;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
   drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null) {
@@ -1267,12 +1268,12 @@ export class UI {
       { id: 'friends_tab_requests', label: `REQUESTS${requests.length > 0 ? ' (' + requests.length + ')' : ''}`, color: tab === 'requests' ? '#FF8844' : '#334455', active: tab === 'requests' },
       { id: 'friends_tab_search', label: 'SEARCH', color: tab === 'search' ? '#44CC44' : '#334455', active: tab === 'search' },
     ];
-    const tabW = 160, tabH = 36, tabGap = 12;
+    const tabW = IS_MOBILE ? 170 : 160, tabH = IS_MOBILE ? 46 : 36, tabGap = IS_MOBILE ? 10 : 12;
     const tabTotalW = tabs.length * tabW + (tabs.length - 1) * tabGap;
     const tabStartX = (SCREEN_WIDTH - tabTotalW) / 2;
     for (let i = 0; i < tabs.length; i++) {
       const tx = tabStartX + i * (tabW + tabGap);
-      this._drawButton(ctx, tx, 92, tabW, tabH, tabs[i].label, tabs[i].id, tabs[i].color, 14);
+      this._drawButton(ctx, tx, 92, tabW, tabH, tabs[i].label, tabs[i].id, tabs[i].color, IS_MOBILE ? 16 : 14);
       // Active tab glow underline
       if (tabs[i].active) {
         ctx.save();
@@ -1324,7 +1325,8 @@ export class UI {
 
     // Back button
     const backTarget = (tab === 'chat' || tab === 'share_select') ? 'friends_back_to_list' : 'friends_back';
-    this._drawButton(ctx, 30, SCREEN_HEIGHT - 60, 130, 44, 'BACK', backTarget, '#445566', 20);
+    const fbH = IS_MOBILE ? 52 : 44;
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - fbH - 16, IS_MOBILE ? 150 : 130, fbH, 'BACK', backTarget, '#445566', 20);
   }
 
   _drawFriendsList(ctx, friends, startY) {
@@ -1333,7 +1335,7 @@ export class UI {
       return;
     }
 
-    const itemH = 60, gap = 8;
+    const itemH = IS_MOBILE ? 68 : 60, gap = 8;
     const listW = 520;
     const listX = (SCREEN_WIDTH - listW) / 2;
 
@@ -1375,9 +1377,10 @@ export class UI {
       ctx.fillText(f.name, listX + 56, iy + itemH / 2 + 5);
 
       // Chat button
-      this._drawButton(ctx, listX + listW - 205, iy + 10, 90, 40, 'CHAT', `friends_chat_${i}`, '#0088CC', 14);
+      const flBtnH = IS_MOBILE ? 48 : 40;
+      this._drawButton(ctx, listX + listW - 210, iy + (itemH - flBtnH) / 2, 95, flBtnH, 'CHAT', `friends_chat_${i}`, '#0088CC', IS_MOBILE ? 16 : 14);
       // Remove button
-      this._drawButton(ctx, listX + listW - 100, iy + 10, 85, 40, 'REMOVE', `friends_remove_${i}`, '#663333', 14);
+      this._drawButton(ctx, listX + listW - 100, iy + (itemH - flBtnH) / 2, 90, flBtnH, 'REMOVE', `friends_remove_${i}`, '#663333', IS_MOBILE ? 16 : 14);
     }
   }
 
@@ -1395,7 +1398,7 @@ export class UI {
     const listX = (SCREEN_WIDTH - listW) / 2;
     ctx.fillText(`${requests.length} PENDING REQUEST${requests.length !== 1 ? 'S' : ''}`, listX + 4, startY - 4);
 
-    const itemH = 60, gap = 8;
+    const itemH = IS_MOBILE ? 68 : 60, gap = 8;
 
     for (let i = 0; i < requests.length && i < 7; i++) {
       const r = requests[i];
@@ -1433,13 +1436,14 @@ export class UI {
       ctx.fillText(r.name, listX + 56, iy + itemH / 2 + 5);
 
       // Accept / Decline
-      this._drawButton(ctx, listX + listW - 215, iy + 10, 100, 40, 'ACCEPT', `friends_accept_${i}`, '#22AA44', 14);
-      this._drawButton(ctx, listX + listW - 100, iy + 10, 85, 40, 'DECLINE', `friends_decline_${i}`, '#883333', 14);
+      const frBtnH = IS_MOBILE ? 48 : 40;
+      this._drawButton(ctx, listX + listW - 220, iy + (itemH - frBtnH) / 2, 105, frBtnH, 'ACCEPT', `friends_accept_${i}`, '#22AA44', IS_MOBILE ? 16 : 14);
+      this._drawButton(ctx, listX + listW - 100, iy + (itemH - frBtnH) / 2, 90, frBtnH, 'DECLINE', `friends_decline_${i}`, '#883333', IS_MOBILE ? 16 : 14);
     }
   }
 
   _drawFriendSearch(ctx, results, query, startY, htmlInputActive, sentRequests) {
-    const boxW = 400, boxH = 42;
+    const boxW = 400, boxH = IS_MOBILE ? 50 : 42;
     const boxX = (SCREEN_WIDTH - boxW) / 2;
 
     // Only draw the canvas search box when HTML input is NOT overlaying it
@@ -1473,7 +1477,7 @@ export class UI {
     this.buttons.push({ id: 'friends_focus_search', x: boxX, y: startY, w: boxW, h: boxH });
 
     // Search button
-    this._drawButton(ctx, boxX + boxW + 12, startY, 100, boxH, 'SEARCH', 'friends_do_search', '#44CC44', 15);
+    this._drawButton(ctx, boxX + boxW + 12, startY, IS_MOBILE ? 110 : 100, boxH, 'SEARCH', 'friends_do_search', '#44CC44', IS_MOBILE ? 17 : 15);
 
     // Results
     const resultY = startY + 65;
@@ -1486,7 +1490,7 @@ export class UI {
       const listX = (SCREEN_WIDTH - listW) / 2;
       ctx.fillText(`${results.length} RESULT${results.length !== 1 ? 'S' : ''} FOUND`, listX + 4, resultY - 6);
 
-      const itemH = 54, gap = 6;
+      const itemH = IS_MOBILE ? 62 : 54, gap = 6;
 
       for (let i = 0; i < results.length && i < 8; i++) {
         const u = results[i];
@@ -1515,7 +1519,8 @@ export class UI {
 
         if (sentRequests && sentRequests.has(u.user_id)) {
           // Disabled grayed-out "SENT" label (no button, not clickable)
-          const bx = listX + listW - 135, by = iy + 8, bw = 120, bh = 38;
+          const srBtnH = IS_MOBILE ? 46 : 38;
+          const bx = listX + listW - 140, by = iy + (itemH - srBtnH) / 2, bw = 125, bh = srBtnH;
           ctx.save();
           ctx.globalAlpha = 0.3;
           this._roundRect(ctx, bx, by, bw, bh, 10);
@@ -1530,7 +1535,8 @@ export class UI {
           ctx.restore();
           ctx.textBaseline = 'alphabetic';
         } else {
-          this._drawButton(ctx, listX + listW - 135, iy + 8, 120, 38, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', 13);
+          const addBtnH = IS_MOBILE ? 46 : 38;
+          this._drawButton(ctx, listX + listW - 140, iy + (itemH - addBtnH) / 2, 125, addBtnH, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', IS_MOBILE ? 15 : 13);
         }
       }
     } else if (results && results.length === 0 && query) {
@@ -1563,7 +1569,8 @@ export class UI {
     ctx.restore();
 
     // Share level button
-    this._drawButton(ctx, SCREEN_WIDTH - 200, startY - 12, 140, 34, 'SHARE LEVEL', 'friends_share_level', '#CC6600', 13);
+    const shareBtnH = IS_MOBILE ? 44 : 34;
+    this._drawButton(ctx, SCREEN_WIDTH - 210, startY - 14, IS_MOBILE ? 160 : 140, shareBtnH, 'SHARE LEVEL', 'friends_share_level', '#CC6600', IS_MOBILE ? 15 : 13);
 
     // Message area
     const msgY = startY + 28;
@@ -1618,17 +1625,19 @@ export class UI {
           ctx.textAlign = m.mine ? 'right' : 'left';
           const lx = m.mine ? bubbleX + bubbleW - 130 : bubbleX + 10;
           ctx.fillText(`[LEVEL] ${m.content}`, lx, my + 22);
-          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 118 : bubbleX + bubbleW - 128, my + 4, 110, 26, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', 12);
+          const playBtnH = IS_MOBILE ? 32 : 26;
+          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - 125 : bubbleX + bubbleW - 135, my + 2, IS_MOBILE ? 120 : 110, playBtnH, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', IS_MOBILE ? 14 : 12);
           // Delete button on own messages
           if (m.mine) {
-            const delX = bubbleX + 4, delY = my + 6;
+            const delS = IS_MOBILE ? 30 : 20;
+            const delX = bubbleX + 2, delY = my + 4;
             ctx.fillStyle = 'rgba(255,60,60,0.5)';
-            ctx.font = 'bold 12px monospace';
+            ctx.font = `bold ${IS_MOBILE ? 16 : 12}px monospace`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('✕', delX + 10, delY + 10);
+            ctx.fillText('✕', delX + delS / 2, delY + delS / 2);
             ctx.textBaseline = 'alphabetic';
-            this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: 20, h: 20 });
+            this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: delS, h: delS });
           }
         } else {
           // Chat bubble
@@ -1651,14 +1660,15 @@ export class UI {
           ctx.fillText(text, bubbleX + 10, my + 20);
           // Delete button on own messages
           if (m.mine) {
-            const delX = bubbleX - 22, delY = my + 2;
+            const delS2 = IS_MOBILE ? 30 : 16;
+            const delX = bubbleX - delS2 - 4, delY = my + 2;
             ctx.fillStyle = 'rgba(255,60,60,0.4)';
-            ctx.font = 'bold 12px monospace';
+            ctx.font = `bold ${IS_MOBILE ? 16 : 12}px monospace`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText('✕', delX + 8, delY + 12);
+            ctx.fillText('✕', delX + delS2 / 2, delY + delS2 / 2 + 2);
             ctx.textBaseline = 'alphabetic';
-            this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: 16, h: 24 });
+            this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: delS2, h: delS2 + 4 });
           }
         }
       }
@@ -1693,7 +1703,8 @@ export class UI {
     this.buttons.push({ id: 'friends_focus_chat', x: inputX, y: inputY, w: inputW, h: 40 });
 
     // Send button
-    this._drawButton(ctx, inputX + inputW + 10, inputY, 100, 40, 'SEND', 'friends_send_msg', '#00AA44', 15);
+    const sendBtnH = IS_MOBILE ? 48 : 40;
+    this._drawButton(ctx, inputX + inputW + 10, inputY, IS_MOBILE ? 110 : 100, sendBtnH, 'SEND', 'friends_send_msg', '#00AA44', IS_MOBILE ? 17 : 15);
   }
 
   _drawShareLevelSelect(ctx, myLevels, shareTarget, startY) {
@@ -1741,7 +1752,7 @@ export class UI {
     }
 
     const cardW = Math.min(500, SCREEN_WIDTH - 60);
-    const cardH = 70;
+    const cardH = IS_MOBILE ? 80 : 70;
     const gap = 12;
     const cardX = (SCREEN_WIDTH - cardW) / 2;
     const listStartY = startY + 52;
@@ -1778,9 +1789,10 @@ export class UI {
       ctx.fillText(objText + '  •  ' + dateText, cardX + 16, cy + 50);
 
       // Send/share button (replaces play + delete)
-      const btnX = cardX + cardW - 60;
+      const shareBtnW = IS_MOBILE ? 58 : 50;
+      const btnX = cardX + cardW - shareBtnW - 10;
       const btnY = cy + 10;
-      const btnW = 50;
+      const btnW = shareBtnW;
       const btnH = cardH - 20;
 
       ctx.save();
