@@ -576,9 +576,10 @@ class Game {
     } else if (action.startsWith('friends_play_level_')) {
       const idx = parseInt(action.split('_')[3]);
       const msg = fd.messages[idx];
+      console.log('[Friends] PLAY action:', action, 'idx:', idx, 'msg:', msg, 'messages count:', fd.messages.length);
       if (msg && msg.type === 'level' && msg.levelData) {
         const ld = msg.levelData;
-        console.log('[Friends] PLAY level data keys:', Object.keys(ld), 'has objects:', !!ld.objects);
+        console.log('[Friends] PLAY level data:', JSON.stringify(ld).slice(0, 200));
         // Level data is embedded directly in the message
         if (ld.objects && ld.objects.length > 0) {
           const lvl = createLevelFromData({
