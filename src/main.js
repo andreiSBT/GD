@@ -955,11 +955,21 @@ class Game {
       this.player.movingPlatformRef.active &&
       !this.player.movingPlatformRef.arrived) ? this.player.movingPlatformRef : null;
 
+    // Detect transport just arrived: was locked, now arrived → skip ramp, full speed immediately
+    const transportJustArrived = this.player.transportLocked &&
+      this.player.movingPlatformRef?.type === 'transport' &&
+      this.player.movingPlatformRef.arrived;
+
     // Reset moving platform flag before collision so it's fresh this frame
     this.player.onMovingPlatform = false;
     this.player.movingPlatformRef = null;
     this.player.transportLocked = false;
     this.pendingOrbHit = null;
+
+    // When transport just arrived, restore full speed immediately (no ramp)
+    if (transportJustArrived) {
+      this.player.transportExitRamp = 1;
+    }
 
     // If player was on active transport, force-keep them fully locked
     if (prevTransportRef) {
