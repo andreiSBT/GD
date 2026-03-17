@@ -454,7 +454,7 @@ class Game {
       }
     } else if (action === 'editor') {
       this.state = EDITOR;
-      this.editor.showBrowser();
+      this.editor.showBrowser(true);
     } else if (action === 'account') {
       this._showAccountOverlay();
     } else if (action === 'friends') {

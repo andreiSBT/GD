@@ -889,11 +889,11 @@ export class Editor {
     this.browsing = false;
   }
 
-  showBrowser() {
+  showBrowser(fromMenu = false) {
     this.browsing = true;
     this.browseScroll = 0;
     this.buttons = [];
-    this.currentSlot = null;
+    if (fromMenu) this.currentSlot = null;
     this._syncCloudLevels();
   }
 
