@@ -627,6 +627,25 @@ class Game {
         console.warn('[Friends] PLAY: msg not found or missing data. msg:', JSON.stringify(msg)?.slice(0, 300));
         this._showFriendsNotif('No level data in this message.', 'error');
       }
+    } else if (action.startsWith('friends_edit_level_')) {
+      const idx = parseInt(action.split('_')[3]);
+      const msg = fd.messages[idx];
+      if (msg && msg.type === 'level' && msg.levelData) {
+        const ld = msg.levelData;
+        if (ld.objects && ld.objects.length > 0) {
+          this._hideFriendsInput();
+          this.editor.loadExistingLevel({
+            name: ld.name || msg.content,
+            themeId: ld.themeId || 1,
+            objects: ld.objects,
+          });
+          this.state = EDITOR;
+        } else {
+          this._showFriendsNotif('Old format. Re-share level.', 'error');
+        }
+      } else {
+        this._showFriendsNotif('No level data in this message.', 'error');
+      }
     } else if (action === 'friends_back') {
       this._hideFriendsInput();
       this.state = MENU;

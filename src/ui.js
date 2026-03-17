@@ -1626,12 +1626,16 @@ export class UI {
           ctx.fillStyle = '#FFD700';
           ctx.font = `bold ${IS_MOBILE ? 15 : 13}px monospace`;
           ctx.textAlign = m.mine ? 'right' : 'left';
-          const lx = m.mine ? bubbleX + bubbleW - (IS_MOBILE ? 140 : 130) : bubbleX + 10;
+          const lx = m.mine ? bubbleX + bubbleW - (IS_MOBILE ? 220 : 200) : bubbleX + 10;
           ctx.fillText(`[LEVEL] ${m.content}`, lx, my + bubbleH / 2 + 4);
           const playBtnH = IS_MOBILE ? 40 : 26;
           const playBtnW = IS_MOBILE ? 130 : 110;
           const playBtnY = my + Math.floor((bubbleH - playBtnH) / 2);
-          this._drawButton(ctx, m.mine ? bubbleX + bubbleW - playBtnW - 5 : bubbleX + bubbleW - playBtnW - 15, playBtnY, playBtnW, playBtnH, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', IS_MOBILE ? 16 : 12);
+          const editBtnW = IS_MOBILE ? 70 : 55;
+          const playX = m.mine ? bubbleX + bubbleW - playBtnW - 5 : bubbleX + bubbleW - playBtnW - 15;
+          const editX = playX - editBtnW - 6;
+          this._drawButton(ctx, playX, playBtnY, playBtnW, playBtnH, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', IS_MOBILE ? 16 : 12);
+          this._drawButton(ctx, editX, playBtnY, editBtnW, playBtnH, 'EDIT', `friends_edit_level_${realIdx}`, '#4488FF', IS_MOBILE ? 16 : 12);
           // Delete button on own messages
           if (m.mine) {
             const delS = IS_MOBILE ? 30 : 20;
