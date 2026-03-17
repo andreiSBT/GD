@@ -109,6 +109,7 @@ export class Editor {
 
     // Delete confirmation dialog
     this.confirmDelete = null; // null or { slotId, slotName }
+    this.officialPicker = false; // show official level picker dialog
   }
 
   // === EVENT HANDLERS ===
@@ -117,6 +118,11 @@ export class Editor {
     // Level browser intercepts all clicks
     if (this.browsing) {
       this._handleBrowseClick(x, y);
+      return;
+    }
+    // Official picker dialog intercepts all clicks
+    if (this.officialPicker) {
+      this._handleOfficialPickerClick(x, y);
       return;
     }
     // Dismiss help overlay on any click
@@ -602,6 +608,11 @@ export class Editor {
       this._drawHelp(ctx);
     }
 
+    // Official level picker dialog
+    if (this.officialPicker) {
+      this._drawOfficialPicker(ctx);
+    }
+
     // Toast notification
     if (this.toastTimer > 0) {
       const alpha = Math.min(1, this.toastTimer * 2);
@@ -1046,7 +1057,7 @@ export class Editor {
       { id: 'action_save', label: 'SAVE', color: '#4488CC' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
       { id: 'action_export', label: 'EXP', color: '#CC8800' },
-      ...(isAdmin() && this.editingOfficialId ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
+      ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
       { id: 'action_help', label: '?', color: '#666' },
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
@@ -1859,22 +1870,12 @@ export class Editor {
         this._showToast('Saved!');
       }
     } else if (id === 'action_save_official') {
-      if (isAdmin() && this.editingOfficialId) {
-        const lvlData = {
-          name: this.levelName,
-          speed: 1.0,
-          themeId: this.themeId,
-          objects: this.objects,
-        };
-        const oid = this.editingOfficialId;
-        saveOfficialLevel(oid, lvlData).then(res => {
-          if (res.error) {
-            this._showToast('Error: ' + res.error);
-          } else {
-            LEVEL_DATA[oid] = lvlData;
-            this._showToast('Official L' + oid + ' saved!');
-          }
-        });
+      if (isAdmin()) {
+        // Save current level first
+        if (this.currentSlot && this.objects.length > 0) {
+          this.saveToSlot(this.currentSlot);
+        }
+        this.officialPicker = true;
       }
     } else if (id === 'action_load') {
       this.showBrowser();
@@ -1894,6 +1895,113 @@ export class Editor {
       }
       if (this.onBack) this.onBack();
     }
+  }
+
+  _drawOfficialPicker(ctx) {
+    // Dim background
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    // Dialog box
+    const dlgW = Math.min(420, SCREEN_WIDTH - 40);
+    const dlgH = 260;
+    const dlgX = (SCREEN_WIDTH - dlgW) / 2;
+    const dlgY = (SCREEN_HEIGHT - dlgH) / 2;
+
+    const dlgGrad = ctx.createLinearGradient(dlgX, dlgY, dlgX, dlgY + dlgH);
+    dlgGrad.addColorStop(0, '#1a1a30');
+    dlgGrad.addColorStop(1, '#0e0e20');
+    ctx.fillStyle = dlgGrad;
+    this._editorRoundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,100,0,0.4)';
+    ctx.lineWidth = 2;
+    this._editorRoundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+    ctx.stroke();
+
+    // Title
+    ctx.fillStyle = '#FF6600';
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('REPLACE OFFICIAL LEVEL', SCREEN_WIDTH / 2, dlgY + 40);
+
+    ctx.fillStyle = '#AAB';
+    ctx.font = '13px monospace';
+    ctx.fillText('Choose which official level to replace:', SCREEN_WIDTH / 2, dlgY + 68);
+
+    // Level buttons
+    const names = ['Stereo Madness', 'Back on Track', 'Polargeist'];
+    const colors = ['#4488FF', '#CC44AA', '#44CC66'];
+    const btnW = (dlgW - 50) / 3;
+    const btnH = 80;
+    const btnY = dlgY + 90;
+
+    for (let i = 0; i < 3; i++) {
+      const bx = dlgX + 15 + i * (btnW + 10);
+      const grad = ctx.createLinearGradient(bx, btnY, bx, btnY + btnH);
+      grad.addColorStop(0, colors[i]);
+      grad.addColorStop(1, colors[i] + '88');
+      ctx.fillStyle = grad;
+      this._editorRoundRect(ctx, bx, btnY, btnW, btnH, 10);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('L' + (i + 1), bx + btnW / 2, btnY + 32);
+      ctx.font = '11px monospace';
+      ctx.fillText(names[i], bx + btnW / 2, btnY + 55);
+
+      this.buttons.push({ id: 'official_pick_' + (i + 1), x: bx, y: btnY, w: btnW, h: btnH });
+    }
+
+    // Cancel button
+    const cbtnW = 160;
+    const cbtnH = 44;
+    const cbtnX = (SCREEN_WIDTH - cbtnW) / 2;
+    const cbtnY = dlgY + dlgH - cbtnH - 18;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    this._editorRoundRect(ctx, cbtnX, cbtnY, cbtnW, cbtnH, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    this._editorRoundRect(ctx, cbtnX, cbtnY, cbtnW, cbtnH, 10);
+    ctx.stroke();
+    ctx.fillStyle = '#CCC';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('CANCEL', cbtnX + cbtnW / 2, cbtnY + cbtnH / 2 + 6);
+    this.buttons.push({ id: 'official_pick_cancel', x: cbtnX, y: cbtnY, w: cbtnW, h: cbtnH });
+  }
+
+  _handleOfficialPickerClick(x, y) {
+    for (const btn of this.buttons) {
+      if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+        if (btn.id === 'official_pick_cancel') {
+          this.officialPicker = false;
+          return;
+        }
+        if (btn.id.startsWith('official_pick_')) {
+          const levelId = parseInt(btn.id.replace('official_pick_', ''));
+          this.officialPicker = false;
+          const lvlData = {
+            name: this.levelName || 'Untitled',
+            speed: 1.0,
+            themeId: this.themeId,
+            objects: this.objects,
+          };
+          saveOfficialLevel(levelId, lvlData).then(res => {
+            if (res.error) {
+              this._showToast('Error: ' + res.error);
+            } else {
+              LEVEL_DATA[levelId] = lvlData;
+              this._showToast('Official L' + levelId + ' saved!');
+            }
+          });
+          return;
+        }
+      }
+    }
+    // Click outside dialog = cancel
+    this.officialPicker = false;
   }
 
   _cycleRotation() {
