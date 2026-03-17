@@ -1028,7 +1028,7 @@ class Game {
     if (prevTransportRef) {
       this.player.onMovingPlatform = true;
       this.player.movingPlatformRef = prevTransportRef;
-      this.player.y = prevTransportRef.y - PLAYER_SIZE;
+      this.player.y = this.player.gravityMult === -1 ? prevTransportRef.y + prevTransportRef.h : prevTransportRef.y - PLAYER_SIZE;
       this.player.vy = 0;
       this.player.grounded = true;
       this.player.onPlatform = true;
@@ -1049,18 +1049,22 @@ class Game {
 
     // Force-snap player to moving platform if they were on it and haven't jumped
     // Also check horizontal bounds so jumping past the platform doesn't snap back
-    if (prevMovingRef && !prevTransportRef && this.player.vy >= 0) {
-      const px = this.player.x;
-      const platLeft = prevMovingRef.x;
-      const platRight = prevMovingRef.x + prevMovingRef.w;
-      if (px + PLAYER_SIZE > platLeft && px < platRight) {
-        this.player.y = prevMovingRef.y - PLAYER_SIZE;
-        this.player.prevY = this.player.y;
-        this.player.vy = 0;
-        this.player.grounded = true;
-        this.player.onPlatform = true;
-        this.player.onMovingPlatform = true;
-        this.player.movingPlatformRef = prevMovingRef;
+    if (prevMovingRef && !prevTransportRef) {
+      const inverted = this.player.gravityMult === -1;
+      const movingAway = inverted ? this.player.vy < 0 : this.player.vy > 0;
+      if (!movingAway) {
+        const px = this.player.x;
+        const platLeft = prevMovingRef.x;
+        const platRight = prevMovingRef.x + prevMovingRef.w;
+        if (px + PLAYER_SIZE > platLeft && px < platRight) {
+          this.player.y = inverted ? prevMovingRef.y + prevMovingRef.h : prevMovingRef.y - PLAYER_SIZE;
+          this.player.prevY = this.player.y;
+          this.player.vy = 0;
+          this.player.grounded = true;
+          this.player.onPlatform = true;
+          this.player.onMovingPlatform = true;
+          this.player.movingPlatformRef = prevMovingRef;
+        }
       }
     }
 
