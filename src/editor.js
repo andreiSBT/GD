@@ -893,6 +893,7 @@ export class Editor {
     this.browsing = true;
     this.browseScroll = 0;
     this.buttons = [];
+    this.currentSlot = null;
     this._syncCloudLevels();
   }
 
