@@ -325,20 +325,22 @@ export class UI {
 
     const prog = progress || {};
     const totalAttempts = getTotalAttempts(prog);
+    const totalJumps = parseInt(localStorage.getItem('gd_total_jumps') || '0');
     const completedLevels = getCompletedCount(prog);
     const officialCount = getLevelCount();
     const createdLevels = getEditorLevelCount();
 
     const statItems = [
       { label: 'TOTAL ATTEMPTS', value: `${totalAttempts}`, color: '#FFD700' },
+      { label: 'TOTAL JUMPS', value: `${totalJumps}`, color: '#FFD700' },
       { label: 'LEVELS COMPLETED', value: `${completedLevels} / ${officialCount}`, color: '#00FF64' },
       { label: 'LEVELS CREATED', value: `${createdLevels}`, color: '#FF8844' },
     ];
 
     const cardW = 340;
-    const cardH = 100;
-    const cardGap = 24;
-    const startY = 140;
+    const cardH = 90;
+    const cardGap = 18;
+    const startY = 130;
     const cardX = (SCREEN_WIDTH - cardW) / 2;
 
     for (let i = 0; i < statItems.length; i++) {
@@ -369,14 +371,14 @@ export class UI {
       ctx.fillStyle = stat.color;
       ctx.font = 'bold 38px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(stat.value, SCREEN_WIDTH / 2, cy + 50);
+      ctx.fillText(stat.value, SCREEN_WIDTH / 2, cy + 45);
       ctx.restore();
 
       // Label
       ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(stat.label, SCREEN_WIDTH / 2, cy + 80);
+      ctx.fillText(stat.label, SCREEN_WIDTH / 2, cy + 72);
     }
 
     // Back button

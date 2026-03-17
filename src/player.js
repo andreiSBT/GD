@@ -95,6 +95,7 @@ export class Player {
         // Rotate 90 degrees per jump
         const dir = this.gravityMult > 0 ? -1 : 1;
         this.targetRotation += dir * 90;
+        Player._countJump();
         return true;
       }
       return false;
@@ -108,6 +109,7 @@ export class Player {
         this.platformRef = null;
         this.coyoteCounter = 0;
         this.jumpBufferCounter = 0;
+        Player._countJump();
         return true;
       }
       return false;
@@ -893,6 +895,13 @@ export class Player {
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.restore();
+  }
+
+  static _countJump() {
+    try {
+      const n = parseInt(localStorage.getItem('gd_total_jumps') || '0') + 1;
+      localStorage.setItem('gd_total_jumps', n.toString());
+    } catch {}
   }
 }
 
