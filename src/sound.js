@@ -85,7 +85,8 @@ export function playDeath() {
   noiseGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3);
   noiseSrc.connect(noiseGain);
   noiseGain.connect(c.destination);
-  noiseSrc.start();
+  noiseSrc.start(c.currentTime);
+  noiseSrc.stop(c.currentTime + 0.35);
   deathNodes.push({ gain: noiseGain, source: noiseSrc });
 
   // Low rumble
@@ -100,9 +101,6 @@ export function playDeath() {
   osc.start(c.currentTime);
   osc.stop(c.currentTime + 0.35);
   deathNodes.push({ gain: oscGain, source: osc });
-
-  // Clean up references after sounds finish
-  setTimeout(() => { deathNodes = []; }, 400);
 }
 
 export function playCheckpoint() {
