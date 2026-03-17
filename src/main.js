@@ -9,7 +9,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel } from './supabase.js';
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
@@ -61,7 +61,7 @@ class Game {
     this.editor.onBack = () => { this.state = MENU; };
     this.editor.onLoadLevel = (id) => {
       const data = LEVEL_DATA[id];
-      if (data) this.editor.loadExistingLevel(data);
+      if (data) this.editor.loadExistingLevel(data, id);
     };
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
@@ -90,7 +90,19 @@ class Game {
 
     this._bindEvents();
     this._setupAccountUI();
-    initAuth().then(() => this._syncFromCloud());
+    initAuth().then(async () => {
+      await this._syncFromCloud();
+      await checkAdmin();
+      if (isAdmin()) console.log('[Admin] User is admin');
+      // Load official levels from cloud (override hardcoded ones)
+      const cloudLevels = await loadOfficialLevels();
+      if (cloudLevels) {
+        for (const [id, data] of Object.entries(cloudLevels)) {
+          LEVEL_DATA[id] = data;
+        }
+        console.log('[Admin] Loaded official levels from cloud:', Object.keys(cloudLevels));
+      }
+    });
     // Re-sync when tab becomes visible again
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') this._syncFromCloud();

@@ -2,7 +2,8 @@
 
 import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES } from './settings.js';
 import { createObstacle } from './obstacles.js';
-import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured } from './supabase.js';
+import { LEVEL_DATA } from './level.js';
+import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel } from './supabase.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
@@ -856,6 +857,7 @@ export class Editor {
       this.theme = THEMES[this.themeId];
       this.objects = data.objects || [];
       this.startPos = data.startPos || null;
+      this.editingOfficialId = null;
       this._rebuildLive();
       this.history = [];
       this.historyIndex = -1;
@@ -880,6 +882,7 @@ export class Editor {
     this.objects = [];
     this.liveObstacles = [];
     this.startPos = null;
+    this.editingOfficialId = null;
     this.history = [];
     this.historyIndex = -1;
     this.cameraX = 0;
@@ -926,9 +929,14 @@ export class Editor {
     if (changed) this._saveSlotList(localList);
   }
 
-  loadExistingLevel(levelData) {
+  loadExistingLevel(levelData, officialId = null) {
     this.objects = JSON.parse(JSON.stringify(levelData.objects));
     this.levelName = levelData.name;
+    this.editingOfficialId = officialId; // track which official level is being edited
+    if (officialId) {
+      this.themeId = levelData.themeId || officialId;
+      this.theme = THEMES[this.themeId] || THEMES[1];
+    }
     this._rebuildLive();
     this.history = [];
     this.historyIndex = -1;
@@ -1037,6 +1045,7 @@ export class Editor {
       { id: 'action_save', label: 'SAVE', color: '#4488CC' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
       { id: 'action_export', label: 'EXP', color: '#CC8800' },
+      ...(isAdmin() && this.editingOfficialId ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
       { id: 'action_help', label: '?', color: '#666' },
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
@@ -1847,6 +1856,24 @@ export class Editor {
         this.currentSlot = 'lvl_' + Date.now();
         this.saveToSlot(this.currentSlot);
         this._showToast('Saved!');
+      }
+    } else if (id === 'action_save_official') {
+      if (isAdmin() && this.editingOfficialId) {
+        const lvlData = {
+          name: this.levelName,
+          speed: 1.0,
+          themeId: this.themeId,
+          objects: this.objects,
+        };
+        const oid = this.editingOfficialId;
+        saveOfficialLevel(oid, lvlData).then(res => {
+          if (res.error) {
+            this._showToast('Error: ' + res.error);
+          } else {
+            LEVEL_DATA[oid] = lvlData;
+            this._showToast('Official L' + oid + ' saved!');
+          }
+        });
       }
     } else if (id === 'action_load') {
       this.showBrowser();

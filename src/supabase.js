@@ -87,6 +87,22 @@
  *    CREATE POLICY "Allow all" ON friends FOR ALL USING (true) WITH CHECK (true);
  *    CREATE POLICY "Allow all" ON friend_messages FOR ALL USING (true) WITH CHECK (true);
  *
+ *    -- Admin: add is_admin to profiles
+ *    ALTER TABLE profiles ADD COLUMN is_admin bool DEFAULT false;
+ *
+ *    -- Official levels table (admin-editable)
+ *    CREATE TABLE official_levels (
+ *      level_id int4 PRIMARY KEY,
+ *      name text NOT NULL,
+ *      speed float4 DEFAULT 1.0,
+ *      theme_id int4 DEFAULT 1,
+ *      objects jsonb DEFAULT '[]'::jsonb,
+ *      updated_at timestamptz DEFAULT now()
+ *    );
+ *    ALTER TABLE official_levels ENABLE ROW LEVEL SECURITY;
+ *    CREATE POLICY "Anyone can read" ON official_levels FOR SELECT USING (true);
+ *    CREATE POLICY "Admins can write" ON official_levels FOR ALL USING (true) WITH CHECK (true);
+ *
  * 3. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
  */
 
@@ -682,4 +698,72 @@ export async function getSharedLevel(userId, slotId) {
       objects: data.objects,
     };
   } catch (e) { return null; }
+}
+
+// === ADMIN & OFFICIAL LEVELS ===
+
+let _isAdmin = false;
+
+export function isAdmin() {
+  return _isAdmin;
+}
+
+export async function checkAdmin() {
+  const client = getClient();
+  if (!client || !currentAuthUser) { _isAdmin = false; return false; }
+  try {
+    const { data, error } = await client.from('profiles')
+      .select('is_admin')
+      .eq('user_id', currentAuthUser.id)
+      .single();
+    _isAdmin = !error && data?.is_admin === true;
+    return _isAdmin;
+  } catch (e) {
+    _isAdmin = false;
+    return false;
+  }
+}
+
+export async function loadOfficialLevels() {
+  const client = getClient();
+  if (!client) return null;
+  try {
+    const { data, error } = await client.from('official_levels')
+      .select('*')
+      .order('level_id', { ascending: true });
+    if (error || !data || data.length === 0) return null;
+    const result = {};
+    for (const row of data) {
+      result[row.level_id] = {
+        id: row.level_id,
+        name: row.name,
+        speed: row.speed || 1.0,
+        themeId: row.theme_id || row.level_id,
+        objects: row.objects,
+      };
+    }
+    return result;
+  } catch (e) {
+    console.warn('[Admin] loadOfficialLevels failed:', e.message);
+    return null;
+  }
+}
+
+export async function saveOfficialLevel(levelId, levelData) {
+  const client = getClient();
+  if (!client || !_isAdmin) return { error: 'Not admin' };
+  try {
+    const { error } = await client.from('official_levels').upsert({
+      level_id: levelId,
+      name: levelData.name,
+      speed: levelData.speed || 1.0,
+      theme_id: levelData.themeId || levelId,
+      objects: levelData.objects,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'level_id' });
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (e) {
+    return { error: e.message };
+  }
 }
