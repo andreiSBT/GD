@@ -945,10 +945,9 @@ export class Editor {
     this.objects = JSON.parse(JSON.stringify(levelData.objects));
     this.levelName = levelData.name;
     this.editingOfficialId = officialId; // track which official level is being edited
-    if (officialId) {
-      this.themeId = levelData.themeId || officialId;
-      this.theme = THEMES[this.themeId] || THEMES[1];
-    }
+    this.themeId = levelData.themeId || officialId || 1;
+    this.theme = THEMES[this.themeId] || THEMES[1];
+    this.browsing = false;
     this._rebuildLive();
     this.history = [];
     this.historyIndex = -1;
