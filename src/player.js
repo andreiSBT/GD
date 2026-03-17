@@ -230,9 +230,11 @@ export class Player {
       // During dash: maintain velocity, no gravity
       this.y += this.vy;
     } else {
-      // Always apply gravity; collision detection re-snaps each frame
-      if (this.grounded) this.vy = 0;
-      this.vy += GRAVITY * this.gravityMult;
+      if (this.grounded) {
+        this.vy = 0;
+      } else {
+        this.vy += GRAVITY * this.gravityMult;
+      }
       this.y += this.vy;
     }
 
@@ -325,8 +327,11 @@ export class Player {
     if (this.dashing) {
       this.y += this.vy;
     } else {
-      if (this.grounded) this.vy = 0;
-      this.vy += grav;
+      if (this.grounded) {
+        this.vy = 0;
+      } else {
+        this.vy += grav;
+      }
       this.y += this.vy;
     }
 
