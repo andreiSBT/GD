@@ -1028,7 +1028,8 @@ class Game {
     if (prevTransportRef) {
       this.player.onMovingPlatform = true;
       this.player.movingPlatformRef = prevTransportRef;
-      this.player.y = this.player.gravityMult === -1 ? prevTransportRef.y + prevTransportRef.h : prevTransportRef.y - PLAYER_SIZE;
+      const tmo = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+      this.player.y = this.player.gravityMult === -1 ? prevTransportRef.y + prevTransportRef.h - tmo : prevTransportRef.y - PLAYER_SIZE + tmo;
       this.player.vy = 0;
       this.player.grounded = true;
       this.player.onPlatform = true;
@@ -1057,7 +1058,8 @@ class Game {
         const platLeft = prevMovingRef.x;
         const platRight = prevMovingRef.x + prevMovingRef.w;
         if (px + PLAYER_SIZE > platLeft && px < platRight) {
-          this.player.y = inverted ? prevMovingRef.y + prevMovingRef.h : prevMovingRef.y - PLAYER_SIZE;
+          const mo = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+          this.player.y = inverted ? prevMovingRef.y + prevMovingRef.h - mo : prevMovingRef.y - PLAYER_SIZE + mo;
           this.player.prevY = this.player.y;
           this.player.vy = 0;
           this.player.grounded = true;
@@ -1070,6 +1072,7 @@ class Game {
 
     // Collision detection (before player.update so moving platform flag is set in time)
     const playerRect = this.player.getRect();
+    const miniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
     const visible = this.level.getVisible(this.camera.x);
     const wasOnPlatform = this.player.onPlatform;
     this.player.onPlatform = false;
@@ -1087,14 +1090,14 @@ class Game {
         const movingUp = (this.player.gravityMult > 0 && this.player.vy < -1) ||
                          (this.player.gravityMult < 0 && this.player.vy > 1);
         if (movingUp) continue;
-        const result = obs.checkCollision(playerRect, this.player.prevY, this.player.gravityMult);
+        const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
             this._die();
             return;
           } else if (result.type === 'land') {
-            // Inverted gravity: land on bottom of platform (player top at platBottom)
-            this.player.y = this.player.gravityMult === -1 ? result.y : result.y - PLAYER_SIZE;
+            // Snap player so mini/full rect aligns with platform surface
+            this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
             this.player.prevY = this.player.y; // prevent interpolation jitter on landing
             this.player.vy = 0;
             this.player.grounded = true;

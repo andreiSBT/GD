@@ -249,8 +249,9 @@ export class Player {
         this._snapRotation();
       }
     } else {
-      if (this.y <= 0) {
-        this.y = 0;
+      const ceilY = this.mini ? (PLAYER_SIZE - this.getSize()) / 2 : 0;
+      if (this.y <= ceilY) {
+        this.y = ceilY;
         this.vy = 0;
         this.grounded = true;
         this.dashing = false;
@@ -283,12 +284,13 @@ export class Player {
 
     // Boundaries
     const groundY = GROUND_Y - PLAYER_SIZE;
+    const ceilY = this.mini ? (PLAYER_SIZE - this.getSize()) / 2 : 0;
     if (this.y >= groundY) {
       this.y = groundY;
       this.vy = 0;
       this.grounded = true;
-    } else if (this.y <= 0) {
-      this.y = 0;
+    } else if (this.y <= ceilY) {
+      this.y = ceilY;
       this.vy = 0;
       this.grounded = true;
     } else {
@@ -310,11 +312,12 @@ export class Player {
 
     // Boundaries
     const groundY = GROUND_Y - PLAYER_SIZE;
+    const waveCeilY = this.mini ? (PLAYER_SIZE - this.getSize()) / 2 : 0;
     if (this.y >= groundY) {
       this.y = groundY;
       this.alive = false; // wave dies on ground/ceiling
-    } else if (this.y <= 0) {
-      this.y = 0;
+    } else if (this.y <= waveCeilY) {
+      this.y = waveCeilY;
       this.alive = false;
     }
 
@@ -345,8 +348,9 @@ export class Player {
         this.dashTimer = 0;
       }
     } else {
-      if (this.y <= 0) {
-        this.y = 0;
+      const ceilY = this.mini ? (PLAYER_SIZE - this.getSize()) / 2 : 0;
+      if (this.y <= ceilY) {
+        this.y = ceilY;
         this.vy = 0;
         this.grounded = true;
         this.dashing = false;
@@ -365,9 +369,13 @@ export class Player {
     this.coyoteCounter = COYOTE_TIME;
   }
 
+  getSize() {
+    return this.mini ? PLAYER_SIZE * 0.5 : PLAYER_SIZE;
+  }
+
   getRect() {
     const inset = 4;
-    const s = this.mini ? PLAYER_SIZE * 0.5 : PLAYER_SIZE;
+    const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
       x: this.x + inset + offset,
