@@ -372,6 +372,17 @@ export class Editor {
       }
     }
 
+    // Platform tool: start drag on touch
+    if (this.selectedTool === 'platform' && touchCount === 1 && y > TOOLBAR_H) {
+      this.dragStart = { gx: grid.gx, gy: grid.gy };
+      this.dragWidth = 1;
+      this.dragHeight = 1;
+      this.dragMinGx = grid.gx;
+      this.dragMinGy = grid.gy;
+      this.touchPaintPending = false;
+      return;
+    }
+
     // In paint swipe mode, swiping places/erases objects instead of scrolling
     const paintableTools = ['spike', 'orb', 'pad', 'checkpoint', 'end', 'coin'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
@@ -437,15 +448,9 @@ export class Editor {
       return;
     }
 
-    // If moved more than 15px and not painting, treat as scroll
-    if (!this.painting && dist > 15) {
+    // Platform drag takes priority over scrolling
+    if (this.dragStart) {
       this.touchMoved = true;
-      this.isTouchScrolling = true;
-      this.cameraX = Math.max(0, this.touchStartCamX - dx);
-    }
-
-    // Platform drag (only if started dragging a platform)
-    if (this.dragStart && !this.isTouchScrolling) {
       const minGx = Math.min(this.dragStart.gx, this.hoverGx);
       const maxGx = Math.max(this.dragStart.gx, this.hoverGx);
       const minGy = Math.min(this.dragStart.gy, this.hoverGy);
@@ -454,6 +459,14 @@ export class Editor {
       this.dragMinGy = minGy;
       this.dragWidth = maxGx - minGx + 1;
       this.dragHeight = maxGy - minGy + 1;
+      return;
+    }
+
+    // If moved more than 15px and not painting, treat as scroll
+    if (!this.painting && dist > 15) {
+      this.touchMoved = true;
+      this.isTouchScrolling = true;
+      this.cameraX = Math.max(0, this.touchStartCamX - dx);
     }
   }
 
@@ -478,20 +491,25 @@ export class Editor {
       return;
     }
 
+    // Finalize platform drag (tap or drag)
+    if (this.dragStart) {
+      const minGx = this.dragMinGx != null ? this.dragMinGx : this.dragStart.gx;
+      const minGy = this.dragMinGy != null ? this.dragMinGy : this.dragStart.gy;
+      const w = this.dragWidth || 1;
+      const h = this.dragHeight || 1;
+      this._pushHistory();
+      this.objects.push({
+        type: 'platform', x: minGx, y: minGy, w, h,
+      });
+      this._rebuildLive();
+      this.dragStart = null;
+      return;
+    }
+
     if (this.touchMoved) return;
 
     // Tap = click at the touch position
     this.handleMouseDown(this.touchStartX, this.touchStartY, 0);
-
-    // If we started a platform drag via tap, auto-finish it with width 1
-    if (this.dragStart) {
-      this._pushHistory();
-      this.objects.push({
-        type: 'platform', x: this.dragStart.gx, y: this.dragStart.gy, w: 1, h: 1,
-      });
-      this._rebuildLive();
-      this.dragStart = null;
-    }
   }
 
   handleWheel(e) {
