@@ -155,7 +155,8 @@ export class Platform {
     }
 
     // Normal gravity: check if player is on top of platform
-    const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
+    const pSize = playerRect.h + 8; // actual player size (mini-aware, 8 = 2*inset)
+    const wasAbove = prevPlayerY + pSize <= platTop + forgiveness;
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
@@ -167,7 +168,7 @@ export class Platform {
     }
     // Already standing on platform (feet near top, within 6px above) - re-land
     // Only if player was also near the top last frame (prevents side approach false land)
-    const prevBottom = prevPlayerY + PLAYER_SIZE;
+    const prevBottom = prevPlayerY + pSize;
     if (playerBottom >= platTop - 6 && playerBottom <= platTop + forgiveness + 2 &&
         prevBottom >= platTop - 6 && prevBottom <= platTop + forgiveness + 2) {
       return { type: 'land', y: platTop };
@@ -392,7 +393,8 @@ export class TransportPlatform extends Platform {
     }
 
     // Normal gravity: check if player is on top of platform
-    const wasAbove = prevPlayerY + PLAYER_SIZE <= platTop + forgiveness;
+    const pSize = playerRect.h + 8; // actual player size (mini-aware, 8 = 2*inset)
+    const wasAbove = prevPlayerY + pSize <= platTop + forgiveness;
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
@@ -404,7 +406,7 @@ export class TransportPlatform extends Platform {
     }
     // Already standing on platform (feet near top, within 6px above) - re-land
     // Only if player was also near the top last frame (prevents side approach false land)
-    const prevBottom = prevPlayerY + PLAYER_SIZE;
+    const prevBottom = prevPlayerY + pSize;
     if (playerBottom >= platTop - 6 && playerBottom <= platTop + forgiveness + 2 &&
         prevBottom >= platTop - 6 && prevBottom <= platTop + forgiveness + 2) {
       return { type: 'land', y: platTop };
