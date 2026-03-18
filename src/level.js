@@ -24,6 +24,7 @@ export class Level {
   constructor(levelId) {
     this.id = levelId;
     this.data = LEVEL_DATA[levelId];
+    if (!this.data) throw new Error(`Level ${levelId} not found`);
     this.name = this.data.name;
     this.speedMult = this.data.speed;
     this.obstacles = [];

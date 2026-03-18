@@ -804,15 +804,15 @@ export class Editor {
   }
 
   _undo() {
-    if (this.historyIndex < 0) return;
-    this.objects = JSON.parse(this.history[this.historyIndex]);
+    if (this.historyIndex <= 0) return;
     this.historyIndex--;
+    this.objects = JSON.parse(this.history[this.historyIndex]);
     this._rebuildLive();
   }
 
   _redo() {
-    if (this.historyIndex >= this.history.length - 2) return;
-    this.historyIndex += 2;
+    if (this.historyIndex >= this.history.length - 1) return;
+    this.historyIndex++;
     this.objects = JSON.parse(this.history[this.historyIndex]);
     this._rebuildLive();
   }

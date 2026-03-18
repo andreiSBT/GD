@@ -53,6 +53,7 @@ class Game {
     this.shakeIntensity = 0;
     this.deathTimer = 0;
     this.pendingOrbHit = null; // orb waiting for click activation
+    this.coinsCollected = 0;
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -107,8 +108,10 @@ class Game {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') this._syncFromCloud();
     });
-    // Periodic sync every 30s
-    setInterval(() => this._syncFromCloud(), 30000);
+    // Periodic sync every 30s (only when tab is visible)
+    setInterval(() => {
+      if (!document.hidden) this._syncFromCloud();
+    }, 30000);
     this._startLoop();
   }
 
@@ -185,6 +188,7 @@ class Game {
           Sound.resumeMusic();
         } else if (this.state === PLAYING || this.state === EDITOR_TESTING) {
           this.shakeIntensity = 0;
+          if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           Sound.pauseMusic();
           this.state = PAUSED;
         } else if (this.state === FRIENDS) {
@@ -367,6 +371,7 @@ class Game {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         if (this.state === PLAYING || this.state === EDITOR_TESTING || this.state === DEAD) {
+          if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
           this.state = PAUSED;
         }
@@ -549,8 +554,11 @@ class Game {
         const text = fd.chatFriend._inputText.trim();
         fd.chatFriend._inputText = '';
         this._hideFriendsInput();
-        sendMessage(fd.chatFriend.friendId, text).then(() => {
-          getMessages(fd.chatFriend.friendId).then(m => { fd.messages = m; });
+        const friendId = fd.chatFriend.friendId;
+        sendMessage(friendId, text).then(() => {
+          if (fd.chatFriend && fd.chatFriend.friendId === friendId) {
+            getMessages(friendId).then(m => { fd.messages = m; });
+          }
         });
         this._showFriendsInput('chat');
       }
@@ -767,7 +775,7 @@ class Game {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
     this.level = new Level(levelId);
-    this.theme = THEMES[levelId];
+    this.theme = THEMES[levelId] || THEMES[1];
     this.attempts = 0;
     this.lastCheckpoint = null;
     // Track previous best for "NEW BEST!" popup
@@ -1086,16 +1094,14 @@ class Game {
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
-        // Skip platform collision if player is moving upward (just jumped)
         const movingUp = (this.player.gravityMult > 0 && this.player.vy < -1) ||
                          (this.player.gravityMult < 0 && this.player.vy > 1);
-        if (movingUp) continue;
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
             this._die();
             return;
-          } else if (result.type === 'land') {
+          } else if (result.type === 'land' && !movingUp) {
             // Snap player so mini/full rect aligns with platform surface
             this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
             this.player.prevY = this.player.y; // prevent interpolation jitter on landing

@@ -194,11 +194,10 @@ export function playMusic(levelId) {
     bassOsc.stop(now + beatMs / 1000 * 0.8);
     activeNodes.push(bassOsc);
 
-    // Clean up finished nodes to prevent memory buildup
-    if (beat % 16 === 0) {
-      activeNodes = activeNodes.filter(n => {
-        try { return n.playbackState !== 3; } catch (_) { return false; }
-      });
+    // Clean up old nodes to prevent memory buildup
+    // Keep only recent nodes (needed for pauseMusic to stop them)
+    if (activeNodes.length > 64) {
+      activeNodes = activeNodes.slice(-32);
     }
 
     beat++;

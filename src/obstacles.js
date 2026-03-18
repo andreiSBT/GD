@@ -543,15 +543,19 @@ export class JumpPad {
     this.w = GRID;
     this.h = GRID * 0.5;
     this.flashTimer = 0;
+    this.activated = false;
   }
 
-  reset() {}
+  reset() { this.activated = false; }
 
   checkCollision(playerRect) {
     if (rectsOverlap(playerRect, this)) {
+      if (this.activated) return null;
+      this.activated = true;
       this.flashTimer = 10;
       return this.padType;
     }
+    this.activated = false;
     return null;
   }
 
