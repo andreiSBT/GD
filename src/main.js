@@ -1094,14 +1094,16 @@ class Game {
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
+        // Skip platform collision if player is moving upward (just jumped)
         const movingUp = (this.player.gravityMult > 0 && this.player.vy < -1) ||
                          (this.player.gravityMult < 0 && this.player.vy > 1);
+        if (movingUp) continue;
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
             this._die();
             return;
-          } else if (result.type === 'land' && !movingUp) {
+          } else if (result.type === 'land') {
             // Snap player so mini/full rect aligns with platform surface
             this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
             this.player.prevY = this.player.y; // prevent interpolation jitter on landing
