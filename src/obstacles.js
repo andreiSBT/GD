@@ -135,20 +135,20 @@ export class Platform {
     // Inverted gravity: player rises and lands on bottom of platform
     if (gravityMult === -1) {
       const playerTop = playerRect.y;
+      const rawTop = playerTop - 4; // remove getRect inset for direction checks
       // Was below platform last frame
-      const wasBelow = prevPlayerY >= platBottom - forgiveness;
+      const wasBelow = prevPlayerY >= platBottom - forgiveness - 4;
       if (wasBelow) {
         return { type: 'land', y: platBottom };
       }
       // Rising into platform bottom
-      const rising = playerTop < prevPlayerY;
+      const rising = rawTop < prevPlayerY;
       if (rising && playerTop <= platBottom + forgiveness) {
         return { type: 'land', y: platBottom };
       }
       // Already standing on bottom of platform (re-land check)
-      const prevTop = prevPlayerY;
-      if (playerTop >= platBottom - 6 && playerTop <= platBottom + forgiveness + 2 &&
-          prevTop >= platBottom - 6 && prevTop <= platBottom + forgiveness + 2) {
+      if (playerTop >= platBottom - 8 && playerTop <= platBottom + forgiveness + 4 &&
+          prevPlayerY >= platBottom - forgiveness - 8) {
         return { type: 'land', y: platBottom };
       }
       return { type: 'death' };
@@ -372,20 +372,20 @@ export class TransportPlatform extends Platform {
     // Inverted gravity: player rises and lands on bottom of platform
     if (gravityMult === -1) {
       const playerTop = playerRect.y;
+      const rawTop = playerTop - 4; // remove getRect inset for direction checks
       // Was below platform last frame
-      const wasBelow = prevPlayerY >= platBottom - forgiveness;
+      const wasBelow = prevPlayerY >= platBottom - forgiveness - 4;
       if (wasBelow) {
         return { type: 'land', y: platBottom };
       }
       // Rising into platform bottom
-      const rising = playerTop < prevPlayerY;
+      const rising = rawTop < prevPlayerY;
       if (rising && playerTop <= platBottom + forgiveness) {
         return { type: 'land', y: platBottom };
       }
       // Already standing on bottom of platform (re-land check)
-      const prevTop = prevPlayerY;
-      if (playerTop >= platBottom - 6 && playerTop <= platBottom + forgiveness + 2 &&
-          prevTop >= platBottom - 6 && prevTop <= platBottom + forgiveness + 2) {
+      if (playerTop >= platBottom - 8 && playerTop <= platBottom + forgiveness + 4 &&
+          prevPlayerY >= platBottom - forgiveness - 8) {
         return { type: 'land', y: platBottom };
       }
       return { type: 'death' };
