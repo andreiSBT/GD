@@ -1,7 +1,7 @@
 /** UI screens: menu, level select, HUD, death screen, complete screen */
 
 import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE } from './settings.js';
-import { getLevelCount } from './level.js';
+import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
 
@@ -186,7 +186,7 @@ export class UI {
     const r = 14;
 
     for (let i = 1; i <= count; i++) {
-      const theme = THEMES[i];
+      const theme = THEMES[i] || THEMES[1];
       const x = startX + (i - 1) * (cardW + gap);
       const y = 95;
       const prog = progress[i] || { attempts: 0, bestProgress: 0, completed: false };
@@ -230,7 +230,8 @@ export class UI {
       ctx.fillStyle = theme.accent;
       ctx.font = 'bold 20px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(theme.name, x + cardW / 2, y + 36);
+      const levelName = (LEVEL_DATA[i] && LEVEL_DATA[i].name) || theme.name || `Level ${i}`;
+      ctx.fillText(levelName, x + cardW / 2, y + 36);
 
       // Level number with glow
       ctx.save();
