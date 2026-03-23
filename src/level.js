@@ -37,6 +37,7 @@ export class Level {
 
   _load() {
     this.obstacles = [];
+    this.totalCoins = 0;
     for (const obj of this.data.objects) {
       const obstacle = createObstacle(obj);
       if (obstacle) {
@@ -44,8 +45,16 @@ export class Level {
         if (obstacle.type === 'end') {
           this.endX = obstacle.x;
         }
+        if (obstacle.type === 'coin') {
+          this.totalCoins++;
+        }
       }
     }
+    // Sort by x for faster visibility filtering
+    this.obstacles.sort((a, b) => a.x - b.x);
+    // Cache for getVisible
+    this._visibleCache = null;
+    this._visibleCacheKey = -Infinity;
   }
 
   reset() {
@@ -63,13 +72,30 @@ export class Level {
   }
 
   getVisible(cameraX) {
+    // Return cached result if camera hasn't moved enough
+    const key = Math.round(cameraX);
+    if (this._visibleCache && key === this._visibleCacheKey) {
+      return this._visibleCache;
+    }
     const left = cameraX - PLAYER_X_OFFSET - 100;
     const right = cameraX + SCREEN_WIDTH + 100;
-    return this.obstacles.filter(o => {
-      const ox = o.x;
-      const ow = o.w || GRID;
-      return ox + ow > left && ox < right;
-    });
+    // Binary search for first obstacle that could be visible (sorted by x)
+    let lo = 0, hi = this.obstacles.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      const o = this.obstacles[mid];
+      if (o.x + (o.w || GRID) <= left) lo = mid + 1;
+      else hi = mid;
+    }
+    const result = [];
+    for (let i = lo; i < this.obstacles.length; i++) {
+      const o = this.obstacles[i];
+      if (o.x >= right) break;
+      result.push(o);
+    }
+    this._visibleCache = result;
+    this._visibleCacheKey = key;
+    return result;
   }
 
   getProgress(playerX) {

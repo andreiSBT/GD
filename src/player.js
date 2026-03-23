@@ -5,6 +5,7 @@ import {
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
   PLAYER_COLORS, CUBE_SHAPES, LOW_PERF
 } from './settings.js';
+import { getAuthUser } from './supabase.js';
 
 // Game modes
 export const MODE_CUBE = 'cube';
@@ -914,6 +915,9 @@ export class Player {
     try {
       const n = parseInt(localStorage.getItem('gd_total_jumps') || '0') + 1;
       localStorage.setItem('gd_total_jumps', n.toString());
+      // Also save per-user so it persists across logout/login
+      const user = getAuthUser();
+      if (user) localStorage.setItem('gd_total_jumps_' + user.id, n.toString());
     } catch {}
   }
 }

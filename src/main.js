@@ -95,6 +95,12 @@ class Game {
       await this._syncFromCloud();
       await checkAdmin();
       if (isAdmin()) console.log('[Admin] User is admin');
+      // Restore jump count for logged-in user
+      const user = getAuthUser();
+      if (user) {
+        const saved = localStorage.getItem('gd_total_jumps_' + user.id);
+        if (saved) localStorage.setItem('gd_total_jumps', saved);
+      }
       // Load official levels from cloud (override hardcoded ones)
       const cloudLevels = await loadOfficialLevels();
       if (cloudLevels) {
@@ -1329,8 +1335,7 @@ class Game {
 
       // Show NEW BEST! only on death screen, never in practice mode
       const showNewBest = this.state === DEAD && this.newBestTriggered && !this.practiceMode;
-      // Count total coins in level
-      const totalCoins = this.level ? this.level.obstacles.filter(o => o.type === 'coin').length : 0;
+      const totalCoins = this.level ? this.level.totalCoins : 0;
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null);
 
       if (this.state === PAUSED) {
@@ -1458,6 +1463,12 @@ class Game {
       this._clearLocalData();
       await this._syncFromCloud();
       await checkAdmin();
+      // Restore jump count for this user
+      const user = getAuthUser();
+      if (user) {
+        const saved = localStorage.getItem('gd_total_jumps_' + user.id);
+        if (saved) localStorage.setItem('gd_total_jumps', saved);
+      }
       updateView();
     });
 
@@ -1478,10 +1489,22 @@ class Game {
       ensureProfile();
       await this._syncFromCloud();
       await checkAdmin();
+      // Restore jump count for this user
+      const user = getAuthUser();
+      if (user) {
+        const saved = localStorage.getItem('gd_total_jumps_' + user.id);
+        if (saved) localStorage.setItem('gd_total_jumps', saved);
+      }
       updateView();
     });
 
     document.getElementById('acc-logout').addEventListener('click', async () => {
+      // Save jump count per-user before logout
+      const user = getAuthUser();
+      if (user) {
+        const jumps = localStorage.getItem('gd_total_jumps') || '0';
+        localStorage.setItem('gd_total_jumps_' + user.id, jumps);
+      }
       await signOut();
       this._clearLocalData();
       updateView();
@@ -1540,14 +1563,8 @@ class Game {
   }
 
   async _syncFromCloud() {
-    // Sync progress from cloud (merges with local, keeps best)
-    console.log('[Sync] Loading progress from cloud...');
     this.progress = await initProgress();
-    console.log('[Sync] Progress:', JSON.stringify(this.progress));
-    // Sync customization from cloud
-    console.log('[Sync] Loading customization from cloud...');
     await this._initCloudCustomization();
-    console.log('[Sync] Customization:', JSON.stringify(this.customization));
   }
 
   _loadCustomization() {
