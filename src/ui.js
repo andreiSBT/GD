@@ -664,7 +664,7 @@ export class UI {
     let btnY = infoBottom + 15;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'NEXT LEVEL', 'next_level', '#00C864');
     btnY += cbh + 15;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'RESTART', 'restart', '#CC6600');
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'RESTART', 'restart', '#CC3333');
     btnY += cbh + 15;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'MENU', 'menu', '#445566');
   }
@@ -1747,7 +1747,7 @@ export class UI {
           const playX = m.mine ? bubbleX + bubbleW - playBtnW - 5 : bubbleX + bubbleW - playBtnW - 15;
           const editX = playX - editBtnW - 6;
           this._drawButton(ctx, playX, playBtnY, playBtnW, playBtnH, 'PLAY', `friends_play_level_${realIdx}`, '#00AA44', IS_MOBILE ? 16 : 12);
-          this._drawButton(ctx, editX, playBtnY, editBtnW, playBtnH, 'EDIT', `friends_edit_level_${realIdx}`, '#4488FF', IS_MOBILE ? 16 : 12);
+          this._drawButton(ctx, editX, playBtnY, editBtnW, playBtnH, 'EDIT', `friends_edit_level_${realIdx}`, '#CC6600', IS_MOBILE ? 16 : 12);
           // Delete button on own messages
           if (m.mine) {
             const delS = IS_MOBILE ? 30 : 20;
