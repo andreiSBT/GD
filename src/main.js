@@ -1516,6 +1516,7 @@ class Game {
     localStorage.removeItem('gd_progress');
     localStorage.removeItem('gd_customization');
     localStorage.removeItem('gd_editor_attempts');
+    localStorage.removeItem('gd_total_jumps');
     // Clear editor slots
     try {
       const slots = JSON.parse(localStorage.getItem('gd_editor_slots') || '[]');
