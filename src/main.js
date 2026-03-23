@@ -438,17 +438,9 @@ class Game {
       this.editorStartCheckpoint = null;
       this.state = EDITOR;
     } else if (action === 'switch_practice') {
-      // Switch to practice mode from current position
+      // Switch to practice mode, keep last checkpoint if one was passed
       this.practiceMode = true;
-      this.lastCheckpoint = {
-        x: this.player.x,
-        y: this.player.y,
-        gravityMult: this.player.gravityMult,
-        speedMult: this.player.speedMult,
-        mode: this.player.mode,
-        mini: this.player.mini,
-        reversed: this.player.reversed,
-      };
+      // lastCheckpoint stays as-is (set by checkpoint obstacles), or null if none passed
       this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
       Sound.resumeMusic();
     } else if (action === 'switch_normal') {
