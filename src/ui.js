@@ -3,7 +3,7 @@
 import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE } from './settings.js';
 import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
-import { getUsername, isAdmin } from './supabase.js';
+import { getUsername } from './supabase.js';
 
 function getEditorLevelCount() {
   try {
@@ -124,10 +124,8 @@ export class UI {
     const bw = IS_MOBILE ? 300 : 260, bh = IS_MOBILE ? 60 : 56, gap = IS_MOBILE ? 64 : 60;
     const bx = SCREEN_WIDTH / 2 - bw / 2;
     let by = 250;
-    if (isAdmin()) {
-      this._drawButton(ctx, bx, by, bw, bh, 'LEVELS', 'levels', '#00C864');
-      by += gap;
-    }
+    this._drawButton(ctx, bx, by, bw, bh, 'LEVELS', 'levels', '#00C864');
+    by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'CUSTOMIZE', 'customize', '#8844CC');
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'EDITOR', 'editor', '#CC6600');
