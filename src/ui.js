@@ -602,7 +602,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, 350 + cbh + 15, cbw, cbh, 'MENU', 'menu', '#445566');
   }
 
-  drawPauseScreen(ctx, editorTesting = false) {
+  drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0) {
     this.buttons = [];
 
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
@@ -618,17 +618,34 @@ export class UI {
     ctx.fillText('PAUSED', SCREEN_WIDTH / 2, 240);
     ctx.restore();
 
+    // Best progress (only for non-editor levels)
+    if (!editorTesting) {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Best: ${Math.floor(bestProgress * 100)}%`, SCREEN_WIDTH / 2, 262);
+    }
+
     // Decorative line
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#FFF';
-    ctx.fillRect(SCREEN_WIDTH / 2 - 100, 260, 200, 1);
+    ctx.fillRect(SCREEN_WIDTH / 2 - 100, 272, 200, 1);
     ctx.globalAlpha = 1;
 
     const pbw = IS_MOBILE ? 280 : 240, pbh = IS_MOBILE ? 58 : 52, pgap = IS_MOBILE ? 68 : 64;
-    let btnY = 300;
+    let btnY = 290;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESUME', 'resume', '#00C864');
     btnY += pgap;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESTART', 'restart', '#CC3333');
+    // Practice/Normal toggle (not for editor testing)
+    if (!editorTesting) {
+      btnY += pgap;
+      if (practiceMode) {
+        this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'NORMAL MODE', 'switch_normal', '#3388CC');
+      } else {
+        this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'PRACTICE', 'switch_practice', '#C8A000');
+      }
+    }
     if (editorTesting) {
       btnY += pgap;
       this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'EDIT LEVEL', 'back_to_editor', '#CC6600');

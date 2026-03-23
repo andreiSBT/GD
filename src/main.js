@@ -437,6 +437,29 @@ class Game {
       this.editorLevelData = null;
       this.editorStartCheckpoint = null;
       this.state = EDITOR;
+    } else if (action === 'switch_practice') {
+      // Switch to practice mode from current position
+      this.practiceMode = true;
+      this.lastCheckpoint = {
+        x: this.player.x,
+        y: this.player.y,
+        gravityMult: this.player.gravityMult,
+        speedMult: this.player.speedMult,
+        mode: this.player.mode,
+        mini: this.player.mini,
+        reversed: this.player.reversed,
+      };
+      this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
+      Sound.resumeMusic();
+    } else if (action === 'switch_normal') {
+      // Switch to normal mode, restart from beginning
+      this.practiceMode = false;
+      this.lastCheckpoint = null;
+      Sound.stopDeath();
+      Sound.stopMusic();
+      this._restart();
+      Sound.resumeAudio();
+      Sound.playMusic(this.level.id);
     } else if (action === 'retry' || action === 'restart') {
       Sound.stopDeath();
       Sound.stopMusic();
@@ -1319,7 +1342,8 @@ class Game {
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null);
 
       if (this.state === PAUSED) {
-        this.ui.drawPauseScreen(ctx, !!this.editorLevelData);
+        const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
+        this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg);
       } else if (this.state === COMPLETE) {
         this.ui.drawCompleteScreen(ctx, this.attempts, this.theme);
       }

@@ -123,11 +123,13 @@ export class Platform {
     const platBottom = this.y + this.h;
 
     // Collision rect: narrow on x (side forgiveness), extended for re-detection
+    // Extend in direction player approaches from: above for normal, below for inverted
+    const ext = 10;
     const sideRect = {
       x: this.x + forgiveness,
-      y: gravityMult === -1 ? this.y : this.y - 6,
+      y: gravityMult === -1 ? this.y : this.y - ext,
       w: this.w - forgiveness * 2,
-      h: this.h + 6,
+      h: this.h + ext,
     };
     if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
@@ -361,11 +363,13 @@ export class TransportPlatform extends Platform {
     const platBottom = this.y + this.h;
 
     // Collision rect: narrow on x (side forgiveness), extended for re-detection
+    // Extend in direction player approaches from: above for normal, below for inverted
+    const ext = 10;
     const sideRect = {
       x: this.x + forgiveness,
-      y: gravityMult === -1 ? this.y : this.y - 6,
+      y: gravityMult === -1 ? this.y : this.y - ext,
       w: this.w - forgiveness * 2,
-      h: this.h + 6,
+      h: this.h + ext,
     };
     if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
