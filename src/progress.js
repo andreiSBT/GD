@@ -42,9 +42,9 @@ export function incrementAttempt(progress, levelId) {
   return progress;
 }
 
-export function updateLevelProgress(progress, levelId, currentProgress, completed) {
+export function updateLevelProgress(progress, levelId, currentProgress, completed, coins = 0) {
   if (!progress[levelId]) {
-    progress[levelId] = { attempts: 0, bestProgress: 0, completed: false };
+    progress[levelId] = { attempts: 0, bestProgress: 0, completed: false, bestCoins: 0 };
   }
   const lp = progress[levelId];
   if (currentProgress > lp.bestProgress) {
@@ -52,6 +52,9 @@ export function updateLevelProgress(progress, levelId, currentProgress, complete
   }
   if (completed) {
     lp.completed = true;
+  }
+  if (coins > (lp.bestCoins || 0)) {
+    lp.bestCoins = coins;
   }
   saveProgress(progress);
   // Sync to cloud in background (non-blocking)

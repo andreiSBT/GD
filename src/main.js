@@ -1210,7 +1210,7 @@ class Game {
           Sound.stopMusic();
           Sound.playComplete();
           if (!this.practiceMode) {
-            this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true);
+            this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true, this.coinsCollected || 0);
           }
           return;
         }

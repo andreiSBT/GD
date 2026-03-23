@@ -266,6 +266,37 @@ export class UI {
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ctx.fillText(`Attempts: ${prog.attempts}`, x + cardW / 2, y + 195);
 
+      // Coins display
+      const levelData = LEVEL_DATA[i];
+      const totalCoins = levelData ? levelData.objects.filter(o => o.type === 'coin').length : 0;
+      if (totalCoins > 0) {
+        const collected = prog.bestCoins || 0;
+        ctx.fillStyle = collected >= totalCoins ? '#FFD700' : 'rgba(255,255,255,0.5)';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'center';
+        // Draw coin circles
+        const coinY = y + 218;
+        const coinSpacing = 22;
+        const coinStartX = x + cardW / 2 - ((totalCoins - 1) * coinSpacing) / 2;
+        for (let c = 0; c < totalCoins; c++) {
+          const cx = coinStartX + c * coinSpacing;
+          const got = c < collected;
+          ctx.beginPath();
+          ctx.arc(cx, coinY, 8, 0, Math.PI * 2);
+          if (got) {
+            ctx.fillStyle = '#FFD700';
+            ctx.fill();
+            ctx.strokeStyle = '#FFA500';
+          } else {
+            ctx.fillStyle = 'rgba(255,215,0,0.15)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+          }
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+      }
+
       // Completed badge
       if (prog.completed) {
         ctx.save();
@@ -273,7 +304,7 @@ export class UI {
         ctx.shadowBlur = 8;
         ctx.fillStyle = '#00FF64';
         ctx.font = 'bold 14px monospace';
-        ctx.fillText('COMPLETED', x + cardW / 2, y + 220);
+        ctx.fillText('COMPLETED', x + cardW / 2, totalCoins > 0 ? y + 248 : y + 220);
         ctx.restore();
       }
 
