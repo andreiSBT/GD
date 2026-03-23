@@ -1335,7 +1335,8 @@ class Game {
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
-        this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg);
+        const pauseCoins = totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins, best: (this.level && this.progress[this.level.id]) ? (this.progress[this.level.id].bestCoins || 0) : 0 } : null;
+        this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg, pauseCoins);
       } else if (this.state === COMPLETE) {
         this.ui.drawCompleteScreen(ctx, this.attempts, this.theme);
       }

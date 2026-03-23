@@ -633,7 +633,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, 350 + cbh + 15, cbw, cbh, 'MENU', 'menu', '#445566');
   }
 
-  drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0) {
+  drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0, coins = null) {
     this.buttons = [];
 
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
@@ -650,21 +650,48 @@ export class UI {
     ctx.restore();
 
     // Best progress (only for non-editor levels)
+    let infoBottom = 262;
     if (!editorTesting) {
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.font = '16px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`Best: ${Math.floor(bestProgress * 100)}%`, SCREEN_WIDTH / 2, 262);
+      infoBottom = 262;
+
+      // Coins display under best
+      if (coins && coins.total > 0) {
+        const coinY = 284;
+        const coinSpacing = 22;
+        const coinStartX = SCREEN_WIDTH / 2 - ((coins.total - 1) * coinSpacing) / 2;
+        for (let c = 0; c < coins.total; c++) {
+          const cx = coinStartX + c * coinSpacing;
+          const got = c < coins.best;
+          ctx.beginPath();
+          ctx.arc(cx, coinY, 8, 0, Math.PI * 2);
+          if (got) {
+            ctx.fillStyle = '#FFD700';
+            ctx.fill();
+            ctx.strokeStyle = '#FFA500';
+          } else {
+            ctx.fillStyle = 'rgba(255,215,0,0.15)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+          }
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+        infoBottom = 296;
+      }
     }
 
     // Decorative line
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#FFF';
-    ctx.fillRect(SCREEN_WIDTH / 2 - 100, 272, 200, 1);
+    ctx.fillRect(SCREEN_WIDTH / 2 - 100, infoBottom + 10, 200, 1);
     ctx.globalAlpha = 1;
 
     const pbw = IS_MOBILE ? 280 : 240, pbh = IS_MOBILE ? 58 : 52, pgap = IS_MOBILE ? 68 : 64;
-    let btnY = 290;
+    let btnY = infoBottom + 24;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESUME', 'resume', '#00C864');
     btnY += pgap;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESTART', 'restart', '#CC3333');
