@@ -223,6 +223,7 @@ export async function signOut() {
 
   await client.auth.signOut({ scope: 'local' });
   currentAuthUser = null;
+  _isAdmin = false;
   if (onAuthChangeCallback) onAuthChangeCallback(null);
 }
 

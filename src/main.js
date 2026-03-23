@@ -1457,6 +1457,7 @@ class Game {
       ensureProfile();
       this._clearLocalData();
       await this._syncFromCloud();
+      await checkAdmin();
       updateView();
     });
 
@@ -1476,6 +1477,7 @@ class Game {
       if (error) { regError.textContent = error; return; }
       ensureProfile();
       await this._syncFromCloud();
+      await checkAdmin();
       updateView();
     });
 
