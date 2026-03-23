@@ -595,7 +595,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365 + bh + 15, bw, bh, 'MENU', 'menu', '#445566');
   }
 
-  drawCompleteScreen(ctx, attempts, theme) {
+  drawCompleteScreen(ctx, attempts, theme, coins = null) {
     this.buttons = [];
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -627,10 +627,46 @@ export class UI {
     ctx.textAlign = 'center';
     ctx.fillText(`Attempts: ${attempts}`, SCREEN_WIDTH / 2, 295);
 
+    // Coins collected this run
+    let infoBottom = 295;
+    if (coins && coins.total > 0) {
+      const coinY = 322;
+      const coinSpacing = 24;
+      const coinStartX = SCREEN_WIDTH / 2 - ((coins.total - 1) * coinSpacing) / 2;
+      for (let c = 0; c < coins.total; c++) {
+        const cx = coinStartX + c * coinSpacing;
+        const got = c < coins.collected;
+        ctx.beginPath();
+        ctx.arc(cx, coinY, 9, 0, Math.PI * 2);
+        if (got) {
+          ctx.fillStyle = '#FFD700';
+          ctx.fill();
+          ctx.save();
+          ctx.shadowColor = '#FFD700';
+          ctx.shadowBlur = 8;
+          ctx.strokeStyle = '#FFA500';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          ctx.fillStyle = 'rgba(255,215,0,0.15)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
+      }
+      infoBottom = 340;
+    }
+
     // Buttons
     const cbw = IS_MOBILE ? 280 : 240, cbh = IS_MOBILE ? 58 : 52;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, 350, cbw, cbh, 'NEXT LEVEL', 'next_level', '#00C864');
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, 350 + cbh + 15, cbw, cbh, 'MENU', 'menu', '#445566');
+    let btnY = infoBottom + 15;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'NEXT LEVEL', 'next_level', '#00C864');
+    btnY += cbh + 15;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'RESTART', 'restart', '#CC6600');
+    btnY += cbh + 15;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'MENU', 'menu', '#445566');
   }
 
   drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0, coins = null) {

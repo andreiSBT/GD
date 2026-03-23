@@ -806,7 +806,7 @@ class Game {
     this.level = createLevelFromData(levelData);
     this.theme = this.editor.theme;
     this.practiceMode = true;
-    this.attempts = 0;
+    this.attempts = 1;
     const startPixelX = (levelData.startX || 0) * GRID;
     const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
     // Set start pos as a persistent checkpoint so player always respawns here
@@ -837,7 +837,7 @@ class Game {
     this.level = createLevelFromData(levelData);
     this.theme = this.editor.theme;
     this.practiceMode = false;
-    this.attempts = 0;
+    this.attempts = 1;
     this.previousBest = 0;
     this.newBestTimer = 0;
     this.newBestTriggered = false;
@@ -1338,7 +1338,8 @@ class Game {
         const pauseCoins = totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins, best: (this.level && this.progress[this.level.id]) ? (this.progress[this.level.id].bestCoins || 0) : 0 } : null;
         this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg, pauseCoins);
       } else if (this.state === COMPLETE) {
-        this.ui.drawCompleteScreen(ctx, this.attempts, this.theme);
+        const completeCoins = totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null;
+        this.ui.drawCompleteScreen(ctx, this.attempts, this.theme, completeCoins);
       }
     }
 
