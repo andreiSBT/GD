@@ -207,20 +207,6 @@ export class Platform {
       c.fillStyle = grad;
       c.fillRect(0, 0, this.w, this.h);
 
-      // Grid pattern (batched into single path)
-      c.strokeStyle = 'rgba(255,255,255,0.08)';
-      c.lineWidth = 1;
-      c.beginPath();
-      for (let gx = 0; gx < this.w; gx += GRID) {
-        c.moveTo(gx, 0);
-        c.lineTo(gx, this.h);
-      }
-      for (let gy = 0; gy < this.h; gy += GRID) {
-        c.moveTo(0, gy);
-        c.lineTo(this.w, gy);
-      }
-      c.stroke();
-
       // Neon top edge
       drawNeonGlow(c, theme.accent, 8);
       c.fillStyle = theme.accent;

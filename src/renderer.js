@@ -82,21 +82,6 @@ export class Renderer {
     ctx.fillStyle = this._gndGrad;
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, GROUND_H);
 
-    // Grid pattern on ground (batched into single path)
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    const offsetX = (-cameraX * 0.5) % GRID;
-    for (let x = offsetX; x < SCREEN_WIDTH; x += GRID) {
-      ctx.moveTo(x, GROUND_Y);
-      ctx.lineTo(x, SCREEN_HEIGHT);
-    }
-    for (let y = GROUND_Y; y < SCREEN_HEIGHT; y += GRID) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(SCREEN_WIDTH, y);
-    }
-    ctx.stroke();
-
     // Neon top line with glow
     ctx.shadowColor = theme.groundLine;
     ctx.shadowBlur = 12;
