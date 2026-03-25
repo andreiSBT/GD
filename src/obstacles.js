@@ -1,6 +1,6 @@
 /** Obstacle types with neon glow visuals and new GD mechanics */
 
-import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH, LOW_PERF } from './settings.js';
+import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
 import { lighten, darken } from './player.js';
 
 // AABB collision check
@@ -8,15 +8,35 @@ function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-// Shared neon glow helper — skip on mobile for performance
+// Shared neon glow helper
 function drawNeonGlow(ctx, color, blur = 10) {
-  if (LOW_PERF) return;
   ctx.shadowColor = color;
   ctx.shadowBlur = blur;
 }
 function clearGlow(ctx) {
-  if (LOW_PERF) return;
   ctx.shadowBlur = 0;
+}
+
+// Offscreen canvas sprite cache — render once, blit every frame
+const _spriteCache = new Map();
+function getCachedSprite(key, w, h, drawFn) {
+  let entry = _spriteCache.get(key);
+  if (entry) return entry;
+  const canvas = document.createElement('canvas');
+  // Extra padding for glow/shadow overflow
+  const pad = 24;
+  canvas.width = w + pad * 2;
+  canvas.height = h + pad * 2;
+  const offCtx = canvas.getContext('2d');
+  offCtx.translate(pad, pad);
+  drawFn(offCtx);
+  entry = { canvas, pad };
+  _spriteCache.set(key, entry);
+  return entry;
+}
+// Clear cache when theme changes (called from Level)
+export function clearSpriteCache() {
+  _spriteCache.clear();
 }
 
 // ============================================================
@@ -60,52 +80,43 @@ export class Spike {
     if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
-    ctx.save();
-    ctx.translate(sx + GRID / 2, sy + GRID / 2);
-    ctx.rotate((this.rot * Math.PI) / 180);
+    const key = `spike_${this.rot}_${theme.spike}_${theme.accent}`;
+    const sprite = getCachedSprite(key, GRID, GRID, (c) => {
+      const halfG = GRID / 2;
+      c.translate(GRID / 2, GRID / 2);
+      c.rotate((this.rot * Math.PI) / 180);
 
-    const halfG = GRID / 2;
-
-    // Glow
-    drawNeonGlow(ctx, theme.accent, 12);
-
-    // Main triangle
-    if (LOW_PERF) {
-      ctx.fillStyle = theme.spike;
-    } else {
-      const grad = ctx.createLinearGradient(0, -halfG, 0, halfG);
+      drawNeonGlow(c, theme.accent, 12);
+      const grad = c.createLinearGradient(0, -halfG, 0, halfG);
       grad.addColorStop(0, theme.spike);
       grad.addColorStop(1, theme.accent);
-      ctx.fillStyle = grad;
-    }
-    ctx.beginPath();
-    ctx.moveTo(0, -halfG + 2);
-    ctx.lineTo(-halfG + 4, halfG - 2);
-    ctx.lineTo(halfG - 4, halfG - 2);
-    ctx.closePath();
-    ctx.fill();
+      c.fillStyle = grad;
+      c.beginPath();
+      c.moveTo(0, -halfG + 2);
+      c.lineTo(-halfG + 4, halfG - 2);
+      c.lineTo(halfG - 4, halfG - 2);
+      c.closePath();
+      c.fill();
 
-    // Inner highlight triangle
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    ctx.beginPath();
-    ctx.moveTo(0, -halfG + 10);
-    ctx.lineTo(-halfG + 14, halfG - 6);
-    ctx.lineTo(halfG - 14, halfG - 6);
-    ctx.closePath();
-    ctx.fill();
+      c.fillStyle = 'rgba(255,255,255,0.15)';
+      c.beginPath();
+      c.moveTo(0, -halfG + 10);
+      c.lineTo(-halfG + 14, halfG - 6);
+      c.lineTo(halfG - 14, halfG - 6);
+      c.closePath();
+      c.fill();
 
-    // Border
-    clearGlow(ctx);
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -halfG + 2);
-    ctx.lineTo(-halfG + 4, halfG - 2);
-    ctx.lineTo(halfG - 4, halfG - 2);
-    ctx.closePath();
-    ctx.stroke();
-
-    ctx.restore();
+      clearGlow(c);
+      c.strokeStyle = theme.accent;
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(0, -halfG + 2);
+      c.lineTo(-halfG + 4, halfG - 2);
+      c.lineTo(halfG - 4, halfG - 2);
+      c.closePath();
+      c.stroke();
+    });
+    ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
 }
 
@@ -187,43 +198,41 @@ export class Platform {
     if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
     const sy = this.y;
 
-    // Main fill
-    if (LOW_PERF) {
-      ctx.fillStyle = theme.platform;
-    } else {
-      const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+    const key = `plat_${this.w}_${this.h}_${theme.platform}_${theme.accent}`;
+    const sprite = getCachedSprite(key, this.w, this.h, (c) => {
+      // Main fill with gradient
+      const grad = c.createLinearGradient(0, 0, 0, this.h);
       grad.addColorStop(0, lighten(theme.platform, 20));
       grad.addColorStop(1, theme.platform);
-      ctx.fillStyle = grad;
-    }
-    ctx.fillRect(sx, sy, this.w, this.h);
+      c.fillStyle = grad;
+      c.fillRect(0, 0, this.w, this.h);
 
-    // Grid pattern (batched into single path)
-    if (!LOW_PERF) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
+      // Grid pattern (batched into single path)
+      c.strokeStyle = 'rgba(255,255,255,0.08)';
+      c.lineWidth = 1;
+      c.beginPath();
       for (let gx = 0; gx < this.w; gx += GRID) {
-        ctx.moveTo(sx + gx, sy);
-        ctx.lineTo(sx + gx, sy + this.h);
+        c.moveTo(gx, 0);
+        c.lineTo(gx, this.h);
       }
       for (let gy = 0; gy < this.h; gy += GRID) {
-        ctx.moveTo(sx, sy + gy);
-        ctx.lineTo(sx + this.w, sy + gy);
+        c.moveTo(0, gy);
+        c.lineTo(this.w, gy);
       }
-      ctx.stroke();
-    }
+      c.stroke();
 
-    // Neon top edge
-    drawNeonGlow(ctx, theme.accent, 8);
-    ctx.fillStyle = theme.accent;
-    ctx.fillRect(sx, sy, this.w, 3);
-    clearGlow(ctx);
+      // Neon top edge
+      drawNeonGlow(c, theme.accent, 8);
+      c.fillStyle = theme.accent;
+      c.fillRect(0, 0, this.w, 3);
+      clearGlow(c);
 
-    // Border
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(sx, sy, this.w, this.h);
+      // Border
+      c.strokeStyle = theme.accent;
+      c.lineWidth = 1;
+      c.strokeRect(0, 0, this.w, this.h);
+    });
+    ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
 }
 
@@ -258,14 +267,10 @@ export class MovingPlatform extends Platform {
     if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
     const sy = this.y;
 
-    if (LOW_PERF) {
-      ctx.fillStyle = theme.platform;
-    } else {
-      const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-      grad.addColorStop(0, lighten(theme.platform, 30));
-      grad.addColorStop(1, theme.platform);
-      ctx.fillStyle = grad;
-    }
+    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+    grad.addColorStop(0, lighten(theme.platform, 30));
+    grad.addColorStop(1, theme.platform);
+    ctx.fillStyle = grad;
     ctx.fillRect(sx, sy, this.w, this.h);
 
     // Arrow indicators inside
@@ -437,14 +442,10 @@ export class TransportPlatform extends Platform {
 
     // Fill with distinct color
     const color = this.active ? '#44FF88' : '#44AAFF';
-    if (LOW_PERF) {
-      ctx.fillStyle = color;
-    } else {
-      const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-      grad.addColorStop(0, lighten(color, 30));
-      grad.addColorStop(1, color);
-      ctx.fillStyle = grad;
-    }
+    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+    grad.addColorStop(0, lighten(color, 30));
+    grad.addColorStop(1, color);
+    ctx.fillStyle = grad;
     ctx.fillRect(sx, sy, this.w, this.h);
 
     // Transport arrows (double chevrons)
@@ -531,15 +532,11 @@ export class JumpOrb {
     ctx.stroke();
 
     // Main orb
-    if (LOW_PERF) {
-      ctx.fillStyle = color;
-    } else {
-      const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, radius);
-      grad.addColorStop(0, '#FFF');
-      grad.addColorStop(0.4, color);
-      grad.addColorStop(1, darken(color, 40));
-      ctx.fillStyle = grad;
-    }
+    const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, radius);
+    grad.addColorStop(0, '#FFF');
+    grad.addColorStop(0.4, color);
+    grad.addColorStop(1, darken(color, 40));
+    ctx.fillStyle = grad;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -702,19 +699,13 @@ export class Portal {
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Inner fill
-    if (LOW_PERF) {
-      ctx.fillStyle = color;
-      ctx.globalAlpha = this.activated ? 0.03 : 0.06;
-      ctx.fill();
-    } else {
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ry);
-      grad.addColorStop(0, color);
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = grad;
-      ctx.globalAlpha = this.activated ? 0.03 : 0.12;
-      ctx.fill();
-    }
+    // Inner fill gradient
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ry);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = this.activated ? 0.03 : 0.12;
+    ctx.fill();
     ctx.globalAlpha = this.activated ? 0.2 : 1;
 
     // Icon

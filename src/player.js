@@ -3,7 +3,7 @@
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
-  PLAYER_COLORS, CUBE_SHAPES, LOW_PERF
+  PLAYER_COLORS, CUBE_SHAPES
 } from './settings.js';
 import { getAuthUser } from './supabase.js';
 
@@ -426,14 +426,10 @@ export class Player {
     if (this.trail.length < 2) return;
     const trailColor = this.customTrailColor || theme.accent;
     ctx.save();
-    if (!LOW_PERF) {
-      ctx.shadowColor = trailColor;
-      ctx.shadowBlur = 8;
-    }
+    ctx.shadowColor = trailColor;
+    ctx.shadowBlur = 8;
     ctx.fillStyle = trailColor;
-    // On LOW_PERF, draw every other trail point
-    const step = LOW_PERF ? 2 : 1;
-    for (let i = 0; i < this.trail.length; i += step) {
+    for (let i = 0; i < this.trail.length; i++) {
       const t = this.trail[i];
       const alpha = (i / this.trail.length) * 0.4;
       const sz = 3 + (i / this.trail.length) * 6;
@@ -442,7 +438,7 @@ export class Player {
       ctx.globalAlpha = alpha;
       ctx.fillRect(tsx, tsy, sz, sz);
     }
-    if (!LOW_PERF) ctx.shadowBlur = 0;
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
     ctx.restore();
   }
@@ -454,15 +450,13 @@ export class Player {
     // Draw body shape
     this._drawShapeBody(ctx, size, hs, color, shape);
 
-    // Gradient overlay (skip on LOW_PERF)
-    if (!LOW_PERF) {
-      const grad = ctx.createLinearGradient(0, -hs, 0, hs);
-      grad.addColorStop(0, 'rgba(255,255,255,0.2)');
-      grad.addColorStop(0.5, 'rgba(255,255,255,0)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-      ctx.fillStyle = grad;
-      this._fillShape(ctx, size, hs, shape);
-    }
+    // Gradient overlay
+    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+    grad.addColorStop(0.5, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    ctx.fillStyle = grad;
+    this._fillShape(ctx, size, hs, shape);
 
     // Inner shape (lighter)
     const m = 8;
@@ -809,14 +803,12 @@ export class Player {
     ctx.closePath();
     ctx.fill();
 
-    // Gradient (skip on LOW_PERF)
-    if (!LOW_PERF) {
-      const grad = ctx.createLinearGradient(0, -hs, 0, hs);
-      grad.addColorStop(0, 'rgba(255,255,255,0.3)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
+    // Gradient
+    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    ctx.fillStyle = grad;
+    ctx.fill();
 
     // Inner diamond
     const m = 10;
@@ -850,14 +842,12 @@ export class Player {
     ctx.arc(0, 0, hs, 0, Math.PI * 2);
     ctx.fill();
 
-    // Gradient overlay (skip on LOW_PERF)
-    if (!LOW_PERF) {
-      const grad = ctx.createRadialGradient(-hs * 0.3, -hs * 0.3, 0, 0, 0, hs);
-      grad.addColorStop(0, 'rgba(255,255,255,0.3)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
+    // Gradient overlay
+    const grad = ctx.createRadialGradient(-hs * 0.3, -hs * 0.3, 0, 0, 0, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    ctx.fillStyle = grad;
+    ctx.fill();
 
     // Inner circle
     ctx.fillStyle = lighten(color, 40);
@@ -882,7 +872,6 @@ export class Player {
   }
 
   _drawGlow(ctx, size, color) {
-    if (LOW_PERF) return; // skip glow entirely on mobile
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
     ctx.save();

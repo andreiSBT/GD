@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, LOW_PERF, setLowPerf } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { Editor } from './editor.js';
@@ -968,28 +968,9 @@ class Game {
     const FIXED_DT = 1 / 60; // physics at fixed 60Hz
     let accumulator = 0;
 
-    // Adaptive performance: monitor FPS and enable LOW_PERF if needed
-    let fpsFrames = 0;
-    let fpsTime = performance.now();
-    let slowFrames = 0;
-
     const loop = (now) => {
       const frameDt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
-
-      // FPS monitoring — enable LOW_PERF dynamically if FPS drops
-      fpsFrames++;
-      if (now - fpsTime >= 1000) {
-        const fps = fpsFrames / ((now - fpsTime) / 1000);
-        if (fps < 45) {
-          slowFrames++;
-          if (slowFrames >= 2 && !LOW_PERF) setLowPerf(true);
-        } else {
-          slowFrames = Math.max(0, slowFrames - 1);
-        }
-        fpsFrames = 0;
-        fpsTime = now;
-      }
 
       // Fixed timestep: physics always steps at 60Hz
       accumulator += frameDt;

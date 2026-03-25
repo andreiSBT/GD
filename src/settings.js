@@ -3,11 +3,7 @@
 export let SCREEN_WIDTH = 1200;
 export const SCREEN_HEIGHT = 700;
 
-// Performance: detect mobile/low-end devices and skip expensive effects
 export const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-const _initialLowPerf = IS_MOBILE || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4);
-export let LOW_PERF = _initialLowPerf;
-export function setLowPerf(v) { LOW_PERF = v; }
 
 export function setScreenWidth(w) { SCREEN_WIDTH = w; }
 export const FPS = 60;

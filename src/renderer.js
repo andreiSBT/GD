@@ -1,6 +1,6 @@
 /** Background, parallax, ground rendering with neon glow effects */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, GROUND_Y, GROUND_H, GRID, LOW_PERF } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, GROUND_Y, GROUND_H, GRID } from './settings.js';
 
 export class Renderer {
   constructor() {
@@ -58,8 +58,8 @@ export class Renderer {
           ctx.fill();
         }
 
-        // Subtle glow on larger particles (skip on mobile)
-        if (obj.size > 3 && !LOW_PERF) {
+        // Subtle glow on larger particles
+        if (obj.size > 3) {
           ctx.globalAlpha = alpha * 0.3;
           ctx.shadowColor = theme.accent;
           ctx.shadowBlur = 6;
@@ -83,30 +83,26 @@ export class Renderer {
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, GROUND_H);
 
     // Grid pattern on ground (batched into single path)
-    if (!LOW_PERF) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      const offsetX = (-cameraX * 0.5) % GRID;
-      for (let x = offsetX; x < SCREEN_WIDTH; x += GRID) {
-        ctx.moveTo(x, GROUND_Y);
-        ctx.lineTo(x, SCREEN_HEIGHT);
-      }
-      for (let y = GROUND_Y; y < SCREEN_HEIGHT; y += GRID) {
-        ctx.moveTo(0, y);
-        ctx.lineTo(SCREEN_WIDTH, y);
-      }
-      ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const offsetX = (-cameraX * 0.5) % GRID;
+    for (let x = offsetX; x < SCREEN_WIDTH; x += GRID) {
+      ctx.moveTo(x, GROUND_Y);
+      ctx.lineTo(x, SCREEN_HEIGHT);
     }
+    for (let y = GROUND_Y; y < SCREEN_HEIGHT; y += GRID) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(SCREEN_WIDTH, y);
+    }
+    ctx.stroke();
 
     // Neon top line with glow
-    if (!LOW_PERF) {
-      ctx.shadowColor = theme.groundLine;
-      ctx.shadowBlur = 12;
-    }
+    ctx.shadowColor = theme.groundLine;
+    ctx.shadowBlur = 12;
     ctx.fillStyle = theme.groundLine;
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, 3);
-    if (!LOW_PERF) ctx.shadowBlur = 0;
+    ctx.shadowBlur = 0;
 
     // Scrolling tick marks
     ctx.fillStyle = theme.groundLine;

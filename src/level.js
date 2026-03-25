@@ -1,7 +1,7 @@
 /** Level loader and camera system */
 
 import { GRID, PLAYER_SIZE, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
-import { createObstacle } from './obstacles.js';
+import { createObstacle, clearSpriteCache } from './obstacles.js';
 import level1 from './levels/level1.js';
 import level2 from './levels/level2.js';
 import level3 from './levels/level3.js';
@@ -36,6 +36,7 @@ export class Level {
   }
 
   _load() {
+    clearSpriteCache();
     this.obstacles = [];
     this.totalCoins = 0;
     for (const obj of this.data.objects) {
