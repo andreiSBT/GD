@@ -69,11 +69,15 @@ export class Spike {
     // Glow
     drawNeonGlow(ctx, theme.accent, 12);
 
-    // Main triangle with gradient
-    const grad = ctx.createLinearGradient(0, -halfG, 0, halfG);
-    grad.addColorStop(0, theme.spike);
-    grad.addColorStop(1, theme.accent);
-    ctx.fillStyle = grad;
+    // Main triangle
+    if (LOW_PERF) {
+      ctx.fillStyle = theme.spike;
+    } else {
+      const grad = ctx.createLinearGradient(0, -halfG, 0, halfG);
+      grad.addColorStop(0, theme.spike);
+      grad.addColorStop(1, theme.accent);
+      ctx.fillStyle = grad;
+    }
     ctx.beginPath();
     ctx.moveTo(0, -halfG + 2);
     ctx.lineTo(-halfG + 4, halfG - 2);
@@ -183,26 +187,30 @@ export class Platform {
     if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
     const sy = this.y;
 
-    // Main fill with gradient
-    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-    grad.addColorStop(0, lighten(theme.platform, 20));
-    grad.addColorStop(1, theme.platform);
-    ctx.fillStyle = grad;
+    // Main fill
+    if (LOW_PERF) {
+      ctx.fillStyle = theme.platform;
+    } else {
+      const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+      grad.addColorStop(0, lighten(theme.platform, 20));
+      grad.addColorStop(1, theme.platform);
+      ctx.fillStyle = grad;
+    }
     ctx.fillRect(sx, sy, this.w, this.h);
 
-    // Grid pattern
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    for (let gx = 0; gx < this.w; gx += GRID) {
+    // Grid pattern (batched into single path)
+    if (!LOW_PERF) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(sx + gx, sy);
-      ctx.lineTo(sx + gx, sy + this.h);
-      ctx.stroke();
-    }
-    for (let gy = 0; gy < this.h; gy += GRID) {
-      ctx.beginPath();
-      ctx.moveTo(sx, sy + gy);
-      ctx.lineTo(sx + this.w, sy + gy);
+      for (let gx = 0; gx < this.w; gx += GRID) {
+        ctx.moveTo(sx + gx, sy);
+        ctx.lineTo(sx + gx, sy + this.h);
+      }
+      for (let gy = 0; gy < this.h; gy += GRID) {
+        ctx.moveTo(sx, sy + gy);
+        ctx.lineTo(sx + this.w, sy + gy);
+      }
       ctx.stroke();
     }
 
@@ -250,10 +258,14 @@ export class MovingPlatform extends Platform {
     if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
     const sy = this.y;
 
-    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-    grad.addColorStop(0, lighten(theme.platform, 30));
-    grad.addColorStop(1, theme.platform);
-    ctx.fillStyle = grad;
+    if (LOW_PERF) {
+      ctx.fillStyle = theme.platform;
+    } else {
+      const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+      grad.addColorStop(0, lighten(theme.platform, 30));
+      grad.addColorStop(1, theme.platform);
+      ctx.fillStyle = grad;
+    }
     ctx.fillRect(sx, sy, this.w, this.h);
 
     // Arrow indicators inside
@@ -425,10 +437,14 @@ export class TransportPlatform extends Platform {
 
     // Fill with distinct color
     const color = this.active ? '#44FF88' : '#44AAFF';
-    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-    grad.addColorStop(0, lighten(color, 30));
-    grad.addColorStop(1, color);
-    ctx.fillStyle = grad;
+    if (LOW_PERF) {
+      ctx.fillStyle = color;
+    } else {
+      const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+      grad.addColorStop(0, lighten(color, 30));
+      grad.addColorStop(1, color);
+      ctx.fillStyle = grad;
+    }
     ctx.fillRect(sx, sy, this.w, this.h);
 
     // Transport arrows (double chevrons)
@@ -515,11 +531,15 @@ export class JumpOrb {
     ctx.stroke();
 
     // Main orb
-    const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, radius);
-    grad.addColorStop(0, '#FFF');
-    grad.addColorStop(0.4, color);
-    grad.addColorStop(1, darken(color, 40));
-    ctx.fillStyle = grad;
+    if (LOW_PERF) {
+      ctx.fillStyle = color;
+    } else {
+      const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, radius);
+      grad.addColorStop(0, '#FFF');
+      grad.addColorStop(0.4, color);
+      grad.addColorStop(1, darken(color, 40));
+      ctx.fillStyle = grad;
+    }
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
@@ -682,13 +702,19 @@ export class Portal {
     ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Inner fill gradient
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ry);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.globalAlpha = this.activated ? 0.03 : 0.12;
-    ctx.fill();
+    // Inner fill
+    if (LOW_PERF) {
+      ctx.fillStyle = color;
+      ctx.globalAlpha = this.activated ? 0.03 : 0.06;
+      ctx.fill();
+    } else {
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ry);
+      grad.addColorStop(0, color);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.globalAlpha = this.activated ? 0.03 : 0.12;
+      ctx.fill();
+    }
     ctx.globalAlpha = this.activated ? 0.2 : 1;
 
     // Icon

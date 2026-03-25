@@ -24,11 +24,14 @@ export class Renderer {
   }
 
   drawBackground(ctx, cameraX, theme) {
-    // Gradient background
-    const grad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
-    grad.addColorStop(0, theme.bgTop);
-    grad.addColorStop(1, theme.bgBot);
-    ctx.fillStyle = grad;
+    // Gradient background (cached per theme)
+    if (this._bgTheme !== theme) {
+      this._bgTheme = theme;
+      this._bgGrad = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+      this._bgGrad.addColorStop(0, theme.bgTop);
+      this._bgGrad.addColorStop(1, theme.bgBot);
+    }
+    ctx.fillStyle = this._bgGrad;
     ctx.fillRect(0, 0, SCREEN_WIDTH, GROUND_Y);
 
     // Parallax layers with varied shapes
@@ -69,11 +72,14 @@ export class Renderer {
   }
 
   drawGround(ctx, cameraX, theme) {
-    // Main ground fill with gradient
-    const grad = ctx.createLinearGradient(0, GROUND_Y, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, theme.ground);
-    grad.addColorStop(1, darkenHex(theme.ground, 30));
-    ctx.fillStyle = grad;
+    // Main ground fill with gradient (cached per theme)
+    if (this._gndTheme !== theme) {
+      this._gndTheme = theme;
+      this._gndGrad = ctx.createLinearGradient(0, GROUND_Y, 0, SCREEN_HEIGHT);
+      this._gndGrad.addColorStop(0, theme.ground);
+      this._gndGrad.addColorStop(1, darkenHex(theme.ground, 30));
+    }
+    ctx.fillStyle = this._gndGrad;
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, GROUND_H);
 
     // Grid pattern on ground (batched into single path)
