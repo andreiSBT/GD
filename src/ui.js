@@ -62,7 +62,9 @@ export class UI {
 
   // Returns button id if clicked, null otherwise
   handleClick(x, y) {
-    for (const btn of this.buttons) {
+    // Check buttons in reverse order so buttons drawn on top take priority
+    for (let i = this.buttons.length - 1; i >= 0; i--) {
+      const btn = this.buttons[i];
       if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
         return btn.id;
       }
@@ -190,6 +192,10 @@ export class UI {
       const x = startX + (i - 1) * (cardW + gap);
       const y = 95;
       const prog = progress[i] || { attempts: 0, bestProgress: 0, completed: false };
+
+      // Register entire card as clickable (normal mode)
+      // Buttons on top will take priority since they're checked later
+      this.buttons.push({ x, y, w: cardW, h: cardH, id: `normal_${i}` });
 
       // Card shadow
       ctx.save();
