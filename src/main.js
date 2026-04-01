@@ -1292,8 +1292,6 @@ class Game {
         if (result) {
           const colorKey = result.replace('color_', '');
           this._startColorTransition(colorKey, obs.customTheme, obs.duration);
-          const triggerColor = obs.customTheme ? obs.customTheme.accent : (COLOR_TRIGGER_THEMES[colorKey]?.color || '#FFF');
-          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, triggerColor, 10);
         }
       } else if (obs.type === 'checkpoint') {
         if (obs.checkCollision(playerRect) === 'checkpoint') {
