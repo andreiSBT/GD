@@ -78,20 +78,23 @@ export class Level {
     if (this._visibleCache && key === this._visibleCacheKey) {
       return this._visibleCache;
     }
-    const left = cameraX - PLAYER_X_OFFSET - 100;
     const right = cameraX + SCREEN_WIDTH + 100;
-    // Binary search for first obstacle that could be visible (sorted by x)
+    const visibleLeft = cameraX - PLAYER_X_OFFSET - 100;
+    // Binary search on o.x only (monotonic since sorted).
+    // Subtract max possible obstacle width so wide platforms aren't skipped.
+    const searchLeft = visibleLeft - SCREEN_WIDTH;
     let lo = 0, hi = this.obstacles.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
-      const o = this.obstacles[mid];
-      if (o.x + (o.w || GRID) <= left) lo = mid + 1;
+      if (this.obstacles[mid].x < searchLeft) lo = mid + 1;
       else hi = mid;
     }
     const result = [];
     for (let i = lo; i < this.obstacles.length; i++) {
       const o = this.obstacles[i];
       if (o.x >= right) break;
+      // Skip obstacles whose right edge is left of the viewport
+      if (o.x + (o.w || GRID) <= visibleLeft) continue;
       result.push(o);
     }
     this._visibleCache = result;
