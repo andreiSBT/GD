@@ -1014,15 +1014,15 @@ class Game {
     this.deathTimer = 0;
   }
 
-  _startColorTransition(colorKey) {
-    const targetTheme = COLOR_TRIGGER_FULL_THEMES[colorKey];
+  _startColorTransition(colorKey, customTheme, duration) {
+    const targetTheme = customTheme || COLOR_TRIGGER_FULL_THEMES[colorKey];
     if (!targetTheme) return;
     // Snapshot current theme as "from"
     const from = {};
     for (const k of Object.keys(targetTheme)) {
       from[k] = this.theme[k];
     }
-    this._colorTransition = { from, to: targetTheme, progress: 0, duration: 0.6 };
+    this._colorTransition = { from, to: targetTheme, progress: 0, duration: duration || 0.6 };
   }
 
   _updateColorTransition(dt) {
@@ -1291,8 +1291,9 @@ class Game {
         const result = obs.checkCollision(playerRect);
         if (result) {
           const colorKey = result.replace('color_', '');
-          this._startColorTransition(colorKey);
-          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, COLOR_TRIGGER_THEMES[colorKey]?.color || '#FFF', 10);
+          this._startColorTransition(colorKey, obs.customTheme, obs.duration);
+          const triggerColor = obs.customTheme ? obs.customTheme.accent : (COLOR_TRIGGER_THEMES[colorKey]?.color || '#FFF');
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, triggerColor, 10);
         }
       } else if (obs.type === 'checkpoint') {
         if (obs.checkCollision(playerRect) === 'checkpoint') {

@@ -928,6 +928,7 @@ export const COLOR_TRIGGER_THEMES = {
   red: { label: 'Red', color: '#FF2222' },
   cyan: { label: 'Cyan', color: '#00FFCC' },
   yellow: { label: 'Yellow', color: '#FFD700' },
+  custom: { label: 'Custom', color: '#FF66AA' },
 };
 
 // Full theme definitions for color triggers
@@ -1003,7 +1004,7 @@ export const COLOR_TRIGGER_FULL_THEMES = {
 };
 
 export class ColorTrigger {
-  constructor(gx, gy, colorType = 'blue') {
+  constructor(gx, gy, colorType = 'blue', customTheme = null, duration = 0.6) {
     this.type = 'color_trigger';
     this.colorType = colorType;
     this.x = gx * GRID;
@@ -1011,6 +1012,8 @@ export class ColorTrigger {
     this.w = GRID;
     this.h = GROUND_Y;
     this.activated = false;
+    this.customTheme = customTheme;
+    this.duration = duration;
   }
 
   reset() {
@@ -1033,8 +1036,9 @@ export class ColorTrigger {
   drawEditor(ctx, cameraX) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -GRID * 2 || sx > SCREEN_WIDTH + GRID * 2) return;
-    const meta = COLOR_TRIGGER_THEMES[this.colorType] || COLOR_TRIGGER_THEMES.blue;
-    const color = meta.color;
+    const color = this.colorType === 'custom' && this.customTheme
+      ? this.customTheme.accent
+      : (COLOR_TRIGGER_THEMES[this.colorType] || COLOR_TRIGGER_THEMES.blue).color;
     // Thin vertical dashed line spanning full height
     ctx.save();
     ctx.strokeStyle = color;
@@ -1082,7 +1086,7 @@ export function createObstacle(obj) {
     case 'coin':
       return new Coin(obj.x, obj.y || 1);
     case 'color_trigger':
-      return new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue');
+      return new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue', obj.customTheme || null, obj.duration || 0.6);
     default:
       return null;
   }

@@ -29,7 +29,7 @@ const SUBTYPES = {
   orb: ['yellow_orb', 'pink_orb', 'dash_orb'],
   pad: ['yellow_pad', 'pink_pad'],
   portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse', 'forward'],
-  color_trigger: ['blue', 'magenta', 'green', 'orange', 'purple', 'red', 'cyan', 'yellow'],
+  color_trigger: ['blue', 'magenta', 'green', 'orange', 'purple', 'red', 'cyan', 'yellow', 'custom'],
 };
 
 const SUBTYPE_COLORS = {
@@ -39,7 +39,7 @@ const SUBTYPE_COLORS = {
   ship: '#FF00FF', wave: '#00FFAA', cube: '#00C8FF',
   ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF', forward: '#44FF44',
   blue: '#00C8FF', magenta: '#FF3296', green: '#64FF32', orange: '#FF8800',
-  purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700',
+  purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700', custom: '#FF66AA',
 };
 
 export class Editor {
@@ -114,6 +114,112 @@ export class Editor {
     // Delete confirmation dialog
     this.confirmDelete = null; // null or { slotId, slotName }
     this.officialPicker = false; // show official level picker dialog
+
+    // Custom color trigger state
+    this._customColorData = {
+      accent: '#FF66AA', bgTop: '#1A0020', bgBot: '#3A0040',
+      ground: '#500060', groundLine: '#FF66AA', spike: '#FFDDEE',
+      platform: '#880066', player: '#FF88CC',
+    };
+    this._customDuration = 0.6;
+    this._customColorPending = null; // { gx, gy } when waiting for overlay
+    this._setupCustomColorOverlay();
+  }
+
+  _setupCustomColorOverlay() {
+    const overlay = document.getElementById('color-editor-overlay');
+    const fields = document.getElementById('ce-fields');
+    const durInput = document.getElementById('ce-duration');
+    const durVal = document.getElementById('ce-duration-val');
+    if (!overlay || !fields) return;
+
+    const labels = {
+      accent: 'Accent', bgTop: 'BG Top', bgBot: 'BG Bottom',
+      ground: 'Ground', groundLine: 'Ground Line', spike: 'Spike',
+      platform: 'Platform', player: 'Player',
+    };
+    // Build color fields
+    for (const [key, label] of Object.entries(labels)) {
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex; align-items:center; gap:8px;';
+      const lbl = document.createElement('span');
+      lbl.textContent = label;
+      lbl.style.cssText = 'color:#99AABB; font-size:12px; font-family:monospace; flex:1; text-align:left;';
+      const inp = document.createElement('input');
+      inp.type = 'color';
+      inp.id = 'ce-' + key;
+      inp.value = this._customColorData[key];
+      inp.style.cssText = 'width:44px; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:rgba(0,0,0,0.4); cursor:pointer; padding:1px;';
+      inp.addEventListener('input', () => { this._customColorData[key] = inp.value; });
+      wrap.appendChild(lbl);
+      wrap.appendChild(inp);
+      fields.appendChild(wrap);
+    }
+
+    durInput.addEventListener('input', () => {
+      this._customDuration = parseFloat(durInput.value);
+      durVal.textContent = durInput.value + 's';
+    });
+
+    document.getElementById('ce-ok').addEventListener('click', () => {
+      overlay.style.display = 'none';
+      if (this._customColorPending) {
+        this._placeCustomColorTrigger(this._customColorPending.gx, this._customColorPending.gy);
+        this._customColorPending = null;
+      }
+    });
+    document.getElementById('ce-cancel').addEventListener('click', () => {
+      overlay.style.display = 'none';
+      this._customColorPending = null;
+    });
+  }
+
+  _showCustomColorOverlay(gx, gy, existingObj) {
+    const overlay = document.getElementById('color-editor-overlay');
+    if (!overlay) return;
+    // Pre-fill from existing object if editing
+    if (existingObj && existingObj.customTheme) {
+      for (const k of Object.keys(this._customColorData)) {
+        if (existingObj.customTheme[k]) this._customColorData[k] = existingObj.customTheme[k];
+      }
+      this._customDuration = existingObj.duration || 0.6;
+    }
+    // Sync inputs
+    for (const k of Object.keys(this._customColorData)) {
+      const inp = document.getElementById('ce-' + k);
+      if (inp) inp.value = this._customColorData[k];
+    }
+    const durInput = document.getElementById('ce-duration');
+    const durVal = document.getElementById('ce-duration-val');
+    if (durInput) { durInput.value = this._customDuration; }
+    if (durVal) { durVal.textContent = this._customDuration + 's'; }
+
+    this._customColorPending = { gx, gy };
+    overlay.style.display = 'flex';
+  }
+
+  _placeCustomColorTrigger(gx, gy) {
+    this._pushHistory();
+    const obj = {
+      type: 'color_trigger', x: gx, y: gy,
+      colorType: 'custom',
+      duration: this._customDuration,
+      customTheme: {
+        name: 'Custom',
+        bgTop: this._customColorData.bgTop,
+        bgBot: this._customColorData.bgBot,
+        ground: this._customColorData.ground,
+        groundLine: this._customColorData.groundLine,
+        accent: this._customColorData.accent,
+        player: this._customColorData.player,
+        spike: this._customColorData.spike,
+        platform: this._customColorData.platform,
+        portalGravity: '#FFD700',
+        portalSpeed: '#FF6600',
+      },
+    };
+    this.objects.push(obj);
+    this._rebuildLive();
   }
 
   // === EVENT HANDLERS ===
@@ -734,6 +840,11 @@ export class Editor {
       obj.portalType = this.subType || 'gravity';
     } else if (this.selectedTool === 'color_trigger') {
       obj.colorType = this.subType || 'blue';
+      if (obj.colorType === 'custom') {
+        // Open overlay instead of placing immediately
+        this._showCustomColorOverlay(gx, gy, null);
+        return;
+      }
     }
 
     this.objects.push(obj);
