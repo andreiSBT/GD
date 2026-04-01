@@ -1,7 +1,7 @@
 /** Level Editor - visual grid-based editor for creating levels */
 
 import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES } from './settings.js';
-import { createObstacle } from './obstacles.js';
+import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
 import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel } from './supabase.js';
 
@@ -20,6 +20,7 @@ const TOOLS = [
   { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
   { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
   { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
+  { id: 'color_trigger', label: 'Color', key: 'R', color: '#FF66AA' },
   { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
   { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
 ];
@@ -28,6 +29,7 @@ const SUBTYPES = {
   orb: ['yellow_orb', 'pink_orb', 'dash_orb'],
   pad: ['yellow_pad', 'pink_pad'],
   portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse', 'forward'],
+  color_trigger: ['blue', 'magenta', 'green', 'orange', 'purple', 'red', 'cyan', 'yellow'],
 };
 
 const SUBTYPE_COLORS = {
@@ -36,6 +38,8 @@ const SUBTYPE_COLORS = {
   gravity: '#FFD700', speed_up: '#FF6600', speed_down: '#00AAFF',
   ship: '#FF00FF', wave: '#00FFAA', cube: '#00C8FF',
   ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF', forward: '#44FF44',
+  blue: '#00C8FF', magenta: '#FF3296', green: '#64FF32', orange: '#FF8800',
+  purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700',
 };
 
 export class Editor {
@@ -197,7 +201,7 @@ export class Editor {
 
     this._placeObject(gx, gy);
     // Start paint mode for tools that support it
-    if (['spike', 'orb', 'pad', 'coin', 'checkpoint', 'end'].includes(this.selectedTool)) {
+    if (['spike', 'orb', 'pad', 'coin', 'checkpoint', 'end', 'color_trigger'].includes(this.selectedTool)) {
       this.painting = true;
       this.paintErase = false;
       this.lastPaintGx = gx;
@@ -384,7 +388,7 @@ export class Editor {
     }
 
     // In paint swipe mode, swiping places/erases objects instead of scrolling
-    const paintableTools = ['spike', 'orb', 'pad', 'checkpoint', 'end', 'coin'];
+    const paintableTools = ['spike', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
     const paintSwipe = this.swipeMode === 'paint' && paintableTools.includes(this.selectedTool);
     if (touchCount === 1 && y > TOOLBAR_H && (paintSwipe || eraseSwipe)) {
@@ -689,10 +693,14 @@ export class Editor {
     // Check if object already exists at this position
     const exists = this.objects.find(o => {
       if (o.x !== gx || o.type !== this.selectedTool) return false;
-      // Allow stacking portals of different subtypes
+      // Allow stacking portals/color triggers of different subtypes
       if (o.type === 'portal') {
         const newSub = this.subType || 'gravity';
         if (o.portalType !== newSub) return false;
+      }
+      if (o.type === 'color_trigger') {
+        const newSub = this.subType || 'blue';
+        if (o.colorType !== newSub) return false;
       }
       let objGy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
@@ -720,6 +728,8 @@ export class Editor {
       obj.padType = this.subType || 'yellow_pad';
     } else if (this.selectedTool === 'portal') {
       obj.portalType = this.subType || 'gravity';
+    } else if (this.selectedTool === 'color_trigger') {
+      obj.colorType = this.subType || 'blue';
     }
 
     this.objects.push(obj);
@@ -729,7 +739,7 @@ export class Editor {
   _findObjectAt(gx, gy) {
     return this.objects.findIndex(o => {
       const ow = Math.max(1, o.w || 1);
-      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
+      const oh = Math.max(1, o.type === 'portal' ? 3 : o.type === 'color_trigger' ? 2 : (o.h || 1));
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
@@ -752,7 +762,7 @@ export class Editor {
 
     const idx = this.objects.findIndex(o => {
       const ow = Math.max(1, o.w || 1);
-      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
+      const oh = Math.max(1, o.type === 'portal' ? 3 : o.type === 'color_trigger' ? 2 : (o.h || 1));
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
@@ -1388,6 +1398,22 @@ export class Editor {
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('Click start', sx + GRID * 1.5, sy + GRID / 2 + 4);
+    } else if (this.selectedTool === 'color_trigger') {
+      const ctColor = SUBTYPE_COLORS[this.subType || 'blue'];
+      ctx.strokeStyle = ctColor;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(sx + GRID / 2, sy);
+      ctx.lineTo(sx + GRID, sy + GRID);
+      ctx.lineTo(sx + GRID / 2, sy + GRID * 2);
+      ctx.lineTo(sx, sy + GRID);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('C', sx + GRID / 2, sy + GRID);
     }
 
     ctx.restore();

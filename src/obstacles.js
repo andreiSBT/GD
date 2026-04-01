@@ -1,6 +1,6 @@
 /** Obstacle types with neon glow visuals and new GD mechanics */
 
-import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
+import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH, THEMES } from './settings.js';
 import { lighten, darken } from './player.js';
 
 // AABB collision check
@@ -917,6 +917,169 @@ export class Coin {
 }
 
 // ============================================================
+// COLOR TRIGGER - changes theme colors when player passes through
+// ============================================================
+export const COLOR_TRIGGER_THEMES = {
+  blue: { label: 'Blue', color: '#00C8FF' },
+  magenta: { label: 'Magenta', color: '#FF3296' },
+  green: { label: 'Green', color: '#64FF32' },
+  orange: { label: 'Orange', color: '#FF8800' },
+  purple: { label: 'Purple', color: '#AA44FF' },
+  red: { label: 'Red', color: '#FF2222' },
+  cyan: { label: 'Cyan', color: '#00FFCC' },
+  yellow: { label: 'Yellow', color: '#FFD700' },
+};
+
+// Full theme definitions for color triggers
+export const COLOR_TRIGGER_FULL_THEMES = {
+  blue: THEMES[1],
+  magenta: THEMES[2],
+  green: THEMES[3],
+  orange: {
+    name: 'Sunset',
+    bgTop: '#1A0A00',
+    bgBot: '#4A2000',
+    ground: '#663300',
+    groundLine: '#FF8800',
+    accent: '#FF8800',
+    player: '#FFAA44',
+    spike: '#FFDDAA',
+    platform: '#884400',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+  purple: {
+    name: 'Nebula',
+    bgTop: '#0A0020',
+    bgBot: '#2A0060',
+    ground: '#3A0080',
+    groundLine: '#AA44FF',
+    accent: '#AA44FF',
+    player: '#CC88FF',
+    spike: '#EEDDFF',
+    platform: '#5500AA',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+  red: {
+    name: 'Inferno',
+    bgTop: '#1A0000',
+    bgBot: '#4A0000',
+    ground: '#660000',
+    groundLine: '#FF2222',
+    accent: '#FF2222',
+    player: '#FF6644',
+    spike: '#FFCCCC',
+    platform: '#880000',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+  cyan: {
+    name: 'Frost',
+    bgTop: '#001A1A',
+    bgBot: '#004040',
+    ground: '#006060',
+    groundLine: '#00FFCC',
+    accent: '#00FFCC',
+    player: '#66FFE0',
+    spike: '#CCFFEE',
+    platform: '#008888',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+  yellow: {
+    name: 'Solar',
+    bgTop: '#1A1400',
+    bgBot: '#3A2A00',
+    ground: '#554400',
+    groundLine: '#FFD700',
+    accent: '#FFD700',
+    player: '#FFEE66',
+    spike: '#FFF8DD',
+    platform: '#887700',
+    portalGravity: '#FFD700',
+    portalSpeed: '#FF6600',
+  },
+};
+
+export class ColorTrigger {
+  constructor(gx, gy, colorType = 'blue') {
+    this.type = 'color_trigger';
+    this.colorType = colorType;
+    this.x = gx * GRID;
+    this.y = GROUND_Y - (gy + 2) * GRID;
+    this.w = GRID;
+    this.h = GRID * 2;
+    this.activated = false;
+    this.animTimer = Math.random() * Math.PI * 2;
+  }
+
+  reset() {
+    this.activated = false;
+  }
+
+  checkCollision(playerRect) {
+    if (this.activated) return null;
+    if (rectsOverlap(playerRect, this)) {
+      this.activated = true;
+      return `color_${this.colorType}`;
+    }
+    return null;
+  }
+
+  draw(ctx, cameraX, theme) {
+    const sx = this.x - cameraX + PLAYER_X_OFFSET;
+    if (sx < -GRID * 2 || sx > SCREEN_WIDTH + GRID * 2) return;
+    const sy = this.y;
+    const meta = COLOR_TRIGGER_THEMES[this.colorType] || COLOR_TRIGGER_THEMES.blue;
+    const color = meta.color;
+
+    this.animTimer += 0.03;
+
+    const cx = sx + this.w / 2;
+    const cy = sy + this.h / 2;
+
+    ctx.save();
+    ctx.globalAlpha = this.activated ? 0.15 : 1;
+
+    // Pulsing glow ring
+    const pulse = 0.8 + Math.sin(this.animTimer * 2) * 0.2;
+    drawNeonGlow(ctx, color, 16 * pulse);
+
+    // Outer diamond shape
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, sy + 4);
+    ctx.lineTo(sx + this.w - 4, cy);
+    ctx.lineTo(cx, sy + this.h - 4);
+    ctx.lineTo(sx + 4, cy);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Inner fill
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, this.h / 2);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.globalAlpha = this.activated ? 0.03 : 0.15;
+    ctx.fill();
+    ctx.globalAlpha = this.activated ? 0.15 : 1;
+
+    clearGlow(ctx);
+
+    // Color palette icon
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('C', cx, cy);
+
+    ctx.restore();
+  }
+}
+
+// ============================================================
 // FACTORY
 // ============================================================
 export function createObstacle(obj) {
@@ -941,6 +1104,8 @@ export function createObstacle(obj) {
       return new JumpPad(obj.x, obj.y || 0, obj.padType || 'yellow_pad');
     case 'coin':
       return new Coin(obj.x, obj.y || 1);
+    case 'color_trigger':
+      return new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue');
     default:
       return null;
   }

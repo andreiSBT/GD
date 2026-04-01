@@ -9,6 +9,7 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
+import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
 
 // Hidden file input for custom music
 const _musicInput = document.createElement('input');
@@ -17,6 +18,13 @@ _musicInput.accept = 'audio/*';
 _musicInput.style.display = 'none';
 document.body.appendChild(_musicInput);
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel } from './supabase.js';
+
+function _lerpColor(hex1, hex2, t) {
+  const r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
+  const r2 = parseInt(hex2.slice(1, 3), 16), g2 = parseInt(hex2.slice(3, 5), 16), b2 = parseInt(hex2.slice(5, 7), 16);
+  const r = Math.round(r1 + (r2 - r1) * t), g = Math.round(g1 + (g2 - g1) * t), b = Math.round(b1 + (b2 - b1) * t);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`.toUpperCase();
+}
 
 const MENU = 'menu';
 const LEVEL_SELECT = 'level_select';
@@ -61,6 +69,8 @@ class Game {
     this.deathTimer = 0;
     this.pendingOrbHit = null; // orb waiting for click activation
     this.coinsCollected = 0;
+    // Color trigger transition state
+    this._colorTransition = null; // { from, to, progress, duration }
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -826,6 +836,8 @@ class Game {
     this.editorStartCheckpoint = null;
     this.level = new Level(levelId);
     this.theme = THEMES[levelId] || THEMES[1];
+    this._baseTheme = this.theme;
+    this._colorTransition = null;
     this.attempts = 0;
     this.lastCheckpoint = null;
     // Track previous best for "NEW BEST!" popup
@@ -840,6 +852,8 @@ class Game {
     this.editorLevelData = levelData;
     this.level = createLevelFromData(levelData);
     this.theme = this.editor.theme;
+    this._baseTheme = this.theme;
+    this._colorTransition = null;
     this.practiceMode = true;
     this.attempts = 1;
     const startPixelX = (levelData.startX || 0) * GRID;
@@ -871,6 +885,8 @@ class Game {
     this.editorLevelData = levelData;
     this.level = createLevelFromData(levelData);
     this.theme = this.editor.theme;
+    this._baseTheme = this.theme;
+    this._colorTransition = null;
     this.practiceMode = false;
     this.attempts = 1;
     this.previousBest = 0;
@@ -930,6 +946,9 @@ class Game {
     this.shakeIntensity = 0;
     this.deathTimer = 0;
     this.pendingOrbHit = null;
+    // Reset theme to base on restart
+    this._colorTransition = null;
+    if (this._baseTheme) this.theme = this._baseTheme;
 
     // Reset all transport platforms back to start position
     if (this.level) {
@@ -945,6 +964,7 @@ class Game {
       this.player.mode = this.lastCheckpoint.mode || MODE_CUBE;
       this.player.mini = this.lastCheckpoint.mini || false;
       this.player.reversed = this.lastCheckpoint.reversed || false;
+      if (this.lastCheckpoint.theme) this.theme = { ...this.lastCheckpoint.theme };
       this.level.resetFrom(this.lastCheckpoint.x);
       this.camera.reset(this.lastCheckpoint.x);
     } else if (this.editorStartCheckpoint) {
@@ -994,6 +1014,45 @@ class Game {
     this.deathTimer = 0;
   }
 
+  _startColorTransition(colorKey) {
+    const targetTheme = COLOR_TRIGGER_FULL_THEMES[colorKey];
+    if (!targetTheme) return;
+    // Snapshot current theme as "from"
+    const from = {};
+    for (const k of Object.keys(targetTheme)) {
+      from[k] = this.theme[k];
+    }
+    this._colorTransition = { from, to: targetTheme, progress: 0, duration: 0.6 };
+  }
+
+  _updateColorTransition(dt) {
+    const t = this._colorTransition;
+    if (!t) return;
+    t.progress += dt / t.duration;
+    if (t.progress >= 1) {
+      // Transition complete - set final theme
+      this.theme = { ...t.to };
+      this._colorTransition = null;
+      // Force renderer to re-cache gradients
+      this.renderer._bgTheme = null;
+      this.renderer._gndTheme = null;
+      return;
+    }
+    // Interpolate all color properties
+    const blended = {};
+    for (const k of Object.keys(t.to)) {
+      if (typeof t.to[k] === 'string' && t.to[k][0] === '#' && t.from[k] && t.from[k][0] === '#') {
+        blended[k] = _lerpColor(t.from[k], t.to[k], t.progress);
+      } else {
+        blended[k] = t.to[k];
+      }
+    }
+    this.theme = blended;
+    // Force renderer to re-cache gradients each frame during transition
+    this.renderer._bgTheme = null;
+    this.renderer._gndTheme = null;
+  }
+
   _startLoop() {
     let lastTime = performance.now();
     const FIXED_DT = 1 / 60; // physics at fixed 60Hz
@@ -1021,6 +1080,7 @@ class Game {
 
   _update(dt) {
     this.ui.update(dt);
+    this._updateColorTransition(dt);
 
     if (this.state === DEAD) {
       this.deathTimer += dt;
@@ -1227,6 +1287,13 @@ class Game {
           Sound.playCheckpoint(); // reuse checkpoint sound for now
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700', 15);
         }
+      } else if (obs.type === 'color_trigger') {
+        const result = obs.checkCollision(playerRect);
+        if (result) {
+          const colorKey = result.replace('color_', '');
+          this._startColorTransition(colorKey);
+          this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, COLOR_TRIGGER_THEMES[colorKey]?.color || '#FFF', 10);
+        }
       } else if (obs.type === 'checkpoint') {
         if (obs.checkCollision(playerRect) === 'checkpoint') {
           Sound.playCheckpoint();
@@ -1238,6 +1305,7 @@ class Game {
             mode: this.player.mode,
             mini: this.player.mini,
             reversed: this.player.reversed,
+            theme: { ...this.theme },
           };
         }
       } else if (obs.type === 'end') {
