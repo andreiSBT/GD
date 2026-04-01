@@ -548,7 +548,11 @@ export class Editor {
     // Live obstacles
     const editorCamX = this.cameraX + PLAYER_X_OFFSET;
     for (const obs of this.liveObstacles) {
-      obs.draw(ctx, editorCamX, this.theme);
+      if (obs.type === 'color_trigger' && obs.drawEditor) {
+        obs.drawEditor(ctx, editorCamX);
+      } else {
+        obs.draw(ctx, editorCamX, this.theme);
+      }
     }
 
     // Start position marker
@@ -738,8 +742,12 @@ export class Editor {
 
   _findObjectAt(gx, gy) {
     return this.objects.findIndex(o => {
+      // Color triggers span full Y — match on X column only
+      if (o.type === 'color_trigger') {
+        return gx >= o.x - 0.5 && gx < o.x + 1.5;
+      }
       const ow = Math.max(1, o.w || 1);
-      const oh = Math.max(1, o.type === 'portal' ? 3 : o.type === 'color_trigger' ? 2 : (o.h || 1));
+      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
@@ -761,8 +769,11 @@ export class Editor {
     }
 
     const idx = this.objects.findIndex(o => {
+      if (o.type === 'color_trigger') {
+        return gx >= o.x - 0.5 && gx < o.x + 1.5;
+      }
       const ow = Math.max(1, o.w || 1);
-      const oh = Math.max(1, o.type === 'portal' ? 3 : o.type === 'color_trigger' ? 2 : (o.h || 1));
+      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;

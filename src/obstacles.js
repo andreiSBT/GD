@@ -1007,11 +1007,10 @@ export class ColorTrigger {
     this.type = 'color_trigger';
     this.colorType = colorType;
     this.x = gx * GRID;
-    this.y = GROUND_Y - (gy + 2) * GRID;
+    this.y = 0;
     this.w = GRID;
-    this.h = GRID * 2;
+    this.h = GROUND_Y;
     this.activated = false;
-    this.animTimer = Math.random() * Math.PI * 2;
   }
 
   reset() {
@@ -1027,54 +1026,32 @@ export class ColorTrigger {
     return null;
   }
 
-  draw(ctx, cameraX, theme) {
+  draw() {
+    // Invisible in gameplay
+  }
+
+  drawEditor(ctx, cameraX) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -GRID * 2 || sx > SCREEN_WIDTH + GRID * 2) return;
-    const sy = this.y;
     const meta = COLOR_TRIGGER_THEMES[this.colorType] || COLOR_TRIGGER_THEMES.blue;
     const color = meta.color;
-
-    this.animTimer += 0.03;
-
-    const cx = sx + this.w / 2;
-    const cy = sy + this.h / 2;
-
+    // Thin vertical dashed line spanning full height
     ctx.save();
-    ctx.globalAlpha = this.activated ? 0.15 : 1;
-
-    // Pulsing glow ring
-    const pulse = 0.8 + Math.sin(this.animTimer * 2) * 0.2;
-    drawNeonGlow(ctx, color, 16 * pulse);
-
-    // Outer diamond shape
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
     ctx.beginPath();
-    ctx.moveTo(cx, sy + 4);
-    ctx.lineTo(sx + this.w - 4, cy);
-    ctx.lineTo(cx, sy + this.h - 4);
-    ctx.lineTo(sx + 4, cy);
-    ctx.closePath();
+    ctx.moveTo(sx + GRID / 2, 0);
+    ctx.lineTo(sx + GRID / 2, GROUND_Y);
     ctx.stroke();
-
-    // Inner fill
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, this.h / 2);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.globalAlpha = this.activated ? 0.03 : 0.15;
-    ctx.fill();
-    ctx.globalAlpha = this.activated ? 0.15 : 1;
-
-    clearGlow(ctx);
-
-    // Color palette icon
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 16px monospace';
+    ctx.setLineDash([]);
+    // Small label
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('C', cx, cy);
-
+    ctx.fillText('C', sx + GRID / 2, 14);
     ctx.restore();
   }
 }
