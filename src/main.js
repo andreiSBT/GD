@@ -9,6 +9,13 @@ import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
+
+// Hidden file input for custom music
+const _musicInput = document.createElement('input');
+_musicInput.type = 'file';
+_musicInput.accept = 'audio/*';
+_musicInput.style.display = 'none';
+document.body.appendChild(_musicInput);
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel } from './supabase.js';
 
 const MENU = 'menu';
@@ -91,6 +98,8 @@ class Game {
 
     this._bindEvents();
     this._setupAccountUI();
+    // Load persisted custom music from IndexedDB
+    Sound.loadCustomMusicFromDB().catch(() => {});
     initAuth().then(async () => {
       await this._syncFromCloud();
       await checkAdmin();
@@ -389,6 +398,26 @@ class Game {
   _handleAction(action) {
     if (action === 'levels') {
       this.state = LEVEL_SELECT;
+    } else if (action.startsWith('music_')) {
+      const id = parseInt(action.split('_')[1]);
+      if (Sound.hasCustomMusic(id)) {
+        // Already has custom music - remove it
+        Sound.removeCustomMusic(id);
+      } else {
+        // Open file picker
+        _musicInput.onchange = async () => {
+          const file = _musicInput.files[0];
+          if (file) {
+            try {
+              await Sound.loadCustomMusic(id, file);
+            } catch (e) {
+              console.error('Failed to load custom music:', e);
+            }
+          }
+          _musicInput.value = '';
+        };
+        _musicInput.click();
+      }
     } else if (action.startsWith('normal_')) {
       const id = parseInt(action.split('_')[1]);
       this.practiceMode = false;
@@ -939,6 +968,8 @@ class Game {
     this.player.alive = false;
     this.shakeIntensity = 10;
     Sound.playDeath();
+    // Restart custom music from the beginning on each death
+    Sound.restartCustomMusic();
     this.particles.emitDeath(
       this.player.x,
       this.player.y + PLAYER_SIZE / 2,

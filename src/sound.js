@@ -119,6 +119,122 @@ export function playComplete() {
   });
 }
 
+// Custom music per level
+const customMusicBuffers = {}; // levelId -> AudioBuffer
+let customMusicSource = null;
+let customMusicGain = null;
+let customMusicLevelId = null;
+
+export function loadCustomMusic(levelId, file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const c = getCtx();
+        // Save raw bytes before decodeAudioData consumes the buffer
+        const raw = new Uint8Array(reader.result);
+        const buffer = await c.decodeAudioData(reader.result);
+        customMusicBuffers[levelId] = buffer;
+        _saveCustomMusicToDB(levelId, raw);
+        resolve();
+      } catch (e) { reject(e); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+export function removeCustomMusic(levelId) {
+  delete customMusicBuffers[levelId];
+  _removeCustomMusicFromDB(levelId);
+}
+
+export function hasCustomMusic(levelId) {
+  return !!customMusicBuffers[levelId];
+}
+
+function _playCustomMusic(levelId) {
+  _stopCustomMusic();
+  const buffer = customMusicBuffers[levelId];
+  if (!buffer) return false;
+  const c = getCtx();
+  customMusicSource = c.createBufferSource();
+  customMusicSource.buffer = buffer;
+  customMusicSource.loop = true;
+  customMusicGain = c.createGain();
+  customMusicGain.gain.setValueAtTime(1.0, c.currentTime);
+  customMusicSource.connect(customMusicGain);
+  customMusicGain.connect(c.destination);
+  customMusicSource.start(0);
+  customMusicLevelId = levelId;
+  return true;
+}
+
+function _stopCustomMusic() {
+  if (customMusicSource) {
+    try { customMusicSource.stop(0); } catch (_) {}
+    customMusicSource.disconnect();
+    customMusicSource = null;
+  }
+  if (customMusicGain) {
+    customMusicGain.disconnect();
+    customMusicGain = null;
+  }
+  customMusicLevelId = null;
+}
+
+export function restartCustomMusic() {
+  if (customMusicLevelId != null) {
+    const id = customMusicLevelId;
+    _stopCustomMusic();
+    _playCustomMusic(id);
+  }
+}
+
+// IndexedDB persistence for custom music
+function _openMusicDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open('gd_custom_music', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('tracks');
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _saveCustomMusicToDB(levelId, arrayBuffer) {
+  try {
+    const db = await _openMusicDB();
+    const tx = db.transaction('tracks', 'readwrite');
+    tx.objectStore('tracks').put(arrayBuffer, levelId);
+  } catch {}
+}
+
+async function _removeCustomMusicFromDB(levelId) {
+  try {
+    const db = await _openMusicDB();
+    const tx = db.transaction('tracks', 'readwrite');
+    tx.objectStore('tracks').delete(levelId);
+  } catch {}
+}
+
+export async function loadCustomMusicFromDB() {
+  try {
+    const db = await _openMusicDB();
+    const tx = db.transaction('tracks', 'readonly');
+    const store = tx.objectStore('tracks');
+    const keys = await new Promise((res, rej) => { const r = store.getAllKeys(); r.onsuccess = () => res(r.result); r.onerror = rej; });
+    const c = getCtx();
+    for (const key of keys) {
+      const data = await new Promise((res, rej) => { const r = store.get(key); r.onsuccess = () => res(r.result); r.onerror = rej; });
+      try {
+        const copy = data.buffer.slice(0);
+        const buffer = await c.decodeAudioData(copy);
+        customMusicBuffers[key] = buffer;
+      } catch {}
+    }
+  } catch {}
+}
+
 // Music system
 let musicInterval = null;
 let musicGain = null;
@@ -128,6 +244,13 @@ let activeNodes = []; // track all active oscillators/sources to stop them clean
 export function playMusic(levelId) {
   stopMusic();
   currentMusicLevel = levelId;
+
+  // Use custom music if available
+  if (customMusicBuffers[levelId]) {
+    _playCustomMusic(levelId);
+    return;
+  }
+
   const c = getCtx();
 
   const bpm = 128 + (levelId - 1) * 10;
@@ -208,6 +331,8 @@ export function playMusic(levelId) {
 }
 
 export function pauseMusic() {
+  // Stop custom music (will restart from beginning on resume)
+  _stopCustomMusic();
   if (musicInterval) {
     clearInterval(musicInterval);
     musicInterval = null;
@@ -224,16 +349,17 @@ export function pauseMusic() {
 }
 
 export function resumeMusic() {
-  if (currentMusicLevel != null && !musicInterval) {
+  if (currentMusicLevel != null && !musicInterval && !customMusicSource) {
     playMusic(currentMusicLevel);
   }
 }
 
 export function isMusicPlaying() {
-  return musicInterval != null;
+  return musicInterval != null || customMusicSource != null;
 }
 
 export function stopMusic() {
+  _stopCustomMusic();
   pauseMusic();
   currentMusicLevel = null;
 }
