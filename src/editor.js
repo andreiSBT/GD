@@ -129,8 +129,6 @@ export class Editor {
   _setupCustomColorOverlay() {
     const overlay = document.getElementById('color-editor-overlay');
     const fields = document.getElementById('ce-fields');
-    const durInput = document.getElementById('ce-duration');
-    const durVal = document.getElementById('ce-duration-val');
     if (!overlay || !fields) return;
 
     const labels = {
@@ -156,22 +154,38 @@ export class Editor {
       fields.appendChild(wrap);
     }
 
-    durInput.addEventListener('input', () => {
-      this._customDuration = parseFloat(durInput.value);
-      durVal.textContent = durInput.value + 's';
-    });
-
-    document.getElementById('ce-ok').addEventListener('click', () => {
-      overlay.style.display = 'none';
-      if (this._customColorPending) {
-        this._placeCustomColorTrigger(this._customColorPending.gx, this._customColorPending.gy);
+    // Use event delegation on the overlay to catch all clicks reliably
+    overlay.addEventListener('pointerdown', (e) => e.stopPropagation());
+    overlay.addEventListener('mousedown', (e) => e.stopPropagation());
+    overlay.addEventListener('touchstart', (e) => e.stopPropagation());
+    overlay.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = e.target.id;
+      if (id === 'ce-ok') {
+        overlay.style.display = 'none';
+        if (this._customColorPending) {
+          this._placeCustomColorTrigger(this._customColorPending.gx, this._customColorPending.gy);
+          this._customColorPending = null;
+        }
+      } else if (id === 'ce-cancel') {
+        overlay.style.display = 'none';
         this._customColorPending = null;
+      } else if (id === 'ce-duration') {
+        const durInput = document.getElementById('ce-duration');
+        const durVal = document.getElementById('ce-duration-val');
+        this._customDuration = parseFloat(durInput.value);
+        durVal.textContent = durInput.value + 's';
       }
     });
-    document.getElementById('ce-cancel').addEventListener('click', () => {
-      overlay.style.display = 'none';
-      this._customColorPending = null;
-    });
+    // Duration slider continuous update
+    const durInput = document.getElementById('ce-duration');
+    const durVal = document.getElementById('ce-duration-val');
+    if (durInput) {
+      durInput.addEventListener('input', () => {
+        this._customDuration = parseFloat(durInput.value);
+        durVal.textContent = durInput.value + 's';
+      });
+    }
   }
 
   _showCustomColorOverlay(gx, gy, existingObj) {
