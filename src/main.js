@@ -946,7 +946,7 @@ class Game {
     this.shakeIntensity = 0;
     this.deathTimer = 0;
     this.pendingOrbHit = null;
-    // Reset theme to base on restart
+    // Reset theme and re-apply any color triggers before spawn point
     this._colorTransition = null;
     if (this._baseTheme) this.theme = this._baseTheme;
 
@@ -978,6 +978,21 @@ class Game {
       this.level.reset();
       this.lastCheckpoint = null;
       this.camera.reset(0);
+    }
+
+    // Re-apply color triggers before spawn point instantly
+    if (this.level) {
+      const spawnX = this.player.x;
+      let lastTrigger = null;
+      for (const obs of this.level.obstacles) {
+        if (obs.type === 'color_trigger' && obs.x <= spawnX) {
+          lastTrigger = obs;
+        }
+      }
+      if (lastTrigger) {
+        const targetTheme = lastTrigger.customTheme || COLOR_TRIGGER_FULL_THEMES[lastTrigger.colorType];
+        if (targetTheme) this.theme = { ...targetTheme };
+      }
     }
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
