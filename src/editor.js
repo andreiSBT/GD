@@ -893,6 +893,14 @@ export class Editor {
 
     this._pushHistory();
 
+    // End marker is special - only one allowed per level (like start pos)
+    if (this.selectedTool === 'end') {
+      const oldEnd = this.objects.findIndex(o => o.type === 'end');
+      if (oldEnd !== -1) {
+        this.objects.splice(oldEnd, 1);
+      }
+    }
+
     const obj = { type: this.selectedTool, x: gx, y: gy };
 
     if (this.selectedTool === 'spike') {
