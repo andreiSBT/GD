@@ -4,6 +4,7 @@ import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET,
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
 import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel } from './supabase.js';
+import { loadCustomMusic, removeCustomMusic, hasCustomMusic } from './sound.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
@@ -114,6 +115,13 @@ export class Editor {
     // Delete confirmation dialog
     this.confirmDelete = null; // null or { slotId, slotName }
     this.officialPicker = false; // show official level picker dialog
+
+    // Hidden file input for music
+    this._musicInput = document.createElement('input');
+    this._musicInput.type = 'file';
+    this._musicInput.accept = 'audio/*';
+    this._musicInput.style.display = 'none';
+    document.body.appendChild(this._musicInput);
 
     // Custom color trigger state
     this._customColorData = {
@@ -234,6 +242,41 @@ export class Editor {
     };
     this.objects.push(obj);
     this._rebuildLive();
+  }
+
+  _getMusicKey() {
+    return this.currentSlot ? 'editor_' + this.currentSlot : null;
+  }
+
+  _hasSlotMusic() {
+    const key = this._getMusicKey();
+    return key ? hasCustomMusic(key) : false;
+  }
+
+  _handleMusicButton() {
+    const key = this._getMusicKey();
+    if (!key) {
+      this._showToast('Save level first!');
+      return;
+    }
+    if (hasCustomMusic(key)) {
+      removeCustomMusic(key);
+      this._showToast('Music removed');
+    } else {
+      this._musicInput.onchange = async () => {
+        const file = this._musicInput.files[0];
+        if (file) {
+          try {
+            await loadCustomMusic(key, file);
+            this._showToast('Music added!');
+          } catch (e) {
+            this._showToast('Failed to load audio');
+          }
+        }
+        this._musicInput.value = '';
+      };
+      this._musicInput.click();
+    }
   }
 
   // === EVENT HANDLERS ===
@@ -1219,6 +1262,7 @@ export class Editor {
       { id: 'action_test', label: 'TEST', color: '#00CC44' },
       { id: 'action_save', label: 'SAVE', color: '#4488CC' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
+      { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
       { id: 'action_export', label: 'EXP', color: '#CC8800' },
       ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
       { id: 'action_help', label: '?', color: '#666' },
@@ -2058,6 +2102,8 @@ export class Editor {
       }
     } else if (id === 'action_load') {
       this.showBrowser();
+    } else if (id === 'action_music') {
+      this._handleMusicButton();
     } else if (id === 'action_export') {
       const json = this.exportJSON();
       navigator.clipboard?.writeText(json).then(() => {

@@ -4,7 +4,6 @@ import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TR
 import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
-import { hasCustomMusic } from './sound.js';
 
 function getEditorLevelCount() {
   try {
@@ -325,26 +324,6 @@ export class UI {
 
       this._drawButton(ctx, btnX1, btnY, btnW, btnH, 'NORMAL', `normal_${i}`, '#00C864', IS_MOBILE ? 17 : 15);
       this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', IS_MOBILE ? 17 : 15);
-
-      // Music button (top-right corner of card)
-      const musicSize = 30;
-      const musicX = x + cardW - musicSize - 8;
-      const musicY = y + 8;
-      const hasMusic = hasCustomMusic(i);
-      ctx.save();
-      ctx.globalAlpha = hasMusic ? 1 : 0.4;
-      ctx.fillStyle = hasMusic ? '#FF66AA' : '#556677';
-      ctx.beginPath();
-      ctx.arc(musicX + musicSize / 2, musicY + musicSize / 2, musicSize / 2, 0, Math.PI * 2);
-      ctx.fill();
-      // Music note icon
-      ctx.fillStyle = '#FFF';
-      ctx.font = `bold ${musicSize * 0.5}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('\u266B', musicX + musicSize / 2, musicY + musicSize / 2);
-      ctx.restore();
-      this.buttons.push({ x: musicX, y: musicY, w: musicSize, h: musicSize, id: `music_${i}` });
     }
 
     // Back button

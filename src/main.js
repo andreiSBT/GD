@@ -10,13 +10,6 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-
-// Hidden file input for custom music
-const _musicInput = document.createElement('input');
-_musicInput.type = 'file';
-_musicInput.accept = 'audio/*';
-_musicInput.style.display = 'none';
-document.body.appendChild(_musicInput);
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel } from './supabase.js';
 
 function _lerpColor(hex1, hex2, t) {
@@ -408,26 +401,6 @@ class Game {
   _handleAction(action) {
     if (action === 'levels') {
       this.state = LEVEL_SELECT;
-    } else if (action.startsWith('music_')) {
-      const id = parseInt(action.split('_')[1]);
-      if (Sound.hasCustomMusic(id)) {
-        // Already has custom music - remove it
-        Sound.removeCustomMusic(id);
-      } else {
-        // Open file picker
-        _musicInput.onchange = async () => {
-          const file = _musicInput.files[0];
-          if (file) {
-            try {
-              await Sound.loadCustomMusic(id, file);
-            } catch (e) {
-              console.error('Failed to load custom music:', e);
-            }
-          }
-          _musicInput.value = '';
-        };
-        _musicInput.click();
-      }
     } else if (action.startsWith('normal_')) {
       const id = parseInt(action.split('_')[1]);
       this.practiceMode = false;
@@ -496,13 +469,15 @@ class Game {
       Sound.stopMusic();
       this._restart();
       Sound.resumeAudio();
-      Sound.playMusic(this.level.id);
+      if (this.editorLevelData) this._playEditorMusic();
+      else Sound.playMusic(this.level.id);
     } else if (action === 'retry' || action === 'restart') {
       Sound.stopDeath();
       Sound.stopMusic();
       this._restart();
       Sound.resumeAudio();
-      Sound.playMusic(this.level.id);
+      if (this.editorLevelData) this._playEditorMusic();
+      else Sound.playMusic(this.level.id);
     } else if (action === 'menu') {
       Sound.stopMusic();
       this.shakeIntensity = 0;
@@ -878,7 +853,7 @@ class Game {
     this.deathTimer = 0;
     this.shakeIntensity = 0;
     this.pendingOrbHit = null;
-    Sound.playMusic(this.editor.themeId);
+    this._playEditorMusic();
   }
 
   _playEditorLevel(levelData) {
@@ -914,7 +889,16 @@ class Game {
     this.deathTimer = 0;
     this.shakeIntensity = 0;
     this.pendingOrbHit = null;
-    Sound.playMusic(this.editor.themeId);
+    this._playEditorMusic();
+  }
+
+  _playEditorMusic() {
+    const musicKey = this.editor._getMusicKey();
+    if (musicKey && Sound.hasCustomMusic(musicKey)) {
+      Sound.playMusic(musicKey);
+    } else {
+      Sound.playMusic(this.editor.themeId);
+    }
   }
 
   _restart() {
@@ -922,7 +906,11 @@ class Game {
     // Ensure music is playing (may have been paused during death/pause)
     if (!Sound.isMusicPlaying() && this.level) {
       Sound.resumeAudio();
-      Sound.playMusic(this.level.id);
+      if (this.editorLevelData) {
+        this._playEditorMusic();
+      } else {
+        Sound.playMusic(this.level.id);
+      }
     }
     this.attempts++;
     this.coinsCollected = 0;
