@@ -51,7 +51,7 @@ function playNoise(duration, volume = 0.2) {
 }
 
 export function playJump() {
-  playTone(400, 0.1, 'sine', 0.25, 800);
+  playTone(400, 0.1, 'sine', 0.2, 800);
 }
 
 let deathNodes = [];
@@ -81,7 +81,7 @@ export function playDeath() {
   const noiseSrc = c.createBufferSource();
   noiseSrc.buffer = buffer;
   const noiseGain = c.createGain();
-  noiseGain.gain.setValueAtTime(0.25, c.currentTime);
+  noiseGain.gain.setValueAtTime(0.2, c.currentTime);
   noiseGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3);
   noiseSrc.connect(noiseGain);
   noiseGain.connect(c.destination);
@@ -94,7 +94,7 @@ export function playDeath() {
   const oscGain = c.createGain();
   osc.type = 'sine';
   osc.frequency.setValueAtTime(80, c.currentTime);
-  oscGain.gain.setValueAtTime(0.3, c.currentTime);
+  oscGain.gain.setValueAtTime(0.24, c.currentTime);
   oscGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
   osc.connect(oscGain);
   oscGain.connect(c.destination);
@@ -104,19 +104,16 @@ export function playDeath() {
 }
 
 export function playCheckpoint() {
-  playTone(600, 0.06, 'sine', 0.2);
-  setTimeout(() => playTone(900, 0.06, 'sine', 0.2), 60);
+  playTone(600, 0.06, 'sine', 0.16);
+  setTimeout(() => playTone(900, 0.06, 'sine', 0.16), 60);
 }
 
 export function playSelect() {
-  playTone(500, 0.08, 'sine', 0.15);
+  playTone(500, 0.08, 'sine', 0.12);
 }
 
 export function playComplete() {
-  const notes = [523, 659, 784, 1047];
-  notes.forEach((freq, i) => {
-    setTimeout(() => playTone(freq, 0.15, 'sine', 0.2), i * 120);
-  });
+  // no-op: removed to let music play uninterrupted
 }
 
 // Custom music per level
