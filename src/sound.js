@@ -152,6 +152,31 @@ export function hasCustomMusic(levelId) {
   return !!customMusicBuffers[levelId] || !!_pendingMusicRaw[levelId];
 }
 
+// Cache normalized gain per buffer so we don't recalculate every play
+const _normalizedGains = new Map();
+const TARGET_RMS = 0.15; // target loudness level
+
+function _getNormalizedGain(buffer) {
+  if (_normalizedGains.has(buffer)) return _normalizedGains.get(buffer);
+  // Calculate RMS across all channels
+  let sumSq = 0;
+  let count = 0;
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    const data = buffer.getChannelData(ch);
+    // Sample every 100th value for performance on long tracks
+    const step = Math.max(1, Math.floor(data.length / 50000));
+    for (let i = 0; i < data.length; i += step) {
+      sumSq += data[i] * data[i];
+      count++;
+    }
+  }
+  const rms = Math.sqrt(sumSq / count);
+  // Clamp gain between 0.3 and 3.0 to avoid extreme adjustments
+  const gain = rms > 0 ? Math.min(3.0, Math.max(0.3, TARGET_RMS / rms)) : 1.0;
+  _normalizedGains.set(buffer, gain);
+  return gain;
+}
+
 function _playCustomMusic(levelId, offset = 0) {
   _stopCustomMusic();
   const buffer = customMusicBuffers[levelId];
@@ -160,8 +185,9 @@ function _playCustomMusic(levelId, offset = 0) {
   customMusicSource = c.createBufferSource();
   customMusicSource.buffer = buffer;
   customMusicSource.loop = true;
+  const normGain = _getNormalizedGain(buffer);
   customMusicGain = c.createGain();
-  customMusicGain.gain.setValueAtTime(1.0, c.currentTime);
+  customMusicGain.gain.setValueAtTime(normGain, c.currentTime);
   customMusicSource.connect(customMusicGain);
   customMusicGain.connect(c.destination);
   // Start from offset (modulo buffer duration for looping)
