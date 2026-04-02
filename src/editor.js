@@ -4,7 +4,7 @@ import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET,
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
 import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic, uploadOfficialMusic } from './supabase.js';
-import { loadCustomMusic, removeCustomMusic, hasCustomMusic, getRawMusicFromDB, copyMusicBuffer } from './sound.js';
+import { loadCustomMusic, removeCustomMusic, hasCustomMusic, getRawMusicFromDB, copyMusicBuffer, getCustomMusicDuration } from './sound.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
@@ -1962,6 +1962,17 @@ export class Editor {
     ctx.moveTo(px + 30, sy - 10);
     ctx.lineTo(px + panelW - 30, sy - 10);
     ctx.stroke();
+
+    // Song duration
+    const musicKey = this._getMusicKey();
+    const songDur = musicKey ? getCustomMusicDuration(musicKey) : 0;
+    if (songDur > 0) {
+      const sm = Math.floor(songDur / 60);
+      const ss = songDur % 60;
+      drawRow('Song Duration', sm > 0 ? `${sm}m ${ss.toFixed(1)}s` : `${ss.toFixed(1)}s`, '#FF66AA');
+    } else {
+      drawRow('Song Duration', 'No custom music', '#556677');
+    }
 
     drawRow('Level Length', info.endX.toFixed(0) + ' grid units');
     drawRow('Total Objects', String(info.objectCount));

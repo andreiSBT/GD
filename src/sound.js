@@ -263,6 +263,11 @@ export function hasPendingMusic(levelId) {
   return !!_pendingMusicRaw[levelId];
 }
 
+export function getCustomMusicDuration(levelId) {
+  const buf = customMusicBuffers[levelId];
+  return buf ? buf.duration : 0;
+}
+
 export async function getRawMusicFromDB(levelId) {
   try {
     const db = await _openMusicDB();
