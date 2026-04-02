@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic } from './supabase.js';
 
 function _lerpColor(hex1, hex2, t) {
   const r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
@@ -121,6 +121,8 @@ class Game {
         }
         console.log('[Admin] Loaded official levels from cloud:', Object.keys(cloudLevels));
       }
+      // Sync custom music from cloud storage
+      this._syncCloudMusic();
     });
     // Re-sync when tab becomes visible again
     document.addEventListener('visibilitychange', () => {
@@ -1672,6 +1674,25 @@ class Game {
   async _syncFromCloud() {
     this.progress = await initProgress();
     await this._initCloudCustomization();
+  }
+
+  async _syncCloudMusic() {
+    try {
+      const slots = await listLevelMusic();
+      for (const slotId of slots) {
+        const key = 'editor_' + slotId;
+        if (Sound.hasCustomMusic(key)) continue; // already loaded locally
+        const ab = await downloadLevelMusic(slotId);
+        if (ab) {
+          // Create a fake File-like blob to reuse loadCustomMusic
+          const blob = new Blob([ab], { type: 'audio/mpeg' });
+          const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
+          await Sound.loadCustomMusic(key, file);
+        }
+      }
+    } catch (e) {
+      console.warn('Cloud music sync failed:', e);
+    }
   }
 
   _loadCustomization() {

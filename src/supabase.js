@@ -440,6 +440,62 @@ export async function deleteEditorLevelFromCloud(slotId) {
   }
 }
 
+// === LEVEL MUSIC (Supabase Storage) ===
+
+export async function uploadLevelMusic(slotId, file) {
+  const client = getClient();
+  if (!client) return null;
+  const userId = getUserId();
+  const path = `${userId}/${slotId}.audio`;
+  try {
+    // Read file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    const { error } = await client.storage.from('level-music')
+      .upload(path, arrayBuffer, { contentType: file.type || 'audio/mpeg', upsert: true });
+    if (error) { console.warn('Music upload failed:', error.message); return null; }
+    return path;
+  } catch (e) {
+    console.warn('Music upload failed:', e.message);
+    return null;
+  }
+}
+
+export async function downloadLevelMusic(slotId) {
+  const client = getClient();
+  if (!client) return null;
+  const userId = getUserId();
+  const path = `${userId}/${slotId}.audio`;
+  try {
+    const { data, error } = await client.storage.from('level-music').download(path);
+    if (error || !data) return null;
+    return await data.arrayBuffer();
+  } catch (e) {
+    console.warn('Music download failed:', e.message);
+    return null;
+  }
+}
+
+export async function deleteLevelMusic(slotId) {
+  const client = getClient();
+  if (!client) return;
+  const userId = getUserId();
+  const path = `${userId}/${slotId}.audio`;
+  try {
+    await client.storage.from('level-music').remove([path]);
+  } catch {}
+}
+
+export async function listLevelMusic() {
+  const client = getClient();
+  if (!client) return [];
+  const userId = getUserId();
+  try {
+    const { data, error } = await client.storage.from('level-music').list(userId);
+    if (error || !data) return [];
+    return data.map(f => f.name.replace('.audio', ''));
+  } catch { return []; }
+}
+
 export function isConfigured() {
   return !!(supabaseUrl && supabaseKey);
 }

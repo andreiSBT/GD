@@ -3,7 +3,7 @@
 import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES, SCROLL_SPEED, FPS } from './settings.js';
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
-import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel } from './supabase.js';
+import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic } from './supabase.js';
 import { loadCustomMusic, removeCustomMusic, hasCustomMusic } from './sound.js';
 
 const TOOLBAR_H = 56;
@@ -267,6 +267,7 @@ export class Editor {
     }
     if (hasCustomMusic(key)) {
       removeCustomMusic(key);
+      deleteLevelMusic(this.currentSlot);
       this._showToast('Music removed');
     } else {
       this._musicInput.onchange = async () => {
@@ -275,6 +276,8 @@ export class Editor {
           try {
             await loadCustomMusic(key, file);
             this._showToast('Music added!');
+            // Upload to cloud in background
+            uploadLevelMusic(this.currentSlot, file);
           } catch (e) {
             this._showToast('Failed to load audio');
           }
