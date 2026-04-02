@@ -4,6 +4,7 @@ import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TR
 import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
+import { getMusicVolume, getSFXVolume } from './sound.js';
 
 function getEditorLevelCount() {
   try {
@@ -752,6 +753,68 @@ export class UI {
     }
     btnY += pgap;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'MENU', 'menu', '#445566');
+
+    // Volume sliders
+    btnY += pgap + 8;
+    this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, btnY, 'MUSIC', getMusicVolume(), 'volume_music');
+    btnY += 42;
+    this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, btnY, 'SFX', getSFXVolume(), 'volume_sfx');
+  }
+
+  _drawVolumeSlider(ctx, centerX, y, label, value, id) {
+    const barW = IS_MOBILE ? 220 : 200;
+    const barH = 10;
+    const handleR = IS_MOBILE ? 12 : 10;
+    const barX = centerX - barW / 2;
+    const barY = y;
+
+    // Label
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, barX - 12, barY + barH / 2);
+
+    // Background bar
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    const r = barH / 2;
+    ctx.beginPath();
+    ctx.roundRect(barX, barY, barW, barH, r);
+    ctx.fill();
+
+    // Filled portion
+    const fillW = value * barW;
+    if (fillW > 0) {
+      const grad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
+      grad.addColorStop(0, '#00C864');
+      grad.addColorStop(1, '#00C8FF');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, fillW, barH, r);
+      ctx.fill();
+    }
+
+    // Handle circle
+    const handleX = barX + fillW;
+    const handleY = barY + barH / 2;
+    ctx.beginPath();
+    ctx.arc(handleX, handleY, handleR, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFF';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Percentage text
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(Math.round(value * 100) + '%', barX + barW + 14, barY + barH / 2);
+    ctx.textBaseline = 'alphabetic';
+
+    // Register the slider bar as a clickable button region (padded for easier interaction)
+    const pad = IS_MOBILE ? 18 : 14;
+    this.buttons.push({ id, x: barX - pad, y: barY - pad, w: barW + pad * 2, h: barH + pad * 2 });
   }
 
   drawCustomize(ctx, customization) {

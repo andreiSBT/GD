@@ -1,13 +1,57 @@
 /** Procedural audio using Web Audio API - no external files needed */
 
 let ctx = null;
+let masterMusicGain = null;
+let masterSFXGain = null;
+
+// Default volumes
+let musicVolume = 0.7;
+let sfxVolume = 0.8;
+
+// Load persisted volumes
+try {
+  const savedMusic = localStorage.getItem('gd_volume_music');
+  const savedSFX = localStorage.getItem('gd_volume_sfx');
+  if (savedMusic !== null) musicVolume = parseFloat(savedMusic);
+  if (savedSFX !== null) sfxVolume = parseFloat(savedSFX);
+} catch {}
 
 function getCtx() {
   if (!ctx) {
     ctx = new (window.AudioContext || window.webkitAudioContext)();
   }
+  // Lazily create master gain nodes
+  if (!masterMusicGain) {
+    masterMusicGain = ctx.createGain();
+    masterMusicGain.gain.setValueAtTime(musicVolume, ctx.currentTime);
+    masterMusicGain.connect(ctx.destination);
+  }
+  if (!masterSFXGain) {
+    masterSFXGain = ctx.createGain();
+    masterSFXGain.gain.setValueAtTime(sfxVolume, ctx.currentTime);
+    masterSFXGain.connect(ctx.destination);
+  }
   return ctx;
 }
+
+export function setMusicVolume(v) {
+  musicVolume = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem('gd_volume_music', musicVolume.toString()); } catch {}
+  if (masterMusicGain) {
+    masterMusicGain.gain.setValueAtTime(musicVolume, ctx.currentTime);
+  }
+}
+
+export function setSFXVolume(v) {
+  sfxVolume = Math.max(0, Math.min(1, v));
+  try { localStorage.setItem('gd_volume_sfx', sfxVolume.toString()); } catch {}
+  if (masterSFXGain) {
+    masterSFXGain.gain.setValueAtTime(sfxVolume, ctx.currentTime);
+  }
+}
+
+export function getMusicVolume() { return musicVolume; }
+export function getSFXVolume() { return sfxVolume; }
 
 // Resume audio context on first user interaction
 export function resumeAudio() {
@@ -27,7 +71,7 @@ function playTone(freq, duration, type = 'sine', volume = 0.3, freqEnd = null) {
   gain.gain.setValueAtTime(volume, c.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
   osc.connect(gain);
-  gain.connect(c.destination);
+  gain.connect(masterSFXGain);
   osc.start(c.currentTime);
   osc.stop(c.currentTime + duration);
 }
@@ -46,7 +90,7 @@ function playNoise(duration, volume = 0.2) {
   gain.gain.setValueAtTime(volume, c.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + duration);
   source.connect(gain);
-  gain.connect(c.destination);
+  gain.connect(masterSFXGain);
   source.start();
 }
 
@@ -84,7 +128,7 @@ export function playDeath() {
   noiseGain.gain.setValueAtTime(0.2, c.currentTime);
   noiseGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3);
   noiseSrc.connect(noiseGain);
-  noiseGain.connect(c.destination);
+  noiseGain.connect(masterSFXGain);
   noiseSrc.start(c.currentTime);
   noiseSrc.stop(c.currentTime + 0.35);
   deathNodes.push({ gain: noiseGain, source: noiseSrc });
@@ -97,7 +141,7 @@ export function playDeath() {
   oscGain.gain.setValueAtTime(0.24, c.currentTime);
   oscGain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
   osc.connect(oscGain);
-  oscGain.connect(c.destination);
+  oscGain.connect(masterSFXGain);
   osc.start(c.currentTime);
   osc.stop(c.currentTime + 0.35);
   deathNodes.push({ gain: oscGain, source: osc });
@@ -189,7 +233,7 @@ function _playCustomMusic(levelId, offset = 0) {
   customMusicGain = c.createGain();
   customMusicGain.gain.setValueAtTime(normGain, c.currentTime);
   customMusicSource.connect(customMusicGain);
-  customMusicGain.connect(c.destination);
+  customMusicGain.connect(masterMusicGain);
   // Start from offset (modulo buffer duration for looping)
   const startOffset = buffer.duration > 0 ? (offset % buffer.duration) : 0;
   customMusicSource.start(0, startOffset);
@@ -347,7 +391,7 @@ export async function playMusic(levelId, offset = 0) {
 
   musicGain = c.createGain();
   musicGain.gain.setValueAtTime(1.0, c.currentTime);
-  musicGain.connect(c.destination);
+  musicGain.connect(masterMusicGain);
 
   // Skip ahead if offset provided (e.g. editor start position)
   const beatSec = beatMs / 1000;

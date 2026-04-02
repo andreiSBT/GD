@@ -1061,6 +1061,116 @@ export class ColorTrigger {
 }
 
 // ============================================================
+// SAW BLADE - rotating circular obstacle with teeth
+// ============================================================
+export class SawBlade {
+  constructor(gx, gy, radius = 1) {
+    this.type = 'saw';
+    this.x = gx * GRID;
+    this.y = GROUND_Y - (gy + 1) * GRID;
+    this.w = radius * GRID;
+    this.h = radius * GRID;
+    this.radius = radius;
+    this.animTimer = Math.random() * Math.PI * 2;
+  }
+
+  reset() {}
+
+  checkCollision(playerRect) {
+    // Circular collision: distance from player center to saw center
+    const sawCx = this.x + this.w / 2;
+    const sawCy = this.y + this.h / 2;
+    const sawR = this.w / 2;
+
+    const playerCx = playerRect.x + playerRect.w / 2;
+    const playerCy = playerRect.y + playerRect.h / 2;
+    const playerR = Math.min(playerRect.w, playerRect.h) / 2;
+
+    const dx = playerCx - sawCx;
+    const dy = playerCy - sawCy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const forgiveness = 8;
+
+    if (dist < sawR + playerR - forgiveness) {
+      return 'death';
+    }
+    return null;
+  }
+
+  draw(ctx, cameraX, theme) {
+    const sx = this.x - cameraX + PLAYER_X_OFFSET;
+    if (sx < -this.w - GRID || sx > SCREEN_WIDTH + GRID) return;
+    const sy = this.y;
+
+    this.animTimer += 0.06;
+
+    const cx = sx + this.w / 2;
+    const cy = sy + this.h / 2;
+    const r = this.w / 2;
+    const teeth = Math.max(8, Math.round(this.radius * 10));
+    const color = theme.spike;
+
+    ctx.save();
+
+    // Neon glow
+    drawNeonGlow(ctx, theme.accent, 14);
+
+    ctx.translate(cx, cy);
+    ctx.rotate(this.animTimer);
+
+    // Draw saw body with jagged teeth
+    ctx.beginPath();
+    for (let i = 0; i < teeth; i++) {
+      const angle = (i / teeth) * Math.PI * 2;
+      const nextAngle = ((i + 0.5) / teeth) * Math.PI * 2;
+      const outerR = r;
+      const innerR = r * 0.7;
+
+      const ox = Math.cos(angle) * outerR;
+      const oy = Math.sin(angle) * outerR;
+      const ix = Math.cos(nextAngle) * innerR;
+      const iy = Math.sin(nextAngle) * innerR;
+
+      if (i === 0) ctx.moveTo(ox, oy);
+      else ctx.lineTo(ox, oy);
+      ctx.lineTo(ix, iy);
+    }
+    ctx.closePath();
+
+    // Gradient fill
+    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+    grad.addColorStop(0, '#FFF');
+    grad.addColorStop(0.3, color);
+    grad.addColorStop(1, darken(color, 40));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Outline
+    clearGlow(ctx);
+    ctx.strokeStyle = theme.accent;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Center hub
+    drawNeonGlow(ctx, theme.accent, 6);
+    ctx.fillStyle = theme.accent;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner ring
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
+    ctx.stroke();
+
+    clearGlow(ctx);
+    ctx.restore();
+  }
+}
+
+// ============================================================
 // FACTORY
 // ============================================================
 export function createObstacle(obj) {
@@ -1087,6 +1197,8 @@ export function createObstacle(obj) {
       return new Coin(obj.x, obj.y || 1);
     case 'color_trigger':
       return new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue', obj.customTheme || null, obj.duration || 0.6);
+    case 'saw':
+      return new SawBlade(obj.x, obj.y || 0, obj.radius || 1);
     default:
       return null;
   }

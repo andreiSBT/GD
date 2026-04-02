@@ -23,6 +23,7 @@ const TOOLS = [
   { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
   { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
   { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
+  { id: 'saw', label: 'Saw', key: 'W', color: '#FF6666' },
   { id: 'color_trigger', label: 'Color', key: 'R', color: '#FF66AA' },
   { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
   { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
@@ -33,6 +34,7 @@ const SUBTYPES = {
   pad: ['yellow_pad', 'pink_pad'],
   portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse', 'forward'],
   color_trigger: ['blue', 'magenta', 'green', 'orange', 'purple', 'red', 'cyan', 'yellow', 'custom'],
+  saw: ['1', '2', '3'],
 };
 
 const SUBTYPE_COLORS = {
@@ -43,6 +45,7 @@ const SUBTYPE_COLORS = {
   ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF', forward: '#44FF44',
   blue: '#00C8FF', magenta: '#FF3296', green: '#64FF32', orange: '#FF8800',
   purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700', custom: '#FF66AA',
+  '1': '#FF6666', '2': '#FF4444', '3': '#FF2222',
 };
 
 export class Editor {
@@ -385,7 +388,7 @@ export class Editor {
 
     this._placeObject(gx, gy);
     // Start paint mode for tools that support it
-    if (['spike', 'orb', 'pad', 'coin', 'checkpoint', 'end', 'color_trigger'].includes(this.selectedTool)) {
+    if (['spike', 'saw', 'orb', 'pad', 'coin', 'checkpoint', 'end', 'color_trigger'].includes(this.selectedTool)) {
       this.painting = true;
       this.paintErase = false;
       this.lastPaintGx = gx;
@@ -595,7 +598,7 @@ export class Editor {
     }
 
     // In paint swipe mode, swiping places/erases objects instead of scrolling
-    const paintableTools = ['spike', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
+    const paintableTools = ['spike', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
     const paintSwipe = this.swipeMode === 'paint' && paintableTools.includes(this.selectedTool);
     if (touchCount === 1 && y > TOOLBAR_H && (paintSwipe || eraseSwipe)) {
@@ -973,6 +976,8 @@ export class Editor {
         this._showCustomColorOverlay(gx, gy, null);
         return;
       }
+    } else if (this.selectedTool === 'saw') {
+      obj.radius = parseInt(this.subType) || 1;
     }
 
     this.objects.push(obj);
@@ -984,6 +989,13 @@ export class Editor {
       // Color triggers span full Y — match on X column only
       if (o.type === 'color_trigger') {
         return gx >= o.x - 0.5 && gx < o.x + 1.5;
+      }
+      // Saw blades use radius for hit area
+      if (o.type === 'saw') {
+        const r = (o.radius || 1) / 2;
+        const cx = o.x + 0.5;
+        const cy = o.y + 0.5;
+        return gx >= cx - r - 0.5 && gx < cx + r + 0.5 && gy >= cy - r - 0.5 && gy < cy + r + 0.5;
       }
       const ow = Math.max(1, o.w || 1);
       const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
@@ -1010,6 +1022,13 @@ export class Editor {
     const idx = this.objects.findIndex(o => {
       if (o.type === 'color_trigger') {
         return gx >= o.x - 0.5 && gx < o.x + 1.5;
+      }
+      // Saw blades use radius for hit area
+      if (o.type === 'saw') {
+        const r = (o.radius || 1) / 2;
+        const cx = o.x + 0.5;
+        const cy = o.y + 0.5;
+        return gx >= cx - r - 0.5 && gx < cx + r + 0.5 && gy >= cy - r - 0.5 && gy < cy + r + 0.5;
       }
       const ow = Math.max(1, o.w || 1);
       const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
@@ -1749,6 +1768,21 @@ export class Editor {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('C', sx + GRID / 2, sy + GRID);
+    } else if (this.selectedTool === 'saw') {
+      const sawRadius = (parseInt(this.subType) || 1) * GRID / 2;
+      const sawColor = SUBTYPE_COLORS[this.subType || '1'] || '#FF6666';
+      ctx.strokeStyle = sawColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(sx + GRID / 2, sy + GRID / 2, sawRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      // X through the circle
+      ctx.beginPath();
+      ctx.moveTo(sx + GRID / 2 - sawRadius * 0.6, sy + GRID / 2 - sawRadius * 0.6);
+      ctx.lineTo(sx + GRID / 2 + sawRadius * 0.6, sy + GRID / 2 + sawRadius * 0.6);
+      ctx.moveTo(sx + GRID / 2 + sawRadius * 0.6, sy + GRID / 2 - sawRadius * 0.6);
+      ctx.lineTo(sx + GRID / 2 - sawRadius * 0.6, sy + GRID / 2 + sawRadius * 0.6);
+      ctx.stroke();
     }
 
     ctx.restore();

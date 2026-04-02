@@ -59,6 +59,7 @@ class Game {
     this.newBestTriggered = false;
     this.lastCheckpoint = null;
     this.shakeIntensity = 0;
+    this._portalFlash = null;
     this.deathTimer = 0;
     this.pendingOrbHit = null; // orb waiting for click activation
     this.coinsCollected = 0;
@@ -239,6 +240,7 @@ class Game {
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     this._mouseDownState = null; // track which state the mousedown began in
+    this._draggingSlider = null; // 'volume_music' or 'volume_sfx' while dragging
 
     this.canvas.addEventListener('mousedown', (e) => {
       Sound.resumeAudio();
@@ -256,6 +258,12 @@ class Game {
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
+          // Volume slider interaction
+          if (action === 'volume_music' || action === 'volume_sfx') {
+            this._draggingSlider = action;
+            this._applySliderValue(action, x);
+            return;
+          }
           Sound.playSelect();
           this._handleAction(action);
           return;
@@ -287,15 +295,23 @@ class Game {
     });
 
     this.canvas.addEventListener('mousemove', (e) => {
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+      const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+      if (this._draggingSlider) {
+        this._applySliderValue(this._draggingSlider, x);
+        return;
+      }
       if (this.state === EDITOR) {
-        const rect = this.canvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
-        const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
         this.editor.handleMouseMove(x, y);
       }
     });
 
     this.canvas.addEventListener('mouseup', (e) => {
+      if (this._draggingSlider) {
+        this._draggingSlider = null;
+        return;
+      }
       if (this.state === EDITOR && this._mouseDownState === EDITOR) {
         const rect = this.canvas.getBoundingClientRect();
         const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
@@ -329,6 +345,12 @@ class Game {
           this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
+          // Volume slider interaction (touch)
+          if (action === 'volume_music' || action === 'volume_sfx') {
+            this._draggingSlider = action;
+            this._applySliderValue(action, x);
+            return;
+          }
           Sound.playSelect();
           this._handleAction(action);
           return;
@@ -359,6 +381,14 @@ class Game {
     }, { passive: false });
 
     this.canvas.addEventListener('touchmove', (e) => {
+      if (this._draggingSlider) {
+        e.preventDefault();
+        const rect = this.canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+        this._applySliderValue(this._draggingSlider, x);
+        return;
+      }
       if (this.state === EDITOR) {
         e.preventDefault();
         const rect = this.canvas.getBoundingClientRect();
@@ -371,6 +401,10 @@ class Game {
 
     this.canvas.addEventListener('touchend', (e) => {
       e.preventDefault();
+      if (this._draggingSlider) {
+        this._draggingSlider = null;
+        return;
+      }
       // Only forward to editor if the touch STARTED in editor state
       // (prevents menu tap from triggering editor browse buttons)
       if (this.state === EDITOR && this._touchStartState === EDITOR) {
@@ -398,6 +432,22 @@ class Game {
         Sound.pauseMusic();
       }
     });
+  }
+
+  _applySliderValue(sliderId, clickX) {
+    // Find the slider button region to compute ratio
+    const btn = this.ui.buttons.find(b => b.id === sliderId);
+    if (!btn) return;
+    // The button region has padding; the actual bar is inset by pad on each side
+    const pad = IS_MOBILE ? 18 : 14;
+    const barX = btn.x + pad;
+    const barW = btn.w - pad * 2;
+    const ratio = Math.max(0, Math.min(1, (clickX - barX) / barW));
+    if (sliderId === 'volume_music') {
+      Sound.setMusicVolume(ratio);
+    } else if (sliderId === 'volume_sfx') {
+      Sound.setSFXVolume(ratio);
+    }
   }
 
   _handleAction(action) {
@@ -889,6 +939,18 @@ class Game {
     this._playEditorMusic(musicOffset);
   }
 
+  _applySliderValue(sliderId, screenX) {
+    // Find the slider button to get its bar bounds
+    const btn = this.ui.buttons.find(b => b.id === sliderId);
+    if (!btn) return;
+    const pad = 14; // matches UI padding
+    const barX = btn.x + pad;
+    const barW = btn.w - pad * 2;
+    const ratio = Math.max(0, Math.min(1, (screenX - barX) / barW));
+    if (sliderId === 'volume_music') Sound.setMusicVolume(ratio);
+    else if (sliderId === 'volume_sfx') Sound.setSFXVolume(ratio);
+  }
+
   _playEditorMusic(offset = 0) {
     const musicKey = this.editor._getMusicKey();
     if (musicKey && Sound.hasCustomMusic(musicKey)) {
@@ -921,6 +983,7 @@ class Game {
     }
     this.particles.clear();
     this.shakeIntensity = 0;
+    this._portalFlash = null;
     this.deathTimer = 0;
     this.pendingOrbHit = null;
     // Reset theme and re-apply any color triggers before spawn point
@@ -997,6 +1060,7 @@ class Game {
   _die() {
     if (this.state === DEAD) return;
     this.player.alive = false;
+    this._portalFlash = null;
     this.shakeIntensity = 10;
     Sound.playDeath();
     Sound.pauseMusic();
@@ -1213,6 +1277,11 @@ class Game {
           this._die();
           return;
         }
+      } else if (obs.type === 'saw') {
+        if (obs.checkCollision(playerRect) === 'death') {
+          this._die();
+          return;
+        }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
@@ -1256,15 +1325,19 @@ class Game {
         } else if (result === 'portal_ship') {
           this.player.setMode(MODE_SHIP);
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF00FF', 8);
+          this._portalFlash = { timer: 0, duration: 0.3, color: '#FF00FF' };
         } else if (result === 'portal_wave') {
           this.player.setMode(MODE_WAVE);
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00FFAA', 8);
+          this._portalFlash = { timer: 0, duration: 0.3, color: '#00FFAA' };
         } else if (result === 'portal_cube') {
           this.player.setMode(MODE_CUBE);
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#00C8FF', 8);
+          this._portalFlash = { timer: 0, duration: 0.3, color: '#00C8FF' };
         } else if (result === 'portal_ball') {
           this.player.setMode(MODE_BALL);
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF8800', 8);
+          this._portalFlash = { timer: 0, duration: 0.3, color: '#FF8800' };
         } else if (result === 'portal_mini') {
           this.player.mini = true;
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FF44FF', 8);
@@ -1370,6 +1443,14 @@ class Game {
     this.particles.update(dt);
     this.shakeIntensity *= 0.9;
 
+    // Advance portal flash timer
+    if (this._portalFlash) {
+      this._portalFlash.timer += dt;
+      if (this._portalFlash.timer >= this._portalFlash.duration) {
+        this._portalFlash = null;
+      }
+    }
+
     // Player death check (wave hitting boundaries, etc.)
     if (!this.player.alive && this.state !== DEAD) {
       this._die();
@@ -1430,6 +1511,22 @@ class Game {
       }
 
       if (mirrored) {
+        ctx.restore();
+      }
+
+      // Portal transition flash effect (white flash + colored tint)
+      if (this._portalFlash) {
+        const f = this._portalFlash;
+        const progress_ = f.timer / f.duration;
+        ctx.save();
+        // White flash that fades out quickly
+        ctx.fillStyle = '#FFFFFF';
+        ctx.globalAlpha = (1 - progress_) * 0.35;
+        ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        // Colored tint that fades slower
+        ctx.fillStyle = f.color;
+        ctx.globalAlpha = (1 - progress_) * 0.15;
+        ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
         ctx.restore();
       }
 
