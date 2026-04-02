@@ -263,6 +263,24 @@ export function hasPendingMusic(levelId) {
   return !!_pendingMusicRaw[levelId];
 }
 
+export async function getRawMusicFromDB(levelId) {
+  try {
+    const db = await _openMusicDB();
+    const tx = db.transaction('tracks', 'readonly');
+    const data = await new Promise((res, rej) => { const r = tx.objectStore('tracks').get(levelId); r.onsuccess = () => res(r.result); r.onerror = rej; });
+    return data || null;
+  } catch { return null; }
+}
+
+export function copyMusicBuffer(fromKey, toKey) {
+  if (customMusicBuffers[fromKey]) {
+    customMusicBuffers[toKey] = customMusicBuffers[fromKey];
+  }
+  if (_pendingMusicRaw[fromKey]) {
+    _pendingMusicRaw[toKey] = _pendingMusicRaw[fromKey];
+  }
+}
+
 // Music system
 let musicInterval = null;
 let musicGain = null;

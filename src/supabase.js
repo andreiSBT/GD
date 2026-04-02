@@ -442,6 +442,33 @@ export async function deleteEditorLevelFromCloud(slotId) {
 
 // === LEVEL MUSIC (Supabase Storage) ===
 
+export async function uploadOfficialMusic(levelId, file) {
+  const client = getClient();
+  if (!client) return null;
+  const path = `official/${levelId}.audio`;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const { error } = await client.storage.from('level-music')
+      .upload(path, arrayBuffer, { contentType: file.type || 'audio/mpeg', upsert: true });
+    if (error) { console.warn('Official music upload failed:', error.message); return null; }
+    return path;
+  } catch (e) {
+    console.warn('Official music upload failed:', e.message);
+    return null;
+  }
+}
+
+export async function downloadOfficialMusic(levelId) {
+  const client = getClient();
+  if (!client) return null;
+  const path = `official/${levelId}.audio`;
+  try {
+    const { data, error } = await client.storage.from('level-music').download(path);
+    if (error || !data) return null;
+    return await data.arrayBuffer();
+  } catch { return null; }
+}
+
 export async function uploadLevelMusic(slotId, file) {
   const client = getClient();
   if (!client) return null;
