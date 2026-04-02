@@ -23,7 +23,7 @@ export class Renderer {
     }
   }
 
-  drawBackground(ctx, cameraX, theme) {
+  drawBackground(ctx, cameraX, theme, pulseIntensity = 0) {
     // Gradient background (cached per theme)
     if (this._bgTheme !== theme) {
       this._bgTheme = theme;
@@ -40,7 +40,7 @@ export class Renderer {
         const sx = ((obj.x - cameraX * obj.speed) % 6000 + 6000) % 6000 - 200;
         if (sx < -20 || sx > SCREEN_WIDTH + 20) continue;
 
-        const alpha = (0.1 + l * 0.08) * obj.brightness;
+        const alpha = Math.min(1, (0.1 + l * 0.08) * obj.brightness + pulseIntensity * 0.4);
         ctx.globalAlpha = alpha;
         ctx.fillStyle = theme.accent;
 
@@ -62,7 +62,7 @@ export class Renderer {
         if (obj.size > 3) {
           ctx.globalAlpha = alpha * 0.3;
           ctx.shadowColor = theme.accent;
-          ctx.shadowBlur = 6;
+          ctx.shadowBlur = 6 + pulseIntensity * 4;
           ctx.fillRect(sx, obj.y, obj.size, obj.size);
           ctx.shadowBlur = 0;
         }
@@ -71,7 +71,7 @@ export class Renderer {
     ctx.globalAlpha = 1;
   }
 
-  drawGround(ctx, cameraX, theme) {
+  drawGround(ctx, cameraX, theme, pulseIntensity = 0) {
     // Main ground fill with gradient (cached per theme)
     if (this._gndTheme !== theme) {
       this._gndTheme = theme;
@@ -84,10 +84,12 @@ export class Renderer {
 
     // Neon top line with glow
     ctx.shadowColor = theme.groundLine;
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 12 + pulseIntensity * 8;
     ctx.fillStyle = theme.groundLine;
+    ctx.globalAlpha = Math.min(1, 1 + pulseIntensity * 0.3);
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, 3);
     ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
 
     // Scrolling tick marks
     ctx.fillStyle = theme.groundLine;

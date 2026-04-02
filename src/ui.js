@@ -5,6 +5,7 @@ import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
 import { getMusicVolume, getSFXVolume } from './sound.js';
+import { getAchievements, loadUnlocked } from './achievements.js';
 
 function getEditorLevelCount() {
   try {
@@ -418,6 +419,86 @@ export class UI {
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(stat.label, SCREEN_WIDTH / 2, cy + 72);
+    }
+
+    // ---- Achievements section ----
+    const achievements = getAchievements();
+    const unlocked = loadUnlocked();
+    const unlockedCount = achievements.filter(a => unlocked.has(a.id)).length;
+    const achStartY = startY + statItems.length * (cardH + cardGap) + 16;
+
+    // "ACHIEVEMENTS" sub-title
+    ctx.save();
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 24px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ACHIEVEMENTS', SCREEN_WIDTH / 2, achStartY);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Count
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${unlockedCount} / ${achievements.length} Unlocked`, SCREEN_WIDTH / 2, achStartY + 22);
+
+    // Achievement grid: 3 columns
+    const achCols = 3;
+    const achCardW = 200;
+    const achCardH = 54;
+    const achGapX = 14;
+    const achGapY = 10;
+    const gridW = achCols * achCardW + (achCols - 1) * achGapX;
+    const gridStartX = (SCREEN_WIDTH - gridW) / 2;
+    const gridTopY = achStartY + 38;
+
+    for (let i = 0; i < achievements.length; i++) {
+      const ach = achievements[i];
+      const col = i % achCols;
+      const row = Math.floor(i / achCols);
+      const ax = gridStartX + col * (achCardW + achGapX);
+      const ay = gridTopY + row * (achCardH + achGapY);
+      const isUnlocked = unlocked.has(ach.id);
+
+      // Card background
+      this._roundRect(ctx, ax, ay, achCardW, achCardH, 8);
+      ctx.fillStyle = isUnlocked ? 'rgba(50,40,0,0.5)' : 'rgba(0,0,0,0.35)';
+      ctx.fill();
+
+      // Card border
+      ctx.save();
+      const borderColor = isUnlocked ? '#FFD700' : '#444444';
+      ctx.shadowColor = isUnlocked ? '#FFD700' : 'transparent';
+      ctx.shadowBlur = isUnlocked ? 6 : 0;
+      this._roundRect(ctx, ax, ay, achCardW, achCardH, 8);
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = isUnlocked ? 0.6 : 0.3;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Icon
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = isUnlocked ? '#FFD700' : '#555555';
+      ctx.fillText(isUnlocked ? '\u2713' : '\u{1F512}', ax + 8, ay + achCardH / 2 - 2);
+
+      // Title
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = isUnlocked ? '#FFD700' : '#666666';
+      ctx.textBaseline = 'top';
+      ctx.fillText(ach.title, ax + 30, ay + 8);
+
+      // Description
+      ctx.font = '10px monospace';
+      ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)';
+      ctx.fillText(ach.desc, ax + 30, ay + 28);
+
+      ctx.textBaseline = 'alphabetic';
     }
 
     // Back button

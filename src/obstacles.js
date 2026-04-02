@@ -1171,6 +1171,135 @@ export class SawBlade {
 }
 
 // ============================================================
+// SLOPE - ramp surface (triangle)
+// ============================================================
+export class Slope {
+  constructor(gx, gy, gw = 2, gh = 2, direction = 'up') {
+    this.type = 'slope';
+    this.direction = direction;
+    this.x = gx * GRID;
+    this.y = GROUND_Y - (gy + gh) * GRID;
+    this.w = gw * GRID;
+    this.h = gh * GRID;
+  }
+
+  getSurfaceY(worldX) {
+    // Clamp worldX to slope's x range
+    const clampedX = Math.max(this.x, Math.min(this.x + this.w, worldX));
+    const t = (clampedX - this.x) / this.w;
+    if (this.direction === 'up') {
+      // Surface goes from bottom-left (this.x, this.y + this.h) to top-right (this.x + this.w, this.y)
+      return (this.y + this.h) + (this.y - (this.y + this.h)) * t; // = y + h - h*t = y + h*(1-t)
+    } else {
+      // Surface goes from top-left (this.x, this.y) to bottom-right (this.x + this.w, this.y + this.h)
+      return this.y + (this.y + this.h - this.y) * t; // = y + h*t
+    }
+  }
+
+  checkCollision(playerRect, prevPlayerY, gravityMult) {
+    // First check AABB overlap with bounding box
+    const bbox = { x: this.x, y: this.y, w: this.w, h: this.h };
+    if (!rectsOverlap(playerRect, bbox)) return null;
+
+    // Compute surface Y at player's center X
+    const playerCenterX = playerRect.x + playerRect.w / 2;
+    const surfaceY = this.getSurfaceY(playerCenterX);
+
+    if (gravityMult === 1) {
+      // Normal gravity: player lands on top of slope
+      const playerBottom = playerRect.y + playerRect.h;
+      const pSize = playerRect.h + 8;
+      const prevBottom = prevPlayerY + pSize;
+      const forgiveness = 12;
+      if (playerBottom >= surfaceY - forgiveness && prevBottom <= surfaceY + forgiveness + 8) {
+        return { type: 'land', y: surfaceY };
+      }
+      // Already standing on slope
+      if (playerBottom >= surfaceY - 6 && playerBottom <= surfaceY + forgiveness) {
+        return { type: 'land', y: surfaceY };
+      }
+    } else {
+      // Inverted gravity: player lands on bottom of slope
+      const playerTop = playerRect.y;
+      const forgiveness = 12;
+      if (playerTop <= surfaceY + forgiveness && prevPlayerY >= surfaceY - forgiveness - 8) {
+        return { type: 'land', y: surfaceY };
+      }
+      if (playerTop >= surfaceY - forgiveness && playerTop <= surfaceY + 6) {
+        return { type: 'land', y: surfaceY };
+      }
+    }
+    return null;
+  }
+
+  draw(ctx, cameraX, theme) {
+    const sx = this.x - cameraX + PLAYER_X_OFFSET;
+    if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
+    const sy = this.y;
+
+    const key = `slope_${this.w}_${this.h}_${this.direction}_${theme.platform}_${theme.accent}`;
+    const sprite = getCachedSprite(key, this.w, this.h, (c) => {
+      // Gradient fill
+      const grad = c.createLinearGradient(0, 0, 0, this.h);
+      grad.addColorStop(0, lighten(theme.platform, 20));
+      grad.addColorStop(1, theme.platform);
+      c.fillStyle = grad;
+
+      // Draw filled triangle
+      c.beginPath();
+      if (this.direction === 'up') {
+        // Ramp going up: bottom-left, bottom-right, top-right
+        c.moveTo(0, this.h);
+        c.lineTo(this.w, this.h);
+        c.lineTo(this.w, 0);
+      } else {
+        // Ramp going down: top-left, bottom-left, bottom-right
+        c.moveTo(0, 0);
+        c.lineTo(0, this.h);
+        c.lineTo(this.w, this.h);
+      }
+      c.closePath();
+      c.fill();
+
+      // Neon edge along the slope line
+      drawNeonGlow(c, theme.accent, 8);
+      c.strokeStyle = theme.accent;
+      c.lineWidth = 2;
+      c.beginPath();
+      if (this.direction === 'up') {
+        c.moveTo(0, this.h);
+        c.lineTo(this.w, 0);
+      } else {
+        c.moveTo(0, 0);
+        c.lineTo(this.w, this.h);
+      }
+      c.stroke();
+      clearGlow(c);
+
+      // Border
+      c.strokeStyle = theme.accent;
+      c.lineWidth = 1;
+      c.beginPath();
+      if (this.direction === 'up') {
+        c.moveTo(0, this.h);
+        c.lineTo(this.w, this.h);
+        c.lineTo(this.w, 0);
+        c.closePath();
+      } else {
+        c.moveTo(0, 0);
+        c.lineTo(0, this.h);
+        c.lineTo(this.w, this.h);
+        c.closePath();
+      }
+      c.stroke();
+    });
+    ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
+  }
+
+  reset() {}
+}
+
+// ============================================================
 // FACTORY
 // ============================================================
 export function createObstacle(obj) {
@@ -1199,6 +1328,8 @@ export function createObstacle(obj) {
       return new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue', obj.customTheme || null, obj.duration || 0.6);
     case 'saw':
       return new SawBlade(obj.x, obj.y || 0, obj.radius || 1);
+    case 'slope':
+      return new Slope(obj.x, obj.y || 0, obj.w || 2, obj.h || 2, obj.direction || 'up');
     default:
       return null;
   }

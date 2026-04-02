@@ -23,6 +23,7 @@ const TOOLS = [
   { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
   { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
   { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
+  { id: 'slope', label: 'Slope', key: 'S', color: '#88CCFF' },
   { id: 'saw', label: 'Saw', key: 'W', color: '#FF6666' },
   { id: 'color_trigger', label: 'Color', key: 'R', color: '#FF66AA' },
   { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
@@ -34,6 +35,7 @@ const SUBTYPES = {
   pad: ['yellow_pad', 'pink_pad'],
   portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse', 'forward'],
   color_trigger: ['blue', 'magenta', 'green', 'orange', 'purple', 'red', 'cyan', 'yellow', 'custom'],
+  slope: ['up', 'down'],
   saw: ['1', '2', '3'],
 };
 
@@ -45,6 +47,7 @@ const SUBTYPE_COLORS = {
   ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF', forward: '#44FF44',
   blue: '#00C8FF', magenta: '#FF3296', green: '#64FF32', orange: '#FF8800',
   purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700', custom: '#FF66AA',
+  up: '#88CCFF', down: '#88CCFF',
   '1': '#FF6666', '2': '#FF4444', '3': '#FF2222',
 };
 
@@ -373,10 +376,10 @@ export class Editor {
       return;
     }
 
-    if (this.selectedTool === 'platform') {
+    if (this.selectedTool === 'platform' || this.selectedTool === 'slope') {
       this.dragStart = { gx, gy };
       this.dragWidth = 1;
-    this.dragHeight = 1;
+      this.dragHeight = 1;
       return;
     }
 
@@ -468,9 +471,15 @@ export class Editor {
       const w = Math.abs(this.hoverGx - this.dragStart.gx) + 1;
       const h = Math.abs(this.hoverGy - this.dragStart.gy) + 1;
       this._pushHistory();
-      this.objects.push({
-        type: 'platform', x: minGx, y: minGy, w, h,
-      });
+      if (this.selectedTool === 'slope') {
+        this.objects.push({
+          type: 'slope', x: minGx, y: minGy, w, h, direction: this.subType || 'up',
+        });
+      } else {
+        this.objects.push({
+          type: 'platform', x: minGx, y: minGy, w, h,
+        });
+      }
       this._rebuildLive();
       this.dragStart = null;
     }
@@ -586,8 +595,8 @@ export class Editor {
       }
     }
 
-    // Platform tool: start drag on touch
-    if (this.selectedTool === 'platform' && touchCount === 1 && y > TOOLBAR_H) {
+    // Platform/Slope tool: start drag on touch
+    if ((this.selectedTool === 'platform' || this.selectedTool === 'slope') && touchCount === 1 && y > TOOLBAR_H) {
       this.dragStart = { gx: grid.gx, gy: grid.gy };
       this.dragWidth = 1;
       this.dragHeight = 1;
@@ -716,16 +725,22 @@ export class Editor {
       return;
     }
 
-    // Finalize platform drag (tap or drag)
+    // Finalize platform/slope drag (tap or drag)
     if (this.dragStart) {
       const minGx = this.dragMinGx != null ? this.dragMinGx : this.dragStart.gx;
       const minGy = this.dragMinGy != null ? this.dragMinGy : this.dragStart.gy;
       const w = this.dragWidth || 1;
       const h = this.dragHeight || 1;
       this._pushHistory();
-      this.objects.push({
-        type: 'platform', x: minGx, y: minGy, w, h,
-      });
+      if (this.selectedTool === 'slope') {
+        this.objects.push({
+          type: 'slope', x: minGx, y: minGy, w, h, direction: this.subType || 'up',
+        });
+      } else {
+        this.objects.push({
+          type: 'platform', x: minGx, y: minGy, w, h,
+        });
+      }
       this._rebuildLive();
       this.dragStart = null;
       return;

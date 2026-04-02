@@ -234,6 +234,9 @@ function _playCustomMusic(levelId, offset = 0) {
   customMusicGain.gain.setValueAtTime(normGain, c.currentTime);
   customMusicSource.connect(customMusicGain);
   customMusicGain.connect(masterMusicGain);
+  analyserNode = c.createAnalyser();
+  analyserNode.fftSize = 256;
+  customMusicGain.connect(analyserNode);
   // Start from offset (modulo buffer duration for looping)
   const startOffset = buffer.duration > 0 ? (offset % buffer.duration) : 0;
   customMusicSource.start(0, startOffset);
@@ -254,6 +257,7 @@ function _stopCustomMusic() {
     customMusicGain = null;
   }
   customMusicLevelId = null;
+  analyserNode = null;
 }
 
 export function getCustomMusicTime() {
@@ -356,6 +360,28 @@ export function copyMusicBuffer(fromKey, toKey) {
   }
 }
 
+// Beat analysis
+let analyserNode = null;
+let _proceduralBeatMs = 0;
+
+export function getBeatIntensity() {
+  if (!analyserNode) {
+    // For procedural music, use beat phase
+    if (musicInterval && _proceduralBeatMs > 0) {
+      const phase = (performance.now() % _proceduralBeatMs) / _proceduralBeatMs;
+      return phase < 0.15 ? 1 - (phase / 0.15) : 0;
+    }
+    return 0;
+  }
+  const data = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(data);
+  // Average low-frequency bins (bass, 0-10)
+  let sum = 0;
+  const bins = Math.min(10, data.length);
+  for (let i = 0; i < bins; i++) sum += data[i];
+  return Math.min(1, (sum / bins) / 180);
+}
+
 // Music system
 let musicInterval = null;
 let musicGain = null;
@@ -381,6 +407,7 @@ export async function playMusic(levelId, offset = 0) {
 
   const bpm = 128 + (levelId - 1) * 10;
   const beatMs = (60 / bpm) * 1000;
+  _proceduralBeatMs = beatMs;
 
   const bassNotes = {
     1: [130.81, 164.81, 196.00, 164.81], // C3 E3 G3 E3
@@ -461,6 +488,7 @@ export async function playMusic(levelId, offset = 0) {
 export function pauseMusic() {
   // Stop custom music (will restart from beginning on resume)
   _stopCustomMusic();
+  _proceduralBeatMs = 0;
   if (musicInterval) {
     clearInterval(musicInterval);
     musicInterval = null;
@@ -489,5 +517,6 @@ export function isMusicPlaying() {
 export function stopMusic() {
   _stopCustomMusic();
   pauseMusic();
+  _proceduralBeatMs = 0;
   currentMusicLevel = null;
 }

@@ -11,6 +11,7 @@ import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } fro
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic } from './supabase.js';
+import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 
 function _lerpColor(hex1, hex2, t) {
   const r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
@@ -65,6 +66,9 @@ class Game {
     this.coinsCollected = 0;
     // Color trigger transition state
     this._colorTransition = null; // { from, to, progress, duration }
+
+    // Achievement toast queue
+    this._achievementToasts = [];
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -975,6 +979,7 @@ class Game {
     // Count every started attempt (including abandoned ones) in persistent stats
     if (this.level && !this.editorLevelData) {
       this.progress = incrementAttempt(this.progress, this.level.id);
+      this._checkAchievements();
     } else if (this.editorLevelData) {
       try {
         const cur = parseInt(localStorage.getItem('gd_editor_attempts') || '0');
@@ -1088,6 +1093,21 @@ class Game {
     this.deathTimer = 0;
   }
 
+  _getAchievementStats() {
+    const totalCoins = {};
+    for (const [id, data] of Object.entries(LEVEL_DATA)) {
+      totalCoins[id] = data.objects ? data.objects.filter(o => o.type === 'coin').length : 0;
+    }
+    return { totalCoins };
+  }
+
+  _checkAchievements() {
+    const newAchs = evaluateAchievements(this.progress, this._getAchievementStats());
+    for (const ach of newAchs) {
+      this._achievementToasts.push({ text: `\u{1F3C6} ${ach.title}`, subtext: ach.desc, timer: 0, duration: 3 });
+    }
+  }
+
   _startColorTransition(colorKey, customTheme, duration) {
     const targetTheme = customTheme || COLOR_TRIGGER_FULL_THEMES[colorKey];
     if (!targetTheme) return;
@@ -1155,6 +1175,12 @@ class Game {
   _update(dt) {
     this.ui.update(dt);
     this._updateColorTransition(dt);
+
+    // Advance achievement toasts
+    for (const toast of this._achievementToasts) {
+      toast.timer += dt;
+    }
+    this._achievementToasts = this._achievementToasts.filter(t => t.timer < t.duration);
 
     if (this.state === DEAD) {
       this.deathTimer += dt;
@@ -1282,6 +1308,17 @@ class Game {
           this._die();
           return;
         }
+      } else if (obs.type === 'slope') {
+        const result = obs.checkCollision(playerRect, this.player.prevY, this.player.gravityMult);
+        if (result && result.type === 'land') {
+          const slopeMiniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+          this.player.y = this.player.gravityMult === -1 ? result.y - slopeMiniOffset : result.y - PLAYER_SIZE + slopeMiniOffset;
+          this.player.prevY = this.player.y;
+          this.player.vy = 0;
+          this.player.grounded = true;
+          this.player.onPlatform = true;
+          this.player._snapRotation();
+        }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
@@ -1399,6 +1436,7 @@ class Game {
           Sound.playComplete();
           if (!this.practiceMode) {
             this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true, this.coinsCollected || 0);
+            this._checkAchievements();
           }
           return;
         }
@@ -1496,14 +1534,15 @@ class Game {
         ctx.scale(-1, 1);
       }
 
-      this.renderer.drawBackground(ctx, camX, this.theme);
+      const pulseIntensity = Sound.getBeatIntensity();
+      this.renderer.drawBackground(ctx, camX, this.theme, pulseIntensity);
 
       const visible = this.level.getVisible(camX);
       for (const obs of visible) {
         obs.draw(ctx, camX, this.theme);
       }
 
-      this.renderer.drawGround(ctx, camX, this.theme);
+      this.renderer.drawGround(ctx, camX, this.theme, pulseIntensity);
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
       if (this.player.alive) {
@@ -1555,6 +1594,48 @@ class Game {
     }
 
     ctx.restore();
+
+    // Achievement toasts — slide in from top
+    for (let i = 0; i < this._achievementToasts.length; i++) {
+      const toast = this._achievementToasts[i];
+      const t = toast.timer / toast.duration;
+      // Slide in for first 15%, hold, slide out for last 15%
+      let slideY;
+      if (t < 0.15) {
+        slideY = -70 + (70 + 12 + i * 70) * (t / 0.15);
+      } else if (t > 0.85) {
+        slideY = (12 + i * 70) - (70 + 12 + i * 70) * ((t - 0.85) / 0.15);
+      } else {
+        slideY = 12 + i * 70;
+      }
+      const toastW = 340;
+      const toastH = 56;
+      const tx = SCREEN_WIDTH / 2 - toastW / 2;
+      this.ctx.save();
+      // Dark background
+      this.ctx.globalAlpha = 0.88;
+      this.ctx.fillStyle = '#1A1200';
+      this.ctx.beginPath();
+      this.ctx.roundRect(tx, slideY, toastW, toastH, 10);
+      this.ctx.fill();
+      // Gold border
+      this.ctx.globalAlpha = 0.7;
+      this.ctx.strokeStyle = '#FFD700';
+      this.ctx.lineWidth = 2;
+      this.ctx.stroke();
+      this.ctx.globalAlpha = 1;
+      // Title text
+      this.ctx.fillStyle = '#FFD700';
+      this.ctx.font = 'bold 18px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'top';
+      this.ctx.fillText(toast.text, SCREEN_WIDTH / 2, slideY + 8);
+      // Description text
+      this.ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      this.ctx.font = '13px monospace';
+      this.ctx.fillText(toast.subtext, SCREEN_WIDTH / 2, slideY + 32);
+      this.ctx.restore();
+    }
 
     // Portrait mode overlay — hint to rotate
     if (this.isPortrait) {
