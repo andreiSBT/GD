@@ -3,8 +3,8 @@
 import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES, SCROLL_SPEED, FPS } from './settings.js';
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
-import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic } from './supabase.js';
-import { loadCustomMusic, removeCustomMusic, hasCustomMusic } from './sound.js';
+import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic, uploadOfficialMusic } from './supabase.js';
+import { loadCustomMusic, removeCustomMusic, hasCustomMusic, getRawMusicFromDB, copyMusicBuffer } from './sound.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
@@ -45,6 +45,25 @@ const SUBTYPE_COLORS = {
   purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700', custom: '#FF66AA',
 };
 
+const LEVEL_ADJECTIVES = [
+  'Cosmic', 'Neon', 'Frozen', 'Electric', 'Shadow', 'Hyper', 'Blazing', 'Crystal',
+  'Toxic', 'Phantom', 'Ultra', 'Chaos', 'Mystic', 'Rapid', 'Infinite', 'Savage',
+  'Crimson', 'Silent', 'Radiant', 'Spectral', 'Lunar', 'Solar', 'Primal', 'Wicked',
+  'Molten', 'Astral', 'Thunder', 'Glitch', 'Turbo', 'Volatile', 'Arcane', 'Digital',
+];
+const LEVEL_NOUNS = [
+  'Dash', 'Storm', 'Wave', 'Rush', 'Pulse', 'Drift', 'Blaze', 'Vertex',
+  'Orbit', 'Surge', 'Vortex', 'Realm', 'Abyss', 'Apex', 'Core', 'Edge',
+  'Fury', 'Zone', 'Path', 'Rift', 'Fall', 'Rise', 'Loop', 'Maze',
+  'Spike', 'Crash', 'Flight', 'Descent', 'Echo', 'Nova', 'Flux', 'Horizon',
+];
+
+function _generateLevelName() {
+  const adj = LEVEL_ADJECTIVES[Math.floor(Math.random() * LEVEL_ADJECTIVES.length)];
+  const noun = LEVEL_NOUNS[Math.floor(Math.random() * LEVEL_NOUNS.length)];
+  return adj + ' ' + noun;
+}
+
 export class Editor {
   constructor(canvas, ctx, renderer) {
     this.canvas = canvas;
@@ -59,7 +78,7 @@ export class Editor {
     this.rotation = 0; // 0, 90, 180, 270 for spikes
     this.theme = THEMES[1];
     this.themeId = 1;
-    this.levelName = 'Custom Level';
+    this.levelName = _generateLevelName();
 
     this.hoverGx = 0;
     this.hoverGy = 0;
@@ -1165,7 +1184,7 @@ export class Editor {
 
   _newLevel() {
     this.currentSlot = 'lvl_' + Date.now();
-    this.levelName = 'My Level';
+    this.levelName = _generateLevelName();
     this.themeId = 1;
     this.theme = THEMES[1];
     this.objects = [];
@@ -2542,11 +2561,22 @@ export class Editor {
             themeId: this.themeId,
             objects: this.objects,
           };
-          saveOfficialLevel(levelId, lvlData).then(res => {
+          saveOfficialLevel(levelId, lvlData).then(async (res) => {
             if (res.error) {
               this._showToast('Error: ' + res.error);
             } else {
               LEVEL_DATA[levelId] = lvlData;
+              // Copy editor slot music to official level
+              const editorKey = this._getMusicKey();
+              if (editorKey && hasCustomMusic(editorKey)) {
+                copyMusicBuffer(editorKey, levelId);
+                const raw = await getRawMusicFromDB(editorKey);
+                if (raw) {
+                  const blob = new Blob([raw], { type: 'audio/mpeg' });
+                  const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
+                  await uploadOfficialMusic(levelId, file);
+                }
+              }
               this._showToast('Official L' + levelId + ' saved!');
             }
           });
