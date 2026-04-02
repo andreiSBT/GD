@@ -8,6 +8,8 @@ import { loadCustomMusic, removeCustomMusic, hasCustomMusic } from './sound.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
+const NAV_BAR_H = 24;
+const NAV_BAR_PAD = 8;
 
 const TOOLS = [
   { id: 'spike', label: 'Spike', key: '1', color: '#FF4444' },
@@ -123,6 +125,9 @@ export class Editor {
     this._musicInput.accept = 'audio/*';
     this._musicInput.style.display = 'none';
     document.body.appendChild(this._musicInput);
+
+    // Navigation bar drag state
+    this.navDragging = false;
 
     // Custom color trigger state
     this._customColorData = {
@@ -302,6 +307,14 @@ export class Editor {
       this.showInfo = false;
       return;
     }
+    // Navigation bar — check before toolbar buttons so drag works
+    const navBtn = this.buttons.find(b => b.id === 'navbar');
+    if (navBtn && x >= navBtn.x && x <= navBtn.x + navBtn.w && y >= navBtn.y && y <= navBtn.y + navBtn.h) {
+      this.navDragging = true;
+      this._navBarSeek(x);
+      return;
+    }
+
     // buttons are populated during draw() — just check them
     // Check toolbar buttons
     for (const btn of this.buttons) {
@@ -380,6 +393,13 @@ export class Editor {
   handleMouseMove(x, y) {
     this.mouseX = x;
     this.mouseY = y;
+
+    // Nav bar dragging
+    if (this.navDragging) {
+      this._navBarSeek(x);
+      return;
+    }
+
     const grid = this._screenToGrid(x, y);
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
@@ -427,6 +447,10 @@ export class Editor {
   }
 
   handleMouseUp(x, y) {
+    if (this.navDragging) {
+      this.navDragging = false;
+      return;
+    }
     if (this.movingObj) {
       // Finalize move - object already at new position from handleMouseMove
       this.movingObj = null;
@@ -528,6 +552,14 @@ export class Editor {
     this.isTouchScrolling = false;
     this.touchMoved = false;
 
+    // Nav bar touch
+    const navBtn = this.buttons.find(b => b.id === 'navbar');
+    if (navBtn && x >= navBtn.x && x <= navBtn.x + navBtn.w && y >= navBtn.y && y <= navBtn.y + navBtn.h) {
+      this.navDragging = true;
+      this._navBarSeek(x);
+      return;
+    }
+
     // Update hover position
     this.mouseX = x;
     this.mouseY = y;
@@ -571,6 +603,12 @@ export class Editor {
   }
 
   handleTouchMove(x, y) {
+    // Nav bar dragging
+    if (this.navDragging) {
+      this._navBarSeek(x);
+      return;
+    }
+
     const dx = x - this.touchStartX;
     const dy = y - this.touchStartY;
     const dist = Math.sqrt(dx * dx + dy * dy);
@@ -648,6 +686,11 @@ export class Editor {
 
   handleTouchEnd() {
     this.touchPaintPending = false;
+
+    if (this.navDragging) {
+      this.navDragging = false;
+      return;
+    }
 
     if (this.movingObj) {
       this.movingObj = null;
@@ -797,6 +840,9 @@ export class Editor {
     if (this._hasSidePanel()) {
       this._drawSidePanel(ctx);
     }
+
+    // Navigation bar (minimap)
+    this._drawNavBar(ctx);
 
     // Bottom bar
     this._drawBottomBar(ctx);
@@ -1414,6 +1460,86 @@ export class Editor {
 
       this.buttons.push({ id: 'sub_' + st, x: bx, y: by, w: bw, h: 30 });
     }
+  }
+
+  _getNavBarMetrics() {
+    // Determine the level extent (rightmost object + some padding)
+    let maxGx = Math.ceil(SCREEN_WIDTH / GRID);
+    for (const o of this.objects) {
+      const right = o.x + (o.w || 1);
+      if (right > maxGx) maxGx = right;
+    }
+    if (this.startPos && this.startPos.gx + 1 > maxGx) maxGx = this.startPos.gx + 1;
+    maxGx += Math.ceil(SCREEN_WIDTH / GRID); // padding so you can scroll past end
+
+    const barY = SCREEN_HEIGHT - 36 - NAV_BAR_H - NAV_BAR_PAD;
+    const barX = 10;
+    const barW = SCREEN_WIDTH - 20;
+    const totalWorldW = maxGx * GRID;
+    const viewportFrac = SCREEN_WIDTH / totalWorldW;
+    const thumbW = Math.max(20, barW * viewportFrac);
+    const scrollFrac = this.cameraX / Math.max(1, totalWorldW - SCREEN_WIDTH);
+    const thumbX = barX + scrollFrac * (barW - thumbW);
+
+    return { barX, barY, barW, totalWorldW, thumbW, thumbX };
+  }
+
+  _drawNavBar(ctx) {
+    const { barX, barY, barW, totalWorldW, thumbW, thumbX } = this._getNavBarMetrics();
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    this._editorRoundRect(ctx, barX, barY, barW, NAV_BAR_H, 4);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    this._editorRoundRect(ctx, barX, barY, barW, NAV_BAR_H, 4);
+    ctx.stroke();
+
+    // Draw object dots on the minimap
+    for (const o of this.objects) {
+      const ox = o.x * GRID;
+      const frac = ox / totalWorldW;
+      const dx = barX + frac * barW;
+      if (dx < barX || dx > barX + barW) continue;
+
+      const tool = TOOLS.find(t => t.id === o.type);
+      ctx.fillStyle = tool ? tool.color : '#888';
+      ctx.globalAlpha = 0.7;
+      const dotW = Math.max(2, ((o.w || 1) * GRID / totalWorldW) * barW);
+      ctx.fillRect(dx, barY + 4, dotW, NAV_BAR_H - 8);
+      ctx.globalAlpha = 1;
+    }
+
+    // Start pos marker
+    if (this.startPos) {
+      const frac = (this.startPos.gx * GRID) / totalWorldW;
+      const dx = barX + frac * barW;
+      ctx.fillStyle = '#00FF88';
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(dx, barY + 2, 3, NAV_BAR_H - 4);
+      ctx.globalAlpha = 1;
+    }
+
+    // Viewport thumb
+    ctx.fillStyle = 'rgba(0,200,255,0.25)';
+    this._editorRoundRect(ctx, thumbX, barY + 1, thumbW, NAV_BAR_H - 2, 3);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,200,255,0.6)';
+    ctx.lineWidth = 1;
+    this._editorRoundRect(ctx, thumbX, barY + 1, thumbW, NAV_BAR_H - 2, 3);
+    ctx.stroke();
+
+    // Register hit area
+    this.buttons.push({ id: 'navbar', x: barX, y: barY, w: barW, h: NAV_BAR_H });
+  }
+
+  _navBarSeek(x) {
+    const { barX, barW, totalWorldW, thumbW } = this._getNavBarMetrics();
+    const maxScroll = totalWorldW - SCREEN_WIDTH;
+    if (maxScroll <= 0) return;
+    const frac = (x - barX - thumbW / 2) / (barW - thumbW);
+    this.cameraX = Math.max(0, Math.min(maxScroll, frac * maxScroll));
   }
 
   _drawBottomBar(ctx) {
