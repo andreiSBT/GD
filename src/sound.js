@@ -303,7 +303,9 @@ export async function playMusic(levelId, offset = 0) {
   musicGain.gain.setValueAtTime(1.0, c.currentTime);
   musicGain.connect(c.destination);
 
-  let beat = 0;
+  // Skip ahead if offset provided (e.g. editor start position)
+  const beatSec = beatMs / 1000;
+  let beat = offset > 0 ? Math.floor(offset / beatSec) : 0;
   function tick() {
     if (!musicGain) return;
     const now = c.currentTime;

@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, SCROLL_SPEED, FPS } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { Editor } from './editor.js';
@@ -824,6 +824,7 @@ class Game {
     this.attempts = 1;
     const startPixelX = (levelData.startX || 0) * GRID;
     const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    const musicOffset = startPixelX / (SCROLL_SPEED * FPS);
     // Set start pos as a persistent checkpoint so player always respawns here
     if (levelData.startX != null || levelData.startY != null) {
       this.editorStartCheckpoint = {
@@ -832,6 +833,7 @@ class Game {
         gravityMult: 1,
         speedMult: 1,
         mode: MODE_CUBE,
+        musicTime: musicOffset,
       };
       this.lastCheckpoint = { ...this.editorStartCheckpoint };
     } else {
@@ -844,7 +846,7 @@ class Game {
     this.deathTimer = 0;
     this.shakeIntensity = 0;
     this.pendingOrbHit = null;
-    this._playEditorMusic();
+    this._playEditorMusic(musicOffset);
   }
 
   _playEditorLevel(levelData) {
@@ -861,6 +863,7 @@ class Game {
     // Use start pos if set (same as test mode)
     const startPixelX = (levelData.startX || 0) * GRID;
     const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    const musicOffset = startPixelX / (SCROLL_SPEED * FPS);
     if (levelData.startX != null || levelData.startY != null) {
       this.editorStartCheckpoint = {
         x: startPixelX,
@@ -868,6 +871,7 @@ class Game {
         gravityMult: 1,
         speedMult: 1,
         mode: MODE_CUBE,
+        musicTime: musicOffset,
       };
       this.lastCheckpoint = { ...this.editorStartCheckpoint };
     } else {
@@ -880,15 +884,15 @@ class Game {
     this.deathTimer = 0;
     this.shakeIntensity = 0;
     this.pendingOrbHit = null;
-    this._playEditorMusic();
+    this._playEditorMusic(musicOffset);
   }
 
-  _playEditorMusic() {
+  _playEditorMusic(offset = 0) {
     const musicKey = this.editor._getMusicKey();
     if (musicKey && Sound.hasCustomMusic(musicKey)) {
-      Sound.playMusic(musicKey);
+      Sound.playMusic(musicKey, offset);
     } else {
-      Sound.playMusic(this.editor.themeId);
+      Sound.playMusic(this.editor.themeId, offset);
     }
   }
 
@@ -966,16 +970,20 @@ class Game {
       }
     }
 
-    // Restart music: from checkpoint offset (practice) or from beginning
+    // Restart music: from checkpoint offset (practice), editor start pos, or beginning
     Sound.resumeAudio();
-    const musicOffset = (this.practiceMode && this.lastCheckpoint && this.lastCheckpoint.musicTime)
-      ? this.lastCheckpoint.musicTime : 0;
+    let musicOffset = 0;
+    if (this.practiceMode && this.lastCheckpoint && this.lastCheckpoint.musicTime) {
+      musicOffset = this.lastCheckpoint.musicTime;
+    } else if (this.editorStartCheckpoint && this.editorStartCheckpoint.musicTime) {
+      musicOffset = this.editorStartCheckpoint.musicTime;
+    }
     if (this.editorLevelData) {
       const musicKey = this.editor._getMusicKey();
       if (musicKey && Sound.hasCustomMusic(musicKey)) {
         Sound.playMusic(musicKey, musicOffset);
       } else {
-        Sound.playMusic(this.editor.themeId);
+        Sound.playMusic(this.editor.themeId, musicOffset);
       }
     } else {
       Sound.playMusic(this.level.id, musicOffset);
