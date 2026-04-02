@@ -1,6 +1,6 @@
 /** Level Editor - visual grid-based editor for creating levels */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES, SCROLL_SPEED, FPS } from './settings.js';
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
 import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel } from './supabase.js';
@@ -115,6 +115,7 @@ export class Editor {
     // Delete confirmation dialog
     this.confirmDelete = null; // null or { slotId, slotName }
     this.officialPicker = false; // show official level picker dialog
+    this.showInfo = false; // level info overlay
 
     // Hidden file input for music
     this._musicInput = document.createElement('input');
@@ -292,9 +293,13 @@ export class Editor {
       this._handleOfficialPickerClick(x, y);
       return;
     }
-    // Dismiss help overlay on any click
+    // Dismiss help/info overlay on any click
     if (this.showHelp) {
       this.showHelp = false;
+      return;
+    }
+    if (this.showInfo) {
+      this.showInfo = false;
       return;
     }
     // buttons are populated during draw() — just check them
@@ -458,6 +463,10 @@ export class Editor {
       }
       if (this.showHelp) {
         this.showHelp = false;
+        return true;
+      }
+      if (this.showInfo) {
+        this.showInfo = false;
         return true;
       }
       // Auto-save and go back to browser
@@ -795,6 +804,11 @@ export class Editor {
     // Help overlay
     if (this.showHelp) {
       this._drawHelp(ctx);
+    }
+
+    // Info overlay
+    if (this.showInfo) {
+      this._drawInfo(ctx);
     }
 
     // Official level picker dialog
@@ -1265,6 +1279,7 @@ export class Editor {
       { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
       { id: 'action_export', label: 'EXP', color: '#CC8800' },
       ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
+      { id: 'action_info', label: 'INFO', color: '#44AACC' },
       { id: 'action_help', label: '?', color: '#666' },
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
@@ -1654,6 +1669,181 @@ export class Editor {
     ctx.fillText('Click end position', end.sx + GRID * 1.5, end.sy - 8);
 
     ctx.restore();
+  }
+
+  _calculateLevelInfo() {
+    // Sort objects by x position
+    const sorted = [...this.objects].sort((a, b) => a.x - b.x);
+
+    // Find end marker
+    const endObj = sorted.find(o => o.type === 'end');
+    const endX = endObj ? endObj.x * GRID : (sorted.length > 0 ? (sorted[sorted.length - 1].x + 1) * GRID : 0);
+
+    // Simulate horizontal traversal
+    let playerX = 0;
+    let speedMult = 1.0;
+    let totalFrames = 0;
+
+    // Collect speed portals and transports sorted by pixel X
+    const events = [];
+    for (const o of sorted) {
+      if (o.type === 'portal' && o.portalType === 'speed_up') {
+        events.push({ x: o.x * GRID, type: 'speed', value: 1.4 });
+      } else if (o.type === 'portal' && o.portalType === 'speed_down') {
+        events.push({ x: o.x * GRID, type: 'speed', value: 1.0 });
+      } else if (o.type === 'transport') {
+        const startPx = o.x * GRID;
+        const endPx = (o.endX != null ? o.endX : o.x) * GRID;
+        const dy = ((o.endY != null ? o.endY : o.y) - o.y) * GRID;
+        const dx = endPx - startPx;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const spd = (o.speed || 2) * 1.5;
+        const frames = dist / spd;
+        const waitFrames = 12;
+        events.push({ x: startPx, type: 'transport', endX: endPx, frames, waitFrames });
+      }
+    }
+    events.sort((a, b) => a.x - b.x);
+
+    let evtIdx = 0;
+    while (playerX < endX) {
+      // Check if we hit an event before endX
+      if (evtIdx < events.length && events[evtIdx].x <= playerX) {
+        const evt = events[evtIdx];
+        evtIdx++;
+        if (evt.type === 'speed') {
+          speedMult = evt.value;
+        } else if (evt.type === 'transport') {
+          // Transport: player is locked during transport
+          totalFrames += evt.waitFrames + evt.frames;
+          playerX = evt.endX;
+          continue;
+        }
+      }
+      // Move forward one frame
+      const nextEvtX = evtIdx < events.length ? events[evtIdx].x : endX;
+      const targetX = Math.min(nextEvtX, endX);
+      const dist = targetX - playerX;
+      if (dist <= 0) { evtIdx++; continue; }
+      const speed = SCROLL_SPEED * speedMult;
+      const frames = dist / speed;
+      totalFrames += frames;
+      playerX = targetX;
+    }
+
+    const seconds = totalFrames / FPS;
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+
+    // Count objects by type
+    const counts = {};
+    for (const o of this.objects) {
+      counts[o.type] = (counts[o.type] || 0) + 1;
+    }
+
+    return {
+      duration: seconds,
+      durationStr: minutes > 0 ? `${minutes}m ${secs.toFixed(1)}s` : `${secs.toFixed(1)}s`,
+      endX: endX / GRID,
+      objectCount: this.objects.length,
+      counts,
+      hasEnd: !!endObj,
+    };
+  }
+
+  _drawInfo(ctx) {
+    const info = this._calculateLevelInfo();
+
+    // Dark overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.88)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    const panelW = 500;
+    const panelH = 380;
+    const px = (SCREEN_WIDTH - panelW) / 2;
+    const py = (SCREEN_HEIGHT - panelH) / 2;
+    const r = 14;
+
+    // Panel background
+    this._editorRoundRect(ctx, px, py, panelW, panelH, r);
+    ctx.fillStyle = 'rgba(5,10,25,0.95)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,170,200,0.3)';
+    ctx.lineWidth = 1.5;
+    this._editorRoundRect(ctx, px, py, panelW, panelH, r);
+    ctx.stroke();
+
+    // Title
+    ctx.save();
+    ctx.shadowColor = '#44AACC';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = '#44AACC';
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('LEVEL INFO', SCREEN_WIDTH / 2, py + 45);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    let sy = py + 85;
+    const lx = px + 35;
+    const vx = px + panelW - 35;
+
+    const drawRow = (label, value, color = '#EEE') => {
+      ctx.fillStyle = '#778899';
+      ctx.font = '15px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, lx, sy);
+      ctx.fillStyle = color;
+      ctx.font = 'bold 15px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(value, vx, sy);
+      sy += 30;
+    };
+
+    // Duration - highlight
+    ctx.save();
+    ctx.shadowColor = '#44AACC';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#44AACC';
+    ctx.font = 'bold 20px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(info.hasEnd ? info.durationStr : '-- no end marker --', SCREEN_WIDTH / 2, sy);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    ctx.fillStyle = '#667788';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('ESTIMATED DURATION', SCREEN_WIDTH / 2, sy + 18);
+    sy += 48;
+
+    // Separator
+    ctx.strokeStyle = 'rgba(0,170,200,0.15)';
+    ctx.beginPath();
+    ctx.moveTo(px + 30, sy - 10);
+    ctx.lineTo(px + panelW - 30, sy - 10);
+    ctx.stroke();
+
+    drawRow('Level Length', info.endX.toFixed(0) + ' grid units');
+    drawRow('Total Objects', String(info.objectCount));
+
+    // Object breakdown
+    const typeLabels = {
+      spike: 'Spikes', platform: 'Platforms', moving: 'Moving Plats',
+      transport: 'Transports', portal: 'Portals', orb: 'Orbs',
+      pad: 'Pads', coin: 'Coins', checkpoint: 'Checkpoints',
+      color_trigger: 'Color Triggers', end: 'End Markers',
+    };
+    for (const [type, label] of Object.entries(typeLabels)) {
+      if (info.counts[type]) {
+        drawRow('  ' + label, String(info.counts[type]), '#AABBCC');
+      }
+    }
+
+    // Close hint
+    ctx.fillStyle = '#556677';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Click anywhere or press ESC to close', SCREEN_WIDTH / 2, py + panelH - 18);
   }
 
   _drawHelp(ctx) {
@@ -2111,6 +2301,8 @@ export class Editor {
       }).catch(() => {
         prompt('Copy level JSON:', json);
       });
+    } else if (id === 'action_info') {
+      this.showInfo = !this.showInfo;
     } else if (id === 'action_help') {
       this.showHelp = !this.showHelp;
     } else if (id === 'action_back') {
