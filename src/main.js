@@ -444,7 +444,7 @@ class Game {
           this._retryTimer = null;
           if (this.state === DEAD) this._restart();
         }, delay);
-        Sound.resumeMusic();
+        // Music stays paused until _restart
       } else {
         this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
         Sound.resumeMusic();
@@ -466,18 +466,10 @@ class Game {
       this.practiceMode = false;
       this.lastCheckpoint = null;
       Sound.stopDeath();
-      Sound.stopMusic();
       this._restart();
-      Sound.resumeAudio();
-      if (this.editorLevelData) this._playEditorMusic();
-      else Sound.playMusic(this.level.id);
     } else if (action === 'retry' || action === 'restart') {
       Sound.stopDeath();
-      Sound.stopMusic();
       this._restart();
-      Sound.resumeAudio();
-      if (this.editorLevelData) this._playEditorMusic();
-      else Sound.playMusic(this.level.id);
     } else if (action === 'menu') {
       Sound.stopMusic();
       this.shakeIntensity = 0;
@@ -820,7 +812,6 @@ class Game {
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._restart();
-    Sound.playMusic(levelId);
   }
 
   _testEditorLevel(levelData) {
@@ -903,15 +894,7 @@ class Game {
 
   _restart() {
     Sound.stopDeath();
-    // Ensure music is playing (may have been paused during death/pause)
-    if (!Sound.isMusicPlaying() && this.level) {
-      Sound.resumeAudio();
-      if (this.editorLevelData) {
-        this._playEditorMusic();
-      } else {
-        Sound.playMusic(this.level.id);
-      }
-    }
+    Sound.stopMusic();
     this.attempts++;
     this.coinsCollected = 0;
     this.newBestTriggered = false;
@@ -983,6 +966,21 @@ class Game {
       }
     }
 
+    // Restart music: from checkpoint offset (practice) or from beginning
+    Sound.resumeAudio();
+    const musicOffset = (this.practiceMode && this.lastCheckpoint && this.lastCheckpoint.musicTime)
+      ? this.lastCheckpoint.musicTime : 0;
+    if (this.editorLevelData) {
+      const musicKey = this.editor._getMusicKey();
+      if (musicKey && Sound.hasCustomMusic(musicKey)) {
+        Sound.playMusic(musicKey, musicOffset);
+      } else {
+        Sound.playMusic(this.editor.themeId);
+      }
+    } else {
+      Sound.playMusic(this.level.id, musicOffset);
+    }
+
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
   }
 
@@ -991,8 +989,7 @@ class Game {
     this.player.alive = false;
     this.shakeIntensity = 10;
     Sound.playDeath();
-    // Restart custom music from the beginning on each death
-    Sound.restartCustomMusic();
+    Sound.pauseMusic();
     this.particles.emitDeath(
       this.player.x,
       this.player.y + PLAYER_SIZE / 2,
@@ -1308,6 +1305,7 @@ class Game {
             mini: this.player.mini,
             reversed: this.player.reversed,
             theme: { ...this.theme },
+            musicTime: Sound.getCustomMusicTime(),
           };
         }
       } else if (obs.type === 'end') {

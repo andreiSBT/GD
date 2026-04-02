@@ -124,6 +124,8 @@ const customMusicBuffers = {}; // levelId -> AudioBuffer
 let customMusicSource = null;
 let customMusicGain = null;
 let customMusicLevelId = null;
+let customMusicStartTime = 0;  // AudioContext time when playback started
+let customMusicOffset = 0;     // offset into the buffer when started
 
 export function loadCustomMusic(levelId, file) {
   return new Promise((resolve, reject) => {
@@ -153,7 +155,7 @@ export function hasCustomMusic(levelId) {
   return !!customMusicBuffers[levelId];
 }
 
-function _playCustomMusic(levelId) {
+function _playCustomMusic(levelId, offset = 0) {
   _stopCustomMusic();
   const buffer = customMusicBuffers[levelId];
   if (!buffer) return false;
@@ -165,7 +167,11 @@ function _playCustomMusic(levelId) {
   customMusicGain.gain.setValueAtTime(1.0, c.currentTime);
   customMusicSource.connect(customMusicGain);
   customMusicGain.connect(c.destination);
-  customMusicSource.start(0);
+  // Start from offset (modulo buffer duration for looping)
+  const startOffset = buffer.duration > 0 ? (offset % buffer.duration) : 0;
+  customMusicSource.start(0, startOffset);
+  customMusicStartTime = c.currentTime;
+  customMusicOffset = startOffset;
   customMusicLevelId = levelId;
   return true;
 }
@@ -183,11 +189,17 @@ function _stopCustomMusic() {
   customMusicLevelId = null;
 }
 
-export function restartCustomMusic() {
+export function getCustomMusicTime() {
+  if (!customMusicSource || customMusicLevelId == null) return 0;
+  const c = getCtx();
+  return customMusicOffset + (c.currentTime - customMusicStartTime);
+}
+
+export function restartCustomMusic(offset = 0) {
   if (customMusicLevelId != null) {
     const id = customMusicLevelId;
     _stopCustomMusic();
-    _playCustomMusic(id);
+    _playCustomMusic(id, offset);
   }
 }
 
@@ -241,13 +253,13 @@ let musicGain = null;
 let currentMusicLevel = null;
 let activeNodes = []; // track all active oscillators/sources to stop them cleanly
 
-export function playMusic(levelId) {
+export function playMusic(levelId, offset = 0) {
   stopMusic();
   currentMusicLevel = levelId;
 
   // Use custom music if available
   if (customMusicBuffers[levelId]) {
-    _playCustomMusic(levelId);
+    _playCustomMusic(levelId, offset);
     return;
   }
 
