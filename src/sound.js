@@ -152,7 +152,7 @@ export function removeCustomMusic(levelId) {
 }
 
 export function hasCustomMusic(levelId) {
-  return !!customMusicBuffers[levelId];
+  return !!customMusicBuffers[levelId] || !!_pendingMusicRaw[levelId];
 }
 
 function _playCustomMusic(levelId, offset = 0) {
@@ -229,22 +229,41 @@ async function _removeCustomMusicFromDB(levelId) {
   } catch {}
 }
 
+// Raw audio bytes loaded from IndexedDB, decoded lazily after user interaction
+const _pendingMusicRaw = {};
+
 export async function loadCustomMusicFromDB() {
   try {
     const db = await _openMusicDB();
     const tx = db.transaction('tracks', 'readonly');
     const store = tx.objectStore('tracks');
     const keys = await new Promise((res, rej) => { const r = store.getAllKeys(); r.onsuccess = () => res(r.result); r.onerror = rej; });
-    const c = getCtx();
     for (const key of keys) {
       const data = await new Promise((res, rej) => { const r = store.get(key); r.onsuccess = () => res(r.result); r.onerror = rej; });
-      try {
-        const copy = data.buffer.slice(0);
-        const buffer = await c.decodeAudioData(copy);
-        customMusicBuffers[key] = buffer;
-      } catch {}
+      _pendingMusicRaw[key] = data;
     }
   } catch {}
+}
+
+// Decode any pending raw audio (call after user interaction when AudioContext is active)
+async function _decodePendingMusic() {
+  const keys = Object.keys(_pendingMusicRaw);
+  if (keys.length === 0) return;
+  const c = getCtx();
+  if (c.state === 'suspended') await c.resume();
+  for (const key of keys) {
+    if (customMusicBuffers[key]) { delete _pendingMusicRaw[key]; continue; }
+    try {
+      const copy = _pendingMusicRaw[key].buffer.slice(0);
+      const buffer = await c.decodeAudioData(copy);
+      customMusicBuffers[key] = buffer;
+    } catch {}
+    delete _pendingMusicRaw[key];
+  }
+}
+
+export function hasPendingMusic(levelId) {
+  return !!_pendingMusicRaw[levelId];
 }
 
 // Music system
@@ -253,9 +272,14 @@ let musicGain = null;
 let currentMusicLevel = null;
 let activeNodes = []; // track all active oscillators/sources to stop them cleanly
 
-export function playMusic(levelId, offset = 0) {
+export async function playMusic(levelId, offset = 0) {
   stopMusic();
   currentMusicLevel = levelId;
+
+  // Decode any pending music from IndexedDB first
+  if (_pendingMusicRaw[levelId] && !customMusicBuffers[levelId]) {
+    await _decodePendingMusic();
+  }
 
   // Use custom music if available
   if (customMusicBuffers[levelId]) {
