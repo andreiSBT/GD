@@ -45,25 +45,6 @@ const SUBTYPE_COLORS = {
   purple: '#AA44FF', red: '#FF2222', cyan: '#00FFCC', yellow: '#FFD700', custom: '#FF66AA',
 };
 
-const LEVEL_ADJECTIVES = [
-  'Cosmic', 'Neon', 'Frozen', 'Electric', 'Shadow', 'Hyper', 'Blazing', 'Crystal',
-  'Toxic', 'Phantom', 'Ultra', 'Chaos', 'Mystic', 'Rapid', 'Infinite', 'Savage',
-  'Crimson', 'Silent', 'Radiant', 'Spectral', 'Lunar', 'Solar', 'Primal', 'Wicked',
-  'Molten', 'Astral', 'Thunder', 'Glitch', 'Turbo', 'Volatile', 'Arcane', 'Digital',
-];
-const LEVEL_NOUNS = [
-  'Dash', 'Storm', 'Wave', 'Rush', 'Pulse', 'Drift', 'Blaze', 'Vertex',
-  'Orbit', 'Surge', 'Vortex', 'Realm', 'Abyss', 'Apex', 'Core', 'Edge',
-  'Fury', 'Zone', 'Path', 'Rift', 'Fall', 'Rise', 'Loop', 'Maze',
-  'Spike', 'Crash', 'Flight', 'Descent', 'Echo', 'Nova', 'Flux', 'Horizon',
-];
-
-function _generateLevelName() {
-  const adj = LEVEL_ADJECTIVES[Math.floor(Math.random() * LEVEL_ADJECTIVES.length)];
-  const noun = LEVEL_NOUNS[Math.floor(Math.random() * LEVEL_NOUNS.length)];
-  return adj + ' ' + noun;
-}
-
 export class Editor {
   constructor(canvas, ctx, renderer) {
     this.canvas = canvas;
@@ -78,7 +59,7 @@ export class Editor {
     this.rotation = 0; // 0, 90, 180, 270 for spikes
     this.theme = THEMES[1];
     this.themeId = 1;
-    this.levelName = _generateLevelName();
+    this.levelName = 'My Level';
 
     this.hoverGx = 0;
     this.hoverGy = 0;
@@ -1183,8 +1164,10 @@ export class Editor {
   }
 
   _newLevel() {
+    const name = prompt('Level name:', 'My Level');
+    if (name == null) return; // cancelled
     this.currentSlot = 'lvl_' + Date.now();
-    this.levelName = _generateLevelName();
+    this.levelName = name.trim() || 'My Level';
     this.themeId = 1;
     this.theme = THEMES[1];
     this.objects = [];
@@ -1355,6 +1338,7 @@ export class Editor {
       { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
       { id: 'action_export', label: 'EXP', color: '#CC8800' },
       ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
+      { id: 'action_rename', label: 'NAME', color: '#AAAA44' },
       { id: 'action_info', label: 'INFO', color: '#44AACC' },
       { id: 'action_help', label: '?', color: '#666' },
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
@@ -2457,6 +2441,12 @@ export class Editor {
       }).catch(() => {
         prompt('Copy level JSON:', json);
       });
+    } else if (id === 'action_rename') {
+      const name = prompt('Level name:', this.levelName);
+      if (name != null && name.trim()) {
+        this.levelName = name.trim();
+        this._showToast('Renamed to "' + this.levelName + '"');
+      }
     } else if (id === 'action_info') {
       this.showInfo = !this.showInfo;
     } else if (id === 'action_help') {
