@@ -523,6 +523,93 @@ export async function listLevelMusic() {
   } catch { return []; }
 }
 
+// === LEADERBOARD ===
+
+export async function submitScore(levelId, attempts, completionTimeMs) {
+  const client = getClient();
+  if (!client) return;
+  const user = getAuthUser();
+  if (!user) return;
+  const username = getUsername() || 'Anonymous';
+  try {
+    const { data: existing } = await client.from('leaderboard')
+      .select('attempts, completion_time_ms')
+      .eq('level_id', String(levelId)).eq('user_id', user.id).single();
+    if (existing) {
+      const better = attempts < existing.attempts ||
+        (attempts === existing.attempts && completionTimeMs < (existing.completion_time_ms || Infinity));
+      if (!better) return;
+    }
+    await client.from('leaderboard').upsert({
+      level_id: String(levelId), user_id: user.id, username, attempts,
+      completion_time_ms: completionTimeMs, completed_at: new Date().toISOString(),
+    }, { onConflict: 'level_id,user_id' });
+  } catch (e) { console.warn('Leaderboard submit failed:', e.message); }
+}
+
+export async function getLeaderboard(levelId, limit = 20) {
+  const client = getClient();
+  if (!client) return [];
+  try {
+    const { data, error } = await client.from('leaderboard')
+      .select('username, attempts, completion_time_ms')
+      .eq('level_id', String(levelId))
+      .order('attempts', { ascending: true })
+      .order('completion_time_ms', { ascending: true, nullsFirst: false })
+      .limit(limit);
+    if (error || !data) return [];
+    return data;
+  } catch { return []; }
+}
+
+// === COMMUNITY LEVELS ===
+
+export async function publishLevel(levelData) {
+  const client = getClient();
+  if (!client) return { error: 'Not connected' };
+  const user = getAuthUser();
+  if (!user) return { error: 'Login required' };
+  try {
+    const { data, error } = await client.from('published_levels').insert({
+      user_id: user.id, name: levelData.name || 'Untitled',
+      theme_id: levelData.themeId || 1, objects: levelData.objects,
+      object_count: levelData.objects.length,
+    }).select().single();
+    if (error) return { error: error.message };
+    return { data };
+  } catch (e) { return { error: e.message }; }
+}
+
+export async function getPublishedLevels(sort = 'newest', page = 0, limit = 12) {
+  const client = getClient();
+  if (!client) return [];
+  try {
+    let query = client.from('published_levels')
+      .select('*')
+      .range(page * limit, (page + 1) * limit - 1);
+    if (sort === 'newest') query = query.order('created_at', { ascending: false });
+    else if (sort === 'top') query = query.order('likes', { ascending: false });
+    else if (sort === 'played') query = query.order('plays', { ascending: false });
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map(r => ({
+      id: r.id, name: r.name, creator: r.creator_name || 'Unknown',
+      themeId: r.theme_id, objects: r.objects,
+      objectCount: r.object_count, plays: r.plays || 0,
+      likes: r.likes || 0, createdAt: r.created_at,
+    }));
+  } catch { return []; }
+}
+
+export async function incrementPlays(levelId) {
+  const client = getClient();
+  if (!client) return;
+  try {
+    const { data } = await client.from('published_levels').select('plays').eq('id', levelId).single();
+    if (data) await client.from('published_levels').update({ plays: (data.plays || 0) + 1 }).eq('id', levelId);
+  } catch {}
+}
+
 export function isConfigured() {
   return !!(supabaseUrl && supabaseKey);
 }

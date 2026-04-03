@@ -3,7 +3,7 @@
 import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES, SCROLL_SPEED, FPS } from './settings.js';
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
-import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic, uploadOfficialMusic } from './supabase.js';
+import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic, uploadOfficialMusic, publishLevel, getAuthUser } from './supabase.js';
 import { loadCustomMusic, removeCustomMusic, hasCustomMusic, getRawMusicFromDB, copyMusicBuffer, getCustomMusicDuration } from './sound.js';
 
 const TOOLBAR_H = 56;
@@ -1370,6 +1370,7 @@ export class Editor {
       { id: 'action_save', label: 'SAVE', color: '#4488CC' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
       { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
+      ...(getAuthUser() ? [{ id: 'action_publish', label: 'PUB', color: '#00CC88' }] : []),
       { id: 'action_export', label: 'EXP', color: '#CC8800' },
       ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
       { id: 'action_rename', label: 'NAME', color: '#AAAA44' },
@@ -1719,6 +1720,21 @@ export class Editor {
     } else if (this.selectedTool === 'platform') {
       ctx.fillStyle = '#4488FF';
       ctx.fillRect(sx, sy, GRID, GRID);
+    } else if (this.selectedTool === 'slope') {
+      ctx.strokeStyle = '#88CCFF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if ((this.subType || 'up') === 'up') {
+        ctx.moveTo(sx, sy + GRID);
+        ctx.lineTo(sx + GRID, sy + GRID);
+        ctx.lineTo(sx + GRID, sy);
+      } else {
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx, sy + GRID);
+        ctx.lineTo(sx + GRID, sy + GRID);
+      }
+      ctx.closePath();
+      ctx.stroke();
     } else if (this.selectedTool === 'orb') {
       ctx.fillStyle = SUBTYPE_COLORS[this.subType || 'yellow_orb'];
       ctx.beginPath();
@@ -1813,11 +1829,32 @@ export class Editor {
 
     ctx.save();
     ctx.globalAlpha = 0.5;
-    ctx.fillStyle = '#4488FF';
-    ctx.fillRect(sx, sy, w, h);
-    ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, w, h);
+
+    if (this.selectedTool === 'slope') {
+      const dir = this.subType || 'up';
+      ctx.fillStyle = '#88CCFF';
+      ctx.beginPath();
+      if (dir === 'up') {
+        ctx.moveTo(sx, sy + h);
+        ctx.lineTo(sx + w, sy + h);
+        ctx.lineTo(sx + w, sy);
+      } else {
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx, sy + h);
+        ctx.lineTo(sx + w, sy + h);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#4488FF';
+      ctx.fillRect(sx, sy, w, h);
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx, sy, w, h);
+    }
 
     ctx.fillStyle = '#FFF';
     ctx.font = '12px monospace';
@@ -2494,6 +2531,13 @@ export class Editor {
       this.showBrowser();
     } else if (id === 'action_music') {
       this._handleMusicButton();
+    } else if (id === 'action_publish') {
+      if (!getAuthUser()) { this._showToast('Login required!'); return; }
+      if (this.objects.length < 5) { this._showToast('Level too short!'); return; }
+      publishLevel({ name: this.levelName, themeId: this.themeId, objects: this.objects }).then(res => {
+        if (res.error) this._showToast('Error: ' + res.error);
+        else this._showToast('Published!');
+      });
     } else if (id === 'action_export') {
       const json = this.exportJSON();
       navigator.clipboard?.writeText(json).then(() => {

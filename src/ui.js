@@ -142,6 +142,10 @@ export class UI {
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'FRIENDS', 'friends', '#0088CC');
 
+    // Community button
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'COMMUNITY', 'community', '#00AA88');
+
     // Account button (top right)
     const username = getUsername();
     const accH = IS_MOBILE ? 48 : 38;
@@ -754,7 +758,15 @@ export class UI {
     btnY += cbh + 15;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'RESTART', 'restart', '#CC3333');
     btnY += cbh + 15;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'LEADERBOARD', 'leaderboard', '#FFD700');
+    btnY += cbh + 15;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'MENU', 'menu', '#445566');
+
+    // Ghost saved indicator
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('GHOST SAVED', SCREEN_WIDTH / 2, btnY + cbh + 20);
   }
 
   drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0, coins = null) {
@@ -1473,6 +1485,160 @@ export class UI {
       ctx.font = '13px monospace';
       ctx.fillText(subtext, SCREEN_WIDTH / 2, centerY + 62);
     }
+  }
+
+  drawCommunity(ctx, data) {
+    this.buttons = [];
+    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    grad.addColorStop(0, '#001A10');
+    grad.addColorStop(1, '#003820');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawMenuParticles(ctx);
+
+    ctx.save();
+    ctx.shadowColor = '#00AA88';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#00AA88';
+    ctx.font = 'bold 38px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('COMMUNITY', SCREEN_WIDTH / 2, 55);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Sort tabs
+    const tabs = [['newest', 'NEWEST'], ['top', 'TOP RATED'], ['played', 'MOST PLAYED']];
+    const tabW = 140, tabH = 34, tabGap = 10;
+    const tabStartX = SCREEN_WIDTH / 2 - (tabs.length * (tabW + tabGap) - tabGap) / 2;
+    for (let i = 0; i < tabs.length; i++) {
+      const tx = tabStartX + i * (tabW + tabGap);
+      const active = data.sort === tabs[i][0];
+      this._drawButton(ctx, tx, 75, tabW, tabH, tabs[i][1], 'community_sort_' + tabs[i][0], active ? '#00AA88' : '#336655', 13);
+    }
+
+    if (data.loading) {
+      ctx.fillStyle = '#88CCAA';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOADING...', SCREEN_WIDTH / 2, 300);
+    } else if (data.levels.length === 0) {
+      ctx.fillStyle = '#667788';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No levels published yet', SCREEN_WIDTH / 2, 300);
+    } else {
+      const cols = 3, cardW = 340, cardH = 120, gapX = 25, gapY = 15;
+      const gridW = cols * cardW + (cols - 1) * gapX;
+      const startX = (SCREEN_WIDTH - gridW) / 2;
+      let startY = 125;
+      for (let i = 0; i < data.levels.length && i < 9; i++) {
+        const lv = data.levels[i];
+        const col = i % cols, row = Math.floor(i / cols);
+        const cx = startX + col * (cardW + gapX);
+        const cy = startY + row * (cardH + gapY);
+
+        // Card bg
+        ctx.fillStyle = 'rgba(0,40,30,0.7)';
+        ctx.beginPath();
+        ctx.roundRect(cx, cy, cardW, cardH, 10);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,170,136,0.25)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Name
+        ctx.fillStyle = '#CCFFEE';
+        ctx.font = 'bold 15px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(lv.name.slice(0, 22), cx + 14, cy + 28);
+
+        // Creator
+        ctx.fillStyle = '#669988';
+        ctx.font = '12px monospace';
+        ctx.fillText('by ' + (lv.creator || 'Unknown'), cx + 14, cy + 48);
+
+        // Stats
+        ctx.fillStyle = '#557766';
+        ctx.font = '11px monospace';
+        ctx.fillText(`▶ ${lv.plays}  ♥ ${lv.likes}  ◆ ${lv.objectCount || '?'} obj`, cx + 14, cy + 68);
+
+        // Play button
+        const pbW = 70, pbH = 30, pbX = cx + cardW - pbW - 10, pbY = cy + cardH - pbH - 10;
+        this._drawButton(ctx, pbX, pbY, pbW, pbH, 'PLAY', 'community_play_' + i, '#00CC88', 13);
+      }
+    }
+
+    const backH = IS_MOBILE ? 52 : 44;
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, 130, backH, 'BACK', 'back_community', '#445566', 18);
+  }
+
+  drawLeaderboard(ctx, data) {
+    this.buttons = [];
+    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    grad.addColorStop(0, '#1A1400');
+    grad.addColorStop(1, '#2A1800');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    ctx.save();
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 38px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('LEADERBOARD', SCREEN_WIDTH / 2, 60);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    if (data.loading) {
+      ctx.fillStyle = '#CCAA66';
+      ctx.font = '18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('LOADING...', SCREEN_WIDTH / 2, 300);
+    } else if (data.entries.length === 0) {
+      ctx.fillStyle = '#667755';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('No scores yet — be the first!', SCREEN_WIDTH / 2, 300);
+    } else {
+      // Column headers
+      const hdrY = 100;
+      ctx.fillStyle = '#998866';
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('#', 200, hdrY);
+      ctx.fillText('PLAYER', 240, hdrY);
+      ctx.fillText('ATTEMPTS', 600, hdrY);
+      ctx.textAlign = 'right';
+      ctx.fillText('TIME', 950, hdrY);
+
+      for (let i = 0; i < data.entries.length; i++) {
+        const e = data.entries[i];
+        const ry = 128 + i * 32;
+        const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+        const color = i < 3 ? rankColors[i] : '#AABB99';
+
+        // Alternating row bg
+        if (i % 2 === 0) {
+          ctx.fillStyle = 'rgba(255,215,0,0.03)';
+          ctx.fillRect(180, ry - 16, 790, 30);
+        }
+
+        ctx.fillStyle = color;
+        ctx.font = i < 3 ? 'bold 15px monospace' : '14px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(String(i + 1), 200, ry);
+        ctx.fillText(e.username || 'Anonymous', 240, ry);
+        ctx.fillText(String(e.attempts), 600, ry);
+        ctx.textAlign = 'right';
+        const timeMs = e.completion_time_ms;
+        const timeFmt = timeMs ? `${(timeMs / 1000).toFixed(1)}s` : '--';
+        ctx.fillText(timeFmt, 950, ry);
+      }
+    }
+
+    const backH = IS_MOBILE ? 52 : 44;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 65, SCREEN_HEIGHT - backH - 20, 130, backH, 'BACK', 'back_leaderboard', '#445566', 18);
   }
 
   drawFriends(ctx, friendsData) {

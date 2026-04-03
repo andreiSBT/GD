@@ -10,8 +10,9 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
+import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 
 function _lerpColor(hex1, hex2, t) {
   const r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
@@ -31,6 +32,8 @@ const STATS = 'stats';
 const EDITOR = 'editor';
 const EDITOR_TESTING = 'editor_testing';
 const FRIENDS = 'friends';
+const COMMUNITY = 'community';
+const LEADERBOARD = 'leaderboard';
 
 class Game {
   constructor() {
@@ -69,6 +72,15 @@ class Game {
 
     // Achievement toast queue
     this._achievementToasts = [];
+    // Replay/ghost
+    this._replayRecorder = null;
+    this._replayGhost = null;
+    this._replayFrame = 0;
+    // Leaderboard
+    this._levelStartTime = 0;
+    this._leaderboardData = { entries: [], loading: false, levelId: null };
+    // Community
+    this.communityData = { levels: [], sort: 'newest', page: 0, loading: false };
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -259,7 +271,7 @@ class Game {
         return;
       }
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS || this.state === COMMUNITY || this.state === LEADERBOARD) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           // Volume slider interaction
@@ -553,6 +565,53 @@ class Game {
       this.state = FRIENDS;
       this.friendsData.tab = 'list';
       this._loadFriendsData();
+    } else if (action === 'community') {
+      this.state = COMMUNITY;
+      this.communityData.loading = true;
+      this.communityData.levels = [];
+      getPublishedLevels('newest', 0).then(levels => {
+        this.communityData.levels = levels;
+        this.communityData.loading = false;
+      });
+    } else if (action === 'back_community') {
+      this.state = MENU;
+    } else if (action.startsWith('community_sort_')) {
+      const sort = action.replace('community_sort_', '');
+      this.communityData.sort = sort;
+      this.communityData.loading = true;
+      getPublishedLevels(sort, 0).then(levels => {
+        this.communityData.levels = levels;
+        this.communityData.loading = false;
+      });
+    } else if (action.startsWith('community_play_')) {
+      const idx = parseInt(action.replace('community_play_', ''));
+      const level = this.communityData.levels[idx];
+      if (level) {
+        incrementPlays(level.id);
+        this.editorLevelData = { name: level.name, themeId: level.themeId, objects: level.objects };
+        this.level = createLevelFromData(this.editorLevelData);
+        this.theme = THEMES[level.themeId] || THEMES[1];
+        this._baseTheme = this.theme;
+        this._colorTransition = null;
+        this.practiceMode = false;
+        this.attempts = 0;
+        this.player.reset(0);
+        this.camera.reset(0);
+        this.particles.clear();
+        this.state = PLAYING;
+        Sound.playMusic(level.themeId);
+      }
+    } else if (action === 'leaderboard') {
+      if (this.level) {
+        this._leaderboardData = { entries: [], loading: true, levelId: this.level.id };
+        getLeaderboard(this.level.id).then(entries => {
+          this._leaderboardData.entries = entries;
+          this._leaderboardData.loading = false;
+        });
+        this.state = LEADERBOARD;
+      }
+    } else if (action === 'back_leaderboard') {
+      this.state = COMPLETE;
     } else if (action === 'back') {
       this.state = MENU;
     } else if (action.startsWith('friends_')) {
@@ -867,6 +926,8 @@ class Game {
     const lp = this.progress[levelId];
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
+    this._replayGhost = loadReplay(levelId);
+    this._levelStartTime = performance.now();
     this._restart();
   }
 
@@ -991,6 +1052,10 @@ class Game {
     this._portalFlash = null;
     this.deathTimer = 0;
     this.pendingOrbHit = null;
+    // Reset replay
+    this._replayRecorder = new ReplayRecorder();
+    this._replayFrame = 0;
+    if (this._replayGhost) this._replayGhost.reset();
     // Reset theme and re-apply any color triggers before spawn point
     this._colorTransition = null;
     if (this._baseTheme) this.theme = this._baseTheme;
@@ -1438,6 +1503,12 @@ class Game {
             this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true, this.coinsCollected || 0);
             this._checkAchievements();
           }
+          // Save replay ghost & submit score
+          if (!this.editorLevelData) {
+            if (this._replayRecorder) saveReplay(this.level.id, this._replayRecorder.serialize());
+            const completionTimeMs = Math.round(performance.now() - this._levelStartTime);
+            submitScore(this.level.id, this.attempts, completionTimeMs);
+          }
           return;
         }
       }
@@ -1461,6 +1532,12 @@ class Game {
     // Now update player movement (after collision set onMovingPlatform)
     this.player.update();
     this.camera.update(this.player.x);
+
+    // Record replay frame
+    if (this._replayRecorder && this.player.alive) {
+      this._replayRecorder.record(this.player);
+    }
+    this._replayFrame++;
 
     // Hold-to-jump: emit effects when auto-jumping from hold
     if (this.player.holdJumped) {
@@ -1519,6 +1596,10 @@ class Game {
       this.ui.drawStats(ctx, this.progress);
     } else if (this.state === FRIENDS) {
       this.ui.drawFriends(ctx, this.friendsData);
+    } else if (this.state === COMMUNITY) {
+      this.ui.drawCommunity(ctx, this.communityData);
+    } else if (this.state === LEADERBOARD) {
+      this.ui.drawLeaderboard(ctx, this._leaderboardData);
     } else {
       // Use interpolated camera for smooth rendering between physics steps
       // When paused or dead, don't interpolate — use final position to avoid jitter
@@ -1544,6 +1625,26 @@ class Game {
 
       this.renderer.drawGround(ctx, camX, this.theme, pulseIntensity);
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
+
+      // Draw ghost replay (behind the player)
+      if (this._replayGhost && this.player.alive) {
+        const ghostPos = this._replayGhost.getPosition(this._replayFrame);
+        if (ghostPos) {
+          const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
+          const gy = ghostPos.y;
+          const sz = PLAYER_SIZE;
+          ctx.save();
+          ctx.globalAlpha = 0.2;
+          ctx.translate(gx + sz / 2, gy + sz / 2);
+          ctx.rotate(ghostPos.rotation);
+          ctx.fillStyle = 'rgba(255,255,255,0.25)';
+          ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(-sz / 2, -sz / 2, sz, sz);
+          ctx.restore();
+        }
+      }
 
       if (this.player.alive) {
         this.player.draw(ctx, camX, this.theme, alpha);
