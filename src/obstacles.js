@@ -197,8 +197,10 @@ export class Platform {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
     const sy = this.y;
+    const he = this.hiddenEdges || new Set();
+    const edgeKey = [...he].sort().join('');
 
-    const key = `plat_${this.w}_${this.h}_${theme.platform}_${theme.accent}`;
+    const key = `plat_${this.w}_${this.h}_${theme.platform}_${theme.accent}_${edgeKey}`;
     const sprite = getCachedSprite(key, this.w, this.h, (c) => {
       // Main fill with gradient
       const grad = c.createLinearGradient(0, 0, 0, this.h);
@@ -207,16 +209,23 @@ export class Platform {
       c.fillStyle = grad;
       c.fillRect(0, 0, this.w, this.h);
 
-      // Neon top edge
-      drawNeonGlow(c, theme.accent, 8);
-      c.fillStyle = theme.accent;
-      c.fillRect(0, 0, this.w, 3);
-      clearGlow(c);
+      // Neon top edge (only if top not hidden)
+      if (!he.has('top')) {
+        drawNeonGlow(c, theme.accent, 8);
+        c.fillStyle = theme.accent;
+        c.fillRect(0, 0, this.w, 3);
+        clearGlow(c);
+      }
 
-      // Border
+      // Border — only on non-hidden edges
       c.strokeStyle = theme.accent;
       c.lineWidth = 1;
-      c.strokeRect(0, 0, this.w, this.h);
+      c.beginPath();
+      if (!he.has('top')) { c.moveTo(0, 0); c.lineTo(this.w, 0); }
+      if (!he.has('right')) { c.moveTo(this.w, 0); c.lineTo(this.w, this.h); }
+      if (!he.has('bottom')) { c.moveTo(this.w, this.h); c.lineTo(0, this.h); }
+      if (!he.has('left')) { c.moveTo(0, this.h); c.lineTo(0, 0); }
+      c.stroke();
     });
     ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
@@ -1245,8 +1254,10 @@ export class Slope {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
     const sy = this.y;
+    const he = this.hiddenEdges || new Set();
+    const edgeKey = [...he].sort().join('');
 
-    const key = `slope_${this.w}_${this.h}_${this.direction}_${theme.platform}_${theme.accent}`;
+    const key = `slope_${this.w}_${this.h}_${this.direction}_${theme.platform}_${theme.accent}_${edgeKey}`;
     const sprite = getCachedSprite(key, this.w, this.h, (c) => {
       // Gradient fill
       const grad = c.createLinearGradient(0, 0, 0, this.h);
@@ -1257,12 +1268,10 @@ export class Slope {
       // Draw filled triangle
       c.beginPath();
       if (this.direction === 'up') {
-        // Ramp going up: bottom-left, bottom-right, top-right
         c.moveTo(0, this.h);
         c.lineTo(this.w, this.h);
         c.lineTo(this.w, 0);
       } else {
-        // Ramp going down: top-left, bottom-left, bottom-right
         c.moveTo(0, 0);
         c.lineTo(0, this.h);
         c.lineTo(this.w, this.h);
@@ -1270,7 +1279,7 @@ export class Slope {
       c.closePath();
       c.fill();
 
-      // Neon edge along the slope line
+      // Neon edge along the slope diagonal (always visible)
       drawNeonGlow(c, theme.accent, 8);
       c.strokeStyle = theme.accent;
       c.lineWidth = 2;
@@ -1285,20 +1294,16 @@ export class Slope {
       c.stroke();
       clearGlow(c);
 
-      // Border
+      // Border — only on non-hidden edges
       c.strokeStyle = theme.accent;
       c.lineWidth = 1;
       c.beginPath();
       if (this.direction === 'up') {
-        c.moveTo(0, this.h);
-        c.lineTo(this.w, this.h);
-        c.lineTo(this.w, 0);
-        c.closePath();
+        if (!he.has('bottom')) { c.moveTo(0, this.h); c.lineTo(this.w, this.h); }
+        if (!he.has('right')) { c.moveTo(this.w, this.h); c.lineTo(this.w, 0); }
       } else {
-        c.moveTo(0, 0);
-        c.lineTo(0, this.h);
-        c.lineTo(this.w, this.h);
-        c.closePath();
+        if (!he.has('left')) { c.moveTo(0, 0); c.lineTo(0, this.h); }
+        if (!he.has('bottom')) { c.moveTo(0, this.h); c.lineTo(this.w, this.h); }
       }
       c.stroke();
     });

@@ -118,6 +118,60 @@ export class Level {
 
     // Replace old platforms with merged ones
     this.obstacles = this.obstacles.filter(o => o.type !== 'platform').concat(newPlatforms);
+
+    // Compute hidden edges between slopes and platforms (and slopes and slopes)
+    this._computeAdjacentEdges();
+  }
+
+  _computeAdjacentEdges() {
+    // For each slope, check which of its edges touch a platform or another slope
+    // hidden edges: 'bottom', 'left', 'right' (slope diagonal edge is never hidden)
+    const solids = this.obstacles.filter(o => o.type === 'platform' || o.type === 'slope');
+    for (const obs of solids) {
+      obs.hiddenEdges = obs.hiddenEdges || new Set();
+    }
+    for (let i = 0; i < solids.length; i++) {
+      const a = solids[i];
+      const ax2 = a.x + a.w, ay2 = a.y + a.h;
+      for (let j = i + 1; j < solids.length; j++) {
+        const b = solids[j];
+        const bx2 = b.x + b.w, by2 = b.y + b.h;
+        // Check if they share a vertical edge (left/right touching)
+        // A's right == B's left
+        if (Math.abs(ax2 - b.x) < 2) {
+          const overlapY = Math.min(ay2, by2) - Math.max(a.y, b.y);
+          if (overlapY > 2) {
+            a.hiddenEdges.add('right');
+            b.hiddenEdges.add('left');
+          }
+        }
+        // A's left == B's right
+        if (Math.abs(a.x - bx2) < 2) {
+          const overlapY = Math.min(ay2, by2) - Math.max(a.y, b.y);
+          if (overlapY > 2) {
+            a.hiddenEdges.add('left');
+            b.hiddenEdges.add('right');
+          }
+        }
+        // Check horizontal edge (top/bottom touching)
+        // A's bottom == B's top
+        if (Math.abs(ay2 - b.y) < 2) {
+          const overlapX = Math.min(ax2, bx2) - Math.max(a.x, b.x);
+          if (overlapX > 2) {
+            a.hiddenEdges.add('bottom');
+            b.hiddenEdges.add('top');
+          }
+        }
+        // A's top == B's bottom
+        if (Math.abs(a.y - by2) < 2) {
+          const overlapX = Math.min(ax2, bx2) - Math.max(a.x, b.x);
+          if (overlapX > 2) {
+            a.hiddenEdges.add('top');
+            b.hiddenEdges.add('bottom');
+          }
+        }
+      }
+    }
   }
 
   reset() {
