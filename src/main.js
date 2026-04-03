@@ -1436,13 +1436,16 @@ class Game {
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
-        const movingUp = (this.player.gravityMult > 0 && this.player.vy < -1) ||
-                         (this.player.gravityMult < 0 && this.player.vy > 1);
+        // Skip platform collision when player is clearly moving away from the surface
+        // (just jumped). Use a higher threshold to avoid sticking on jump.
+        // For normal gravity: skip when vy strongly negative (rising fast)
+        // For inverted gravity: skip when vy strongly positive (rising fast in inverted)
+        const risingFast = (this.player.gravityMult > 0 && this.player.vy < -3) ||
+                           (this.player.gravityMult < 0 && this.player.vy > 3);
+        if (risingFast) continue;
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
-          // When moving upward, ignore death (passing through from below) but still allow landing
           if (result.type === 'death') {
-            if (movingUp) continue; // pass through platform from below
             this._die();
             return;
           } else if (result.type === 'land') {
