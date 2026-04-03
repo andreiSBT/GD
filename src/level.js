@@ -1,7 +1,7 @@
 /** Level loader and camera system */
 
 import { GRID, PLAYER_SIZE, PLAYER_X_OFFSET, SCREEN_WIDTH } from './settings.js';
-import { createObstacle, clearSpriteCache } from './obstacles.js';
+import { createObstacle, clearSpriteCache, Platform } from './obstacles.js';
 import level1 from './levels/level1.js';
 import level2 from './levels/level2.js';
 import level3 from './levels/level3.js';
@@ -57,11 +57,67 @@ export class Level {
         }
       }
     }
+    // Merge touching platforms into single larger ones
+    this._mergePlatforms();
     // Sort by x for faster visibility filtering
     this.obstacles.sort((a, b) => a.x - b.x);
     // Cache for getVisible
     this._visibleCache = null;
     this._visibleCacheKey = -Infinity;
+  }
+
+  _mergePlatforms() {
+    // Group static platforms that touch or overlap into merged larger platforms
+    const platforms = this.obstacles.filter(o => o.type === 'platform');
+    if (platforms.length < 2) return;
+
+    const merged = new Set();
+    const newPlatforms = [];
+
+    for (let i = 0; i < platforms.length; i++) {
+      if (merged.has(i)) continue;
+      // Start a group with this platform's bounding box
+      let minX = platforms[i].x;
+      let minY = platforms[i].y;
+      let maxX = platforms[i].x + platforms[i].w;
+      let maxY = platforms[i].y + platforms[i].h;
+      merged.add(i);
+
+      // Keep expanding the group until no more neighbors found
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (let j = 0; j < platforms.length; j++) {
+          if (merged.has(j)) continue;
+          const p = platforms[j];
+          const px2 = p.x + p.w;
+          const py2 = p.y + p.h;
+          // Check if platform j touches or overlaps the current group
+          // Touch = edges exactly meet (no gap), overlap = edges cross
+          const touchX = p.x <= maxX && px2 >= minX;
+          const touchY = p.y <= maxY && py2 >= minY;
+          if (touchX && touchY) {
+            minX = Math.min(minX, p.x);
+            minY = Math.min(minY, p.y);
+            maxX = Math.max(maxX, px2);
+            maxY = Math.max(maxY, py2);
+            merged.add(j);
+            changed = true;
+          }
+        }
+      }
+
+      // Create a merged platform using pixel coordinates
+      const mp = new Platform(0, 0, 1, 1);
+      mp.x = minX;
+      mp.y = minY;
+      mp.w = maxX - minX;
+      mp.h = maxY - minY;
+      newPlatforms.push(mp);
+    }
+
+    // Replace old platforms with merged ones
+    this.obstacles = this.obstacles.filter(o => o.type !== 'platform').concat(newPlatforms);
   }
 
   reset() {
