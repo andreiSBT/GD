@@ -311,15 +311,13 @@ export class Player {
     }
     this.y += this.vy;
 
-    // Boundaries
+    // Boundaries — clamp to ground/ceiling without dying
     const groundY = GROUND_Y - PLAYER_SIZE;
     const waveCeilY = this.mini ? (PLAYER_SIZE - this.getSize()) / 2 : 0;
     if (this.y >= groundY) {
       this.y = groundY;
-      this.alive = false; // wave dies on ground/ceiling
     } else if (this.y <= waveCeilY) {
       this.y = waveCeilY;
-      this.alive = false;
     }
 
     this.rotation += 8;
