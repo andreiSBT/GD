@@ -194,27 +194,34 @@ export class Platform {
   }
 
   draw(ctx, cameraX, theme) {
-    if (this._hitboxOnly) return; // invisible collision-only platform
-    const sx = this.x - cameraX + PLAYER_X_OFFSET;
-    if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
-    const sy = this.y;
+    if (this._hitboxOnly) return;
     const he = this.hiddenEdges || new Set();
+    // Extend draw area by 1px on hidden edges to cover subpixel gaps
+    const ex = { l: he.has('left') ? 1 : 0, r: he.has('right') ? 1 : 0, t: he.has('top') ? 1 : 0, b: he.has('bottom') ? 1 : 0 };
+    const drawX = this.x - ex.l;
+    const drawY = this.y - ex.t;
+    const drawW = this.w + ex.l + ex.r;
+    const drawH = this.h + ex.t + ex.b;
+
+    const sx = drawX - cameraX + PLAYER_X_OFFSET;
+    if (sx < -drawW || sx > SCREEN_WIDTH + drawW) return;
+    const sy = drawY;
     const edgeKey = [...he].sort().join('');
 
-    const key = `plat_${this.w}_${this.h}_${theme.platform}_${theme.accent}_${edgeKey}`;
-    const sprite = getCachedSprite(key, this.w, this.h, (c) => {
+    const key = `plat_${drawW}_${drawH}_${theme.platform}_${theme.accent}_${edgeKey}`;
+    const sprite = getCachedSprite(key, drawW, drawH, (c) => {
       // Main fill with gradient
-      const grad = c.createLinearGradient(0, 0, 0, this.h);
+      const grad = c.createLinearGradient(0, 0, 0, drawH);
       grad.addColorStop(0, lighten(theme.platform, 20));
       grad.addColorStop(1, theme.platform);
       c.fillStyle = grad;
-      c.fillRect(0, 0, this.w, this.h);
+      c.fillRect(0, 0, drawW, drawH);
 
       // Neon top edge (only if top not hidden)
       if (!he.has('top')) {
         drawNeonGlow(c, theme.accent, 8);
         c.fillStyle = theme.accent;
-        c.fillRect(0, 0, this.w, 3);
+        c.fillRect(0, 0, drawW, 3);
         clearGlow(c);
       }
 
@@ -222,10 +229,10 @@ export class Platform {
       c.strokeStyle = theme.accent;
       c.lineWidth = 1;
       c.beginPath();
-      if (!he.has('top')) { c.moveTo(0, 0); c.lineTo(this.w, 0); }
-      if (!he.has('right')) { c.moveTo(this.w, 0); c.lineTo(this.w, this.h); }
-      if (!he.has('bottom')) { c.moveTo(this.w, this.h); c.lineTo(0, this.h); }
-      if (!he.has('left')) { c.moveTo(0, this.h); c.lineTo(0, 0); }
+      if (!he.has('top')) { c.moveTo(0, 0); c.lineTo(drawW, 0); }
+      if (!he.has('right')) { c.moveTo(drawW, 0); c.lineTo(drawW, drawH); }
+      if (!he.has('bottom')) { c.moveTo(drawW, drawH); c.lineTo(0, drawH); }
+      if (!he.has('left')) { c.moveTo(0, drawH); c.lineTo(0, 0); }
       c.stroke();
     });
     ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
