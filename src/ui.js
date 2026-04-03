@@ -1559,11 +1559,22 @@ export class UI {
       const gridW = cols * cardW + (cols - 1) * gapX;
       const startX = (SCREEN_WIDTH - gridW) / 2;
       let startY = 125;
-      for (let i = 0; i < data.levels.length && i < 9; i++) {
+      const rows = Math.ceil(data.levels.length / cols);
+      const contentH = rows * (cardH + gapY) - gapY;
+      const visibleH = SCREEN_HEIGHT - startY - 80;
+      this.maxScrollY = Math.max(0, contentH - visibleH);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, startY, SCREEN_WIDTH, visibleH);
+      ctx.clip();
+
+      for (let i = 0; i < data.levels.length; i++) {
         const lv = data.levels[i];
         const col = i % cols, row = Math.floor(i / cols);
         const cx = startX + col * (cardW + gapX);
-        const cy = startY + row * (cardH + gapY);
+        const cy = startY + row * (cardH + gapY) - this.scrollY;
+        if (cy + cardH < startY || cy > startY + visibleH) continue;
 
         // Card bg
         ctx.fillStyle = 'rgba(0,40,30,0.7)';
@@ -1594,6 +1605,7 @@ export class UI {
         const pbW = 70, pbH = 30, pbX = cx + cardW - pbW - 10, pbY = cy + cardH - pbH - 10;
         this._drawButton(ctx, pbX, pbY, pbW, pbH, 'PLAY', 'community_play_' + i, '#00CC88', 13);
       }
+      ctx.restore();
     }
 
     const backH = IS_MOBILE ? 52 : 44;
@@ -1640,9 +1652,20 @@ export class UI {
       ctx.textAlign = 'right';
       ctx.fillText('TIME', 950, hdrY);
 
+      const rowH = 32;
+      const listStartY = 128;
+      const visibleH = SCREEN_HEIGHT - listStartY - 80;
+      this.maxScrollY = Math.max(0, data.entries.length * rowH - visibleH);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, listStartY - 16, SCREEN_WIDTH, visibleH + 16);
+      ctx.clip();
+
       for (let i = 0; i < data.entries.length; i++) {
         const e = data.entries[i];
-        const ry = 128 + i * 32;
+        const ry = listStartY + i * rowH - this.scrollY;
+        if (ry + rowH < listStartY - 16 || ry > listStartY + visibleH) continue;
         const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
         const color = i < 3 ? rankColors[i] : '#AABB99';
 
@@ -1663,6 +1686,7 @@ export class UI {
         const timeFmt = timeMs ? `${(timeMs / 1000).toFixed(1)}s` : '--';
         ctx.fillText(timeFmt, 950, ry);
       }
+      ctx.restore();
     }
 
     const backH = IS_MOBILE ? 52 : 44;
@@ -1796,10 +1820,18 @@ export class UI {
     const itemH = IS_MOBILE ? 68 : 60, gap = 8;
     const listW = 520;
     const listX = (SCREEN_WIDTH - listW) / 2;
+    const visibleH = SCREEN_HEIGHT - startY - 80;
+    this.maxScrollY = Math.max(0, friends.length * (itemH + gap) - gap - visibleH);
 
-    for (let i = 0; i < friends.length && i < 7; i++) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, startY, SCREEN_WIDTH, visibleH);
+    ctx.clip();
+
+    for (let i = 0; i < friends.length; i++) {
       const f = friends[i];
-      const iy = startY + i * (itemH + gap);
+      const iy = startY + i * (itemH + gap) - this.scrollY;
+      if (iy + itemH < startY || iy > startY + visibleH) continue;
       const avatarColors = ['#00AAFF', '#FF6644', '#44CC88', '#CC44AA', '#FFAA22', '#8866FF', '#44DDDD'];
 
       // Row bg with subtle glow
@@ -1840,6 +1872,7 @@ export class UI {
       // Remove button
       this._drawButton(ctx, listX + listW - 100, iy + (itemH - flBtnH) / 2, 90, flBtnH, 'REMOVE', `friends_remove_${i}`, '#663333', IS_MOBILE ? 16 : 14);
     }
+    ctx.restore();
   }
 
   _drawFriendRequests(ctx, requests, startY) {
@@ -1857,10 +1890,18 @@ export class UI {
     ctx.fillText(`${requests.length} PENDING REQUEST${requests.length !== 1 ? 'S' : ''}`, listX + 4, startY - 4);
 
     const itemH = IS_MOBILE ? 68 : 60, gap = 8;
+    const visibleH = SCREEN_HEIGHT - startY - 80;
+    this.maxScrollY = Math.max(0, requests.length * (itemH + gap) - gap - visibleH);
 
-    for (let i = 0; i < requests.length && i < 7; i++) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, startY, SCREEN_WIDTH, visibleH);
+    ctx.clip();
+
+    for (let i = 0; i < requests.length; i++) {
       const r = requests[i];
-      const iy = startY + i * (itemH + gap);
+      const iy = startY + i * (itemH + gap) - this.scrollY;
+      if (iy + itemH < startY || iy > startY + visibleH) continue;
 
       // Row bg with warm glow
       ctx.save();
@@ -1898,6 +1939,7 @@ export class UI {
       this._drawButton(ctx, listX + listW - 220, iy + (itemH - frBtnH) / 2, 105, frBtnH, 'ACCEPT', `friends_accept_${i}`, '#22AA44', IS_MOBILE ? 16 : 14);
       this._drawButton(ctx, listX + listW - 100, iy + (itemH - frBtnH) / 2, 90, frBtnH, 'DECLINE', `friends_decline_${i}`, '#883333', IS_MOBILE ? 16 : 14);
     }
+    ctx.restore();
   }
 
   _drawFriendSearch(ctx, results, query, startY, htmlInputActive, sentRequests) {
@@ -1949,10 +1991,18 @@ export class UI {
       ctx.fillText(`${results.length} RESULT${results.length !== 1 ? 'S' : ''} FOUND`, listX + 4, resultY - 6);
 
       const itemH = IS_MOBILE ? 62 : 54, gap = 6;
+      const visibleH = SCREEN_HEIGHT - resultY - 80;
+      this.maxScrollY = Math.max(0, results.length * (itemH + gap) - gap - visibleH);
 
-      for (let i = 0; i < results.length && i < 8; i++) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, resultY, SCREEN_WIDTH, visibleH);
+      ctx.clip();
+
+      for (let i = 0; i < results.length; i++) {
         const u = results[i];
-        const iy = resultY + i * (itemH + gap);
+        const iy = resultY + i * (itemH + gap) - this.scrollY;
+        if (iy + itemH < resultY || iy > resultY + visibleH) continue;
 
         ctx.save();
         ctx.shadowColor = 'rgba(68,204,68,0.08)';
@@ -1997,6 +2047,7 @@ export class UI {
           this._drawButton(ctx, listX + listW - 140, iy + (itemH - addBtnH) / 2, 125, addBtnH, 'ADD FRIEND', `friends_add_${i}`, '#2288AA', IS_MOBILE ? 15 : 13);
         }
       }
+      ctx.restore();
     } else if (results && results.length === 0 && query) {
       this._drawEmptyState(ctx, '?', 'No players found', 'Try a different username', resultY + 60);
     }

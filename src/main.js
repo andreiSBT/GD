@@ -357,9 +357,15 @@ class Game {
         return;
       }
 
+      // Start scroll tracking for scrollable screens
+      if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state)) {
+        this.ui.handleScrollTouchStart(y);
+      }
+
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
-          this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS) {
+          this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS ||
+          this.state === COMMUNITY || this.state === LEADERBOARD) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           // Volume slider interaction (touch)
@@ -406,13 +412,16 @@ class Game {
         this._applySliderValue(this._draggingSlider, x);
         return;
       }
+      const rect = this.canvas.getBoundingClientRect();
+      const touch = e.touches[0];
+      const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
+      const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
       if (this.state === EDITOR) {
         e.preventDefault();
-        const rect = this.canvas.getBoundingClientRect();
-        const touch = e.touches[0];
-        const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
-        const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
         this.editor.handleTouchMove(x, y);
+      } else if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state)) {
+        e.preventDefault();
+        this.ui.handleScrollTouchMove(y);
       }
     }, { passive: false });
 
@@ -431,10 +440,14 @@ class Game {
       doRelease();
     }, { passive: false });
 
+    const SCROLLABLE_STATES = [FRIENDS, COMMUNITY, LEADERBOARD, STATS];
     this.canvas.addEventListener('wheel', (e) => {
       if (this.state === EDITOR) {
         e.preventDefault();
         this.editor.handleWheel(e);
+      } else if (SCROLLABLE_STATES.includes(this.state)) {
+        e.preventDefault();
+        this.ui.handleWheel(e.deltaY);
       }
     }, { passive: false });
 
@@ -485,6 +498,7 @@ class Game {
       this.practiceMode = true;
       this._startLevel(id);
     } else if (action === 'stats') {
+      this.ui.resetScroll();
       this.state = STATS;
     } else if (action === 'back_stats') {
       this.state = MENU;
@@ -569,10 +583,12 @@ class Game {
         this._showAccountOverlay();
         return;
       }
+      this.ui.resetScroll();
       this.state = FRIENDS;
       this.friendsData.tab = 'list';
       this._loadFriendsData();
     } else if (action === 'community') {
+      this.ui.resetScroll();
       this.state = COMMUNITY;
       this.communityData.loading = true;
       this.communityData.levels = [];
@@ -585,6 +601,7 @@ class Game {
     } else if (action.startsWith('community_sort_')) {
       const sort = action.replace('community_sort_', '');
       this.communityData.sort = sort;
+      this.ui.resetScroll();
       this.communityData.loading = true;
       getPublishedLevels(sort, 0).then(levels => {
         this.communityData.levels = levels;
@@ -615,6 +632,7 @@ class Game {
           this._leaderboardData.entries = entries;
           this._leaderboardData.loading = false;
         });
+        this.ui.resetScroll();
         this.state = LEADERBOARD;
       }
     } else if (action === 'back_leaderboard') {
@@ -631,14 +649,17 @@ class Game {
 
     if (action === 'friends_tab_list') {
       fd.tab = 'list';
+      this.ui.resetScroll();
       this._hideFriendsInput();
       this._loadFriendsData();
     } else if (action === 'friends_tab_requests') {
       fd.tab = 'requests';
+      this.ui.resetScroll();
       this._hideFriendsInput();
       this._loadFriendsData();
     } else if (action === 'friends_tab_search') {
       fd.tab = 'search';
+      this.ui.resetScroll();
       fd.searchResults = null;
       this._showFriendsInput('search');
     } else if (action === 'friends_focus_search') {
