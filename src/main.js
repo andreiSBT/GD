@@ -1439,11 +1439,25 @@ class Game {
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
-            // If player is approaching from the non-landing side (below in normal gravity,
-            // above in inverted), let them pass through instead of dying
             const comingFromBelow = this.player.gravityMult > 0 && this.player.vy < 0;
             const comingFromAbove = this.player.gravityMult < 0 && this.player.vy > 0;
-            if (comingFromBelow || comingFromAbove) continue;
+            if (comingFromBelow || comingFromAbove) {
+              // In ship/wave mode, block against the underside of platform instead of passing through
+              if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
+                const platBottom = obs.y + obs.h;
+                if (this.player.gravityMult > 0) {
+                  // Normal gravity, rising: push player below platform
+                  this.player.y = platBottom + miniOffset;
+                  this.player.vy = 0;
+                } else {
+                  // Inverted gravity, rising: push player above platform
+                  this.player.y = obs.y - PLAYER_SIZE + miniOffset;
+                  this.player.vy = 0;
+                }
+                this.player.prevY = this.player.y;
+              }
+              continue;
+            }
             this._die();
             return;
           } else if (result.type === 'land') {
