@@ -1439,18 +1439,19 @@ class Game {
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
-            const comingFromBelow = this.player.gravityMult > 0 && this.player.vy < 0;
-            const comingFromAbove = this.player.gravityMult < 0 && this.player.vy > 0;
-            if (comingFromBelow || comingFromAbove) {
-              // In ship/wave mode, block against the underside of platform instead of passing through
+            // Check if player was vertically below/above the platform last frame
+            // (approaching from underside) vs horizontally to the left (side hit = death)
+            const prevBottom = this.player.prevY + PLAYER_SIZE;
+            const prevTop = this.player.prevY;
+            const wasBelow = this.player.gravityMult > 0 && prevBottom > obs.y + obs.h - 4;
+            const wasAboveInv = this.player.gravityMult < 0 && prevTop < obs.y + 4;
+            if (wasBelow || wasAboveInv) {
+              // Coming from underside — ship/wave block, cube/ball pass through
               if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
-                const platBottom = obs.y + obs.h;
                 if (this.player.gravityMult > 0) {
-                  // Normal gravity, rising: push player below platform
-                  this.player.y = platBottom + miniOffset;
+                  this.player.y = obs.y + obs.h + miniOffset;
                   this.player.vy = 0;
                 } else {
-                  // Inverted gravity, rising: push player above platform
                   this.player.y = obs.y - PLAYER_SIZE + miniOffset;
                   this.player.vy = 0;
                 }
@@ -1458,6 +1459,7 @@ class Game {
               }
               continue;
             }
+            // Side hit — always die
             this._die();
             return;
           } else if (result.type === 'land') {
