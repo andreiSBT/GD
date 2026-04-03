@@ -67,59 +67,70 @@ export class Level {
   }
 
   _mergePlatforms() {
-    // Group static platforms that touch or overlap into merged larger platforms
+    // Keep original platforms for rendering, create merged hitboxes for collision
     const platforms = this.obstacles.filter(o => o.type === 'platform');
-    if (platforms.length < 2) return;
+    if (platforms.length < 2) {
+      this._computeAdjacentEdges();
+      return;
+    }
 
-    const merged = new Set();
-    const newPlatforms = [];
-
+    // Group touching platforms
+    const groupOf = new Array(platforms.length).fill(-1);
+    let groupCount = 0;
     for (let i = 0; i < platforms.length; i++) {
-      if (merged.has(i)) continue;
-      // Start a group with this platform's bounding box
-      let minX = platforms[i].x;
-      let minY = platforms[i].y;
-      let maxX = platforms[i].x + platforms[i].w;
-      let maxY = platforms[i].y + platforms[i].h;
-      merged.add(i);
-
-      // Keep expanding the group until no more neighbors found
+      if (groupOf[i] >= 0) continue;
+      const gid = groupCount++;
+      groupOf[i] = gid;
       let changed = true;
       while (changed) {
         changed = false;
         for (let j = 0; j < platforms.length; j++) {
-          if (merged.has(j)) continue;
+          if (groupOf[j] >= 0) continue;
           const p = platforms[j];
-          const px2 = p.x + p.w;
-          const py2 = p.y + p.h;
-          // Check if platform j touches or overlaps the current group
-          // Touch = edges exactly meet (no gap), overlap = edges cross
-          const touchX = p.x <= maxX && px2 >= minX;
-          const touchY = p.y <= maxY && py2 >= minY;
-          if (touchX && touchY) {
-            minX = Math.min(minX, p.x);
-            minY = Math.min(minY, p.y);
-            maxX = Math.max(maxX, px2);
-            maxY = Math.max(maxY, py2);
-            merged.add(j);
-            changed = true;
+          const px2 = p.x + p.w, py2 = p.y + p.h;
+          // Check if j touches any platform already in this group
+          for (let k = 0; k < platforms.length; k++) {
+            if (groupOf[k] !== gid) continue;
+            const q = platforms[k];
+            const qx2 = q.x + q.w, qy2 = q.y + q.h;
+            if (p.x <= qx2 && px2 >= q.x && p.y <= qy2 && py2 >= q.y) {
+              groupOf[j] = gid;
+              changed = true;
+              break;
+            }
           }
         }
       }
-
-      // Create a merged platform using pixel coordinates
-      const mp = new Platform(0, 0, 1, 1);
-      mp.x = minX;
-      mp.y = minY;
-      mp.w = maxX - minX;
-      mp.h = maxY - minY;
-      newPlatforms.push(mp);
     }
 
-    // Replace old platforms with merged ones
-    this.obstacles = this.obstacles.filter(o => o.type !== 'platform').concat(newPlatforms);
+    // Create merged hitbox per group (invisible, collision only)
+    for (let g = 0; g < groupCount; g++) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      let count = 0;
+      for (let i = 0; i < platforms.length; i++) {
+        if (groupOf[i] !== g) continue;
+        count++;
+        minX = Math.min(minX, platforms[i].x);
+        minY = Math.min(minY, platforms[i].y);
+        maxX = Math.max(maxX, platforms[i].x + platforms[i].w);
+        maxY = Math.max(maxY, platforms[i].y + platforms[i].h);
+      }
+      if (count <= 1) continue; // single platform, no need for merged hitbox
+      // Mark original platforms in this group as render-only (skip collision)
+      for (let i = 0; i < platforms.length; i++) {
+        if (groupOf[i] === g) platforms[i]._renderOnly = true;
+      }
+      // Add invisible merged hitbox
+      const hb = new Platform(0, 0, 1, 1);
+      hb.x = minX;
+      hb.y = minY;
+      hb.w = maxX - minX;
+      hb.h = maxY - minY;
+      hb._hitboxOnly = true; // skip rendering
+      this.obstacles.push(hb);
+    }
 
-    // Compute hidden edges between slopes and platforms (and slopes and slopes)
+    // Compute hidden edges between slopes and platforms
     this._computeAdjacentEdges();
   }
 

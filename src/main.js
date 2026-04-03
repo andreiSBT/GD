@@ -1442,6 +1442,7 @@ class Game {
           }
         }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
+        if (obs._renderOnly) continue; // skip render-only, merged hitbox handles collision
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);

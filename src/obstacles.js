@@ -194,6 +194,7 @@ export class Platform {
   }
 
   draw(ctx, cameraX, theme) {
+    if (this._hitboxOnly) return; // invisible collision-only platform
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -this.w || sx > SCREEN_WIDTH + this.w) return;
     const sy = this.y;
