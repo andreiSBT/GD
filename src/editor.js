@@ -2574,7 +2574,7 @@ export class Editor {
 
     // Dialog box
     const dlgW = Math.min(420, SCREEN_WIDTH - 40);
-    const dlgH = 260;
+    const dlgH = 400;
     const dlgX = (SCREEN_WIDTH - dlgW) / 2;
     const dlgY = (SCREEN_HEIGHT - dlgH) / 2;
 
@@ -2599,29 +2599,34 @@ export class Editor {
     ctx.font = '13px monospace';
     ctx.fillText('Choose which official level to replace:', SCREEN_WIDTH / 2, dlgY + 68);
 
-    // Level buttons
-    const names = ['Stereo Madness', 'Back on Track', 'Polargeist'];
-    const colors = ['#4488FF', '#CC44AA', '#44CC66'];
-    const btnW = (dlgW - 50) / 3;
-    const btnH = 80;
-    const btnY = dlgY + 90;
+    // Level buttons — 3 per row, up to 9
+    const lvlCount = Object.keys(THEMES).length;
+    const cols = 3;
+    const rows = Math.ceil(lvlCount / cols);
+    const btnW = (dlgW - 50) / cols;
+    const btnH = 56;
+    const btnGapY = 8;
+    const startBtnY = dlgY + 90;
 
-    for (let i = 0; i < 3; i++) {
-      const bx = dlgX + 15 + i * (btnW + 10);
-      const grad = ctx.createLinearGradient(bx, btnY, bx, btnY + btnH);
-      grad.addColorStop(0, colors[i]);
-      grad.addColorStop(1, colors[i] + '88');
+    for (let i = 0; i < lvlCount; i++) {
+      const col = i % cols, row = Math.floor(i / cols);
+      const bx = dlgX + 15 + col * (btnW + 10);
+      const by = startBtnY + row * (btnH + btnGapY);
+      const theme = THEMES[i + 1] || THEMES[1];
+      const grad = ctx.createLinearGradient(bx, by, bx, by + btnH);
+      grad.addColorStop(0, theme.accent);
+      grad.addColorStop(1, theme.accent + '66');
       ctx.fillStyle = grad;
-      this._editorRoundRect(ctx, bx, btnY, btnW, btnH, 10);
+      this._editorRoundRect(ctx, bx, by, btnW, btnH, 8);
       ctx.fill();
 
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 22px monospace';
-      ctx.fillText('L' + (i + 1), bx + btnW / 2, btnY + 32);
-      ctx.font = '11px monospace';
-      ctx.fillText(names[i], bx + btnW / 2, btnY + 55);
+      ctx.font = 'bold 18px monospace';
+      ctx.fillText('L' + (i + 1), bx + btnW / 2, by + 24);
+      ctx.font = '10px monospace';
+      ctx.fillText(theme.name || '', bx + btnW / 2, by + 42);
 
-      this.buttons.push({ id: 'official_pick_' + (i + 1), x: bx, y: btnY, w: btnW, h: btnH });
+      this.buttons.push({ id: 'official_pick_' + (i + 1), x: bx, y: by, w: btnW, h: btnH });
     }
 
     // Cancel button
