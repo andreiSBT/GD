@@ -2668,10 +2668,18 @@ export class Editor {
                 if (raw) {
                   const blob = new Blob([raw], { type: 'audio/mpeg' });
                   const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
-                  await uploadOfficialMusic(levelId, file);
+                  const musicPath = await uploadOfficialMusic(levelId, file);
+                  if (musicPath) {
+                    this._showToast('Official L' + levelId + ' + music saved!');
+                  } else {
+                    this._showToast('L' + levelId + ' saved, music upload failed');
+                  }
+                } else {
+                  this._showToast('Official L' + levelId + ' saved (no music data)');
                 }
+              } else {
+                this._showToast('Official L' + levelId + ' saved!');
               }
-              this._showToast('Official L' + levelId + ' saved!');
             }
           });
           return;

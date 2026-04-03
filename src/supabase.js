@@ -103,7 +103,13 @@
  *    CREATE POLICY "Anyone can read" ON official_levels FOR SELECT USING (true);
  *    CREATE POLICY "Admins can write" ON official_levels FOR ALL USING (true) WITH CHECK (true);
  *
- * 3. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
+ * 3. Create a Storage bucket called "level-music" (public, 50MB file limit):
+ *    - Go to Storage in Supabase Dashboard
+ *    - Click "New bucket", name it "level-music", toggle Public ON
+ *    - Add a storage policy: allow all operations for all users
+ *      (or use: INSERT/SELECT/UPDATE/DELETE for authenticated + anon)
+ *
+ * 4. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env
  */
 
 import { createClient } from '@supabase/supabase-js';
