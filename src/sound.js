@@ -387,6 +387,8 @@ let musicInterval = null;
 let musicGain = null;
 let currentMusicLevel = null;
 let activeNodes = []; // track all active oscillators/sources to stop them cleanly
+let pausedMusicTime = 0; // saved playback position when paused
+let _proceduralBeat = 0; // current beat count for procedural music
 
 export async function playMusic(levelId, offset = 0) {
   stopMusic();
@@ -422,7 +424,7 @@ export async function playMusic(levelId, offset = 0) {
 
   // Skip ahead if offset provided (e.g. editor start position)
   const beatSec = beatMs / 1000;
-  let beat = offset > 0 ? Math.floor(offset / beatSec) : 0;
+  _proceduralBeat = offset > 0 ? Math.floor(offset / beatSec) : 0;
   function tick() {
     if (!musicGain) return;
     const now = c.currentTime;
@@ -442,7 +444,7 @@ export async function playMusic(levelId, offset = 0) {
     activeNodes.push(kickOsc);
 
     // Hi-hat on off-beats
-    if (beat % 2 === 1) {
+    if (_proceduralBeat % 2 === 1) {
       const bufSize = c.sampleRate * 0.03;
       const buf = c.createBuffer(1, bufSize, c.sampleRate);
       const d = buf.getChannelData(0);
@@ -459,7 +461,7 @@ export async function playMusic(levelId, offset = 0) {
     }
 
     // Bass note
-    const noteIdx = beat % 4;
+    const noteIdx = _proceduralBeat % 4;
     const bassOsc = c.createOscillator();
     const bassGainNode = c.createGain();
     bassOsc.type = 'sawtooth';
@@ -478,7 +480,7 @@ export async function playMusic(levelId, offset = 0) {
       activeNodes = activeNodes.slice(-32);
     }
 
-    beat++;
+    _proceduralBeat++;
   }
 
   tick();
@@ -486,7 +488,12 @@ export async function playMusic(levelId, offset = 0) {
 }
 
 export function pauseMusic() {
-  // Stop custom music (will restart from beginning on resume)
+  // Save current playback position before stopping
+  if (customMusicSource && customMusicLevelId != null) {
+    pausedMusicTime = getCustomMusicTime();
+  } else if (musicInterval) {
+    pausedMusicTime = _proceduralBeat * (_proceduralBeatMs / 1000);
+  }
   _stopCustomMusic();
   _proceduralBeatMs = 0;
   if (musicInterval) {
@@ -506,7 +513,7 @@ export function pauseMusic() {
 
 export function resumeMusic() {
   if (currentMusicLevel != null && !musicInterval && !customMusicSource) {
-    playMusic(currentMusicLevel);
+    playMusic(currentMusicLevel, pausedMusicTime);
   }
 }
 
@@ -518,5 +525,6 @@ export function stopMusic() {
   _stopCustomMusic();
   pauseMusic();
   _proceduralBeatMs = 0;
+  pausedMusicTime = 0;
   currentMusicLevel = null;
 }
