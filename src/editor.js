@@ -2511,6 +2511,7 @@ export class Editor {
     } else if (id === 'action_redo') {
       this._redo();
     } else if (id === 'action_test') {
+      if (this.currentSlot) this.saveToSlot(this.currentSlot);
       if (this.onTest) this.onTest(this.getLevelData());
     } else if (id === 'action_save') {
       if (this.currentSlot) {
