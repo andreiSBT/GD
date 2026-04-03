@@ -1452,8 +1452,38 @@ class Game {
             this.player._snapRotation();
           }
         }
+      } else if (obs.type === 'platform_group') {
+        // Merged group: collision checks each sub-platform individually
+        const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
+        if (result) {
+          if (result.type === 'death') {
+            const prevBottom = this.player.prevY + PLAYER_SIZE;
+            const prevTop = this.player.prevY;
+            const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - obs.y) < 8;
+            const wasBelow = this.player.gravityMult > 0 && prevBottom > obs.y + obs.h - 4;
+            const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - (obs.y + obs.h)) < 8;
+            const wasAboveInv = this.player.gravityMult < 0 && prevTop < obs.y + 4;
+            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv) {
+              if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
+                if (this.player.gravityMult > 0) { this.player.y = obs.y + obs.h + miniOffset; this.player.vy = 0; }
+                else { this.player.y = obs.y - PLAYER_SIZE + miniOffset; this.player.vy = 0; }
+                this.player.prevY = this.player.y;
+              }
+              continue;
+            }
+            this._die(); return;
+          } else if (result.type === 'land') {
+            const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) || (this.player.gravityMult < 0 && this.player.vy > 2);
+            if (jumpingOff) continue;
+            this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
+            this.player.prevY = this.player.y;
+            this.player.vy = 0;
+            this.player.grounded = true;
+            this.player.onPlatform = true;
+            this.player._snapRotation();
+          }
+        }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
-        if (obs._renderOnly) continue; // skip render-only, merged hitbox handles collision
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
