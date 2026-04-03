@@ -1188,11 +1188,19 @@ export class Slope {
     const clampedX = Math.max(this.x, Math.min(this.x + this.w, worldX));
     const t = (clampedX - this.x) / this.w;
     if (this.direction === 'up') {
-      // Surface goes from bottom-left (this.x, this.y + this.h) to top-right (this.x + this.w, this.y)
-      return (this.y + this.h) + (this.y - (this.y + this.h)) * t; // = y + h - h*t = y + h*(1-t)
+      return (this.y + this.h) - this.h * t;
     } else {
-      // Surface goes from top-left (this.x, this.y) to bottom-right (this.x + this.w, this.y + this.h)
-      return this.y + (this.y + this.h - this.y) * t; // = y + h*t
+      return this.y + this.h * t;
+    }
+  }
+
+  // Returns the vertical change per pixel of horizontal movement
+  getSlopeRatio() {
+    // Negative = going up, positive = going down
+    if (this.direction === 'up') {
+      return -this.h / this.w;
+    } else {
+      return this.h / this.w;
     }
   }
 
@@ -1205,6 +1213,8 @@ export class Slope {
     const playerCenterX = playerRect.x + playerRect.w / 2;
     const surfaceY = this.getSurfaceY(playerCenterX);
 
+    const slopeRatio = this.getSlopeRatio();
+
     if (gravityMult === 1) {
       // Normal gravity: player lands on top of slope
       const playerBottom = playerRect.y + playerRect.h;
@@ -1212,21 +1222,20 @@ export class Slope {
       const prevBottom = prevPlayerY + pSize;
       const forgiveness = 12;
       if (playerBottom >= surfaceY - forgiveness && prevBottom <= surfaceY + forgiveness + 8) {
-        return { type: 'land', y: surfaceY };
+        return { type: 'land', y: surfaceY, slopeRatio };
       }
-      // Already standing on slope
       if (playerBottom >= surfaceY - 6 && playerBottom <= surfaceY + forgiveness) {
-        return { type: 'land', y: surfaceY };
+        return { type: 'land', y: surfaceY, slopeRatio };
       }
     } else {
       // Inverted gravity: player lands on bottom of slope
       const playerTop = playerRect.y;
       const forgiveness = 12;
       if (playerTop <= surfaceY + forgiveness && prevPlayerY >= surfaceY - forgiveness - 8) {
-        return { type: 'land', y: surfaceY };
+        return { type: 'land', y: surfaceY, slopeRatio };
       }
       if (playerTop >= surfaceY - forgiveness && playerTop <= surfaceY + 6) {
-        return { type: 'land', y: surfaceY };
+        return { type: 'land', y: surfaceY, slopeRatio };
       }
     }
     return null;

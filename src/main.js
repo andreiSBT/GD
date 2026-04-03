@@ -1425,13 +1425,20 @@ class Game {
       } else if (obs.type === 'slope') {
         const result = obs.checkCollision(playerRect, this.player.prevY, this.player.gravityMult);
         if (result && result.type === 'land') {
-          const slopeMiniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
-          this.player.y = this.player.gravityMult === -1 ? result.y - slopeMiniOffset : result.y - PLAYER_SIZE + slopeMiniOffset;
-          this.player.prevY = this.player.y;
-          this.player.vy = 0;
-          this.player.grounded = true;
-          this.player.onPlatform = true;
-          this.player._snapRotation();
+          // Allow jumping off slope — don't land if vy is strongly upward
+          const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) ||
+                             (this.player.gravityMult < 0 && this.player.vy > 2);
+          if (!jumpingOff) {
+            const slopeMiniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+            this.player.y = this.player.gravityMult === -1 ? result.y - slopeMiniOffset : result.y - PLAYER_SIZE + slopeMiniOffset;
+            this.player.prevY = this.player.y;
+            // Set vy based on slope angle — player follows the diagonal
+            const speed = SCROLL_SPEED * this.player.speedMult;
+            this.player.vy = result.slopeRatio * speed;
+            this.player.grounded = true;
+            this.player.onPlatform = true;
+            this.player._snapRotation();
+          }
         }
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
