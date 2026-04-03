@@ -1560,12 +1560,11 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.fillText('No levels published yet', SCREEN_WIDTH / 2, 300);
     } else {
-      const cols = 3, cardW = 340, cardH = 120, gapX = 25, gapY = 15;
-      const gridW = cols * cardW + (cols - 1) * gapX;
-      const startX = (SCREEN_WIDTH - gridW) / 2;
-      let startY = 125;
-      const rows = Math.ceil(data.levels.length / cols);
-      const contentH = rows * (cardH + gapY) - gapY;
+      const margin = 30;
+      const cardW = SCREEN_WIDTH - margin * 2;
+      const cardH = 64, gapY = 10;
+      const startY = 125;
+      const contentH = data.levels.length * (cardH + gapY) - gapY;
       const visibleH = SCREEN_HEIGHT - startY - 80;
       this.maxScrollY = Math.max(0, contentH - visibleH);
 
@@ -1576,15 +1575,13 @@ export class UI {
 
       for (let i = 0; i < data.levels.length; i++) {
         const lv = data.levels[i];
-        const col = i % cols, row = Math.floor(i / cols);
-        const cx = startX + col * (cardW + gapX);
-        const cy = startY + row * (cardH + gapY) - this.scrollY;
+        const cy = startY + i * (cardH + gapY) - this.scrollY;
         if (cy + cardH < startY || cy > startY + visibleH) continue;
 
         // Card bg
         ctx.fillStyle = 'rgba(0,40,30,0.7)';
         ctx.beginPath();
-        ctx.roundRect(cx, cy, cardW, cardH, 10);
+        ctx.roundRect(margin, cy, cardW, cardH, 10);
         ctx.fill();
         ctx.strokeStyle = 'rgba(0,170,136,0.25)';
         ctx.lineWidth = 1;
@@ -1592,23 +1589,25 @@ export class UI {
 
         // Name
         ctx.fillStyle = '#CCFFEE';
-        ctx.font = 'bold 15px monospace';
+        ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(lv.name.slice(0, 22), cx + 14, cy + 28);
+        ctx.fillText(lv.name.slice(0, 30), margin + 16, cy + 26);
 
-        // Creator
+        // Creator + stats on second line
         ctx.fillStyle = '#669988';
         ctx.font = '12px monospace';
-        ctx.fillText('by ' + (lv.creator || 'Unknown'), cx + 14, cy + 48);
+        ctx.fillText('by ' + (lv.creator || 'Unknown'), margin + 16, cy + 48);
 
-        // Stats
         ctx.fillStyle = '#557766';
         ctx.font = '11px monospace';
-        ctx.fillText(`▶ ${lv.plays}  ♥ ${lv.likes}  ◆ ${lv.objectCount || '?'} obj`, cx + 14, cy + 68);
+        ctx.textAlign = 'center';
+        ctx.fillText(`▶ ${lv.plays}`, margin + cardW / 2, cy + 26);
+        ctx.fillText(`♥ ${lv.likes}`, margin + cardW / 2 + 80, cy + 26);
+        ctx.fillText(`◆ ${lv.objectCount || '?'} obj`, margin + cardW / 2, cy + 48);
 
-        // Play button
-        const pbW = 70, pbH = 30, pbX = cx + cardW - pbW - 10, pbY = cy + cardH - pbH - 10;
-        this._drawButton(ctx, pbX, pbY, pbW, pbH, 'PLAY', 'community_play_' + i, '#00CC88', 13);
+        // Play button (right side)
+        const pbW = 80, pbH = 36, pbX = margin + cardW - pbW - 12, pbY = cy + (cardH - pbH) / 2;
+        this._drawButton(ctx, pbX, pbY, pbW, pbH, 'PLAY', 'community_play_' + i, '#00CC88', 14);
       }
       ctx.restore();
     }
