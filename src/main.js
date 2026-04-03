@@ -1439,13 +1439,18 @@ class Game {
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
-            // Check if player was vertically below/above the platform last frame
-            // (approaching from underside) vs horizontally to the left (side hit = death)
+            // Check if player was vertically aligned with the platform last frame
+            // (on top, below, or above) vs approaching from the side (side hit = death)
             const prevBottom = this.player.prevY + PLAYER_SIZE;
             const prevTop = this.player.prevY;
-            const wasBelow = this.player.gravityMult > 0 && prevBottom > obs.y + obs.h - 4;
-            const wasAboveInv = this.player.gravityMult < 0 && prevTop < obs.y + 4;
-            if (wasBelow || wasAboveInv) {
+            const platTop = obs.y;
+            const platBottom = obs.y + obs.h;
+            // Was on top of platform, below it, or above it (not approaching from side)
+            const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < 8;
+            const wasBelow = this.player.gravityMult > 0 && prevBottom > platBottom - 4;
+            const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
+            const wasAboveInv = this.player.gravityMult < 0 && prevTop < platTop + 4;
+            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv) {
               // Coming from underside — ship/wave block, cube/ball pass through
               if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
                 if (this.player.gravityMult > 0) {
