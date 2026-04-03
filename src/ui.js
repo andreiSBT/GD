@@ -38,6 +38,12 @@ export class UI {
   constructor() {
     this.buttons = [];
     this.pulseTimer = 0;
+    // Scroll state for list screens
+    this.scrollY = 0;
+    this.maxScrollY = 0;
+    this.scrollTouchStartY = 0;
+    this.scrollTouchStartScroll = 0;
+    this.isScrollDragging = false;
     // Floating menu particles
     this.menuParticles = [];
     for (let i = 0; i < 30; i++) {
@@ -60,6 +66,27 @@ export class UI {
       p.x += p.drift;
       if (p.y < -10) { p.y = 710; p.x = Math.random() * 1400; }
     }
+  }
+
+  resetScroll() {
+    this.scrollY = 0;
+    this.maxScrollY = 0;
+  }
+
+  handleWheel(deltaY) {
+    this.scrollY = Math.max(0, Math.min(this.maxScrollY, this.scrollY + deltaY));
+  }
+
+  handleScrollTouchStart(y) {
+    this.scrollTouchStartY = y;
+    this.scrollTouchStartScroll = this.scrollY;
+    this.isScrollDragging = false;
+  }
+
+  handleScrollTouchMove(y) {
+    const dy = this.scrollTouchStartY - y;
+    if (Math.abs(dy) > 5) this.isScrollDragging = true;
+    this.scrollY = Math.max(0, Math.min(this.maxScrollY, this.scrollTouchStartScroll + dy));
   }
 
   // Returns button id if clicked, null otherwise
@@ -317,9 +344,9 @@ export class UI {
       this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', IS_MOBILE ? 17 : 15);
     }
 
-    // Page arrows
-    const arrowY = 95 + cardH / 2 - 25;
-    const arrowW = IS_MOBILE ? 56 : 48, arrowH = IS_MOBILE ? 56 : 50;
+    // Page arrows (top, near title, at edges)
+    const arrowY = 32;
+    const arrowW = IS_MOBILE ? 56 : 48, arrowH = IS_MOBILE ? 44 : 38;
     if (page > 0) {
       this._drawButton(ctx, 15, arrowY, arrowW, arrowH, '<', 'levels_prev', '#224466', 28);
     }
