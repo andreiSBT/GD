@@ -715,7 +715,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365 + bh + 15, bw, bh, 'MENU', 'menu', '#445566');
   }
 
-  drawCompleteScreen(ctx, attempts, theme, coins = null) {
+  drawCompleteScreen(ctx, attempts, theme, coins = null, isEditorLevel = false) {
     this.buttons = [];
 
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -786,8 +786,13 @@ export class UI {
     btnY += cbh + 15;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'RESTART', 'restart', '#CC3333');
     btnY += cbh + 15;
-    this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'LEADERBOARD', 'leaderboard', '#FFD700');
-    btnY += cbh + 15;
+    if (isEditorLevel) {
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'EDIT LEVEL', 'back_to_editor', '#CC6600');
+      btnY += cbh + 15;
+    } else {
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'LEADERBOARD', 'leaderboard', '#FFD700');
+      btnY += cbh + 15;
+    }
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'MENU', 'menu', '#445566');
 
     // Ghost saved indicator

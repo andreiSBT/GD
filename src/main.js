@@ -1766,7 +1766,7 @@ class Game {
         this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg, pauseCoins);
       } else if (this.state === COMPLETE) {
         const completeCoins = totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null;
-        this.ui.drawCompleteScreen(ctx, this.attempts, this.theme, completeCoins);
+        this.ui.drawCompleteScreen(ctx, this.attempts, this.theme, completeCoins, !!this.editorLevelData);
       }
     }
 
