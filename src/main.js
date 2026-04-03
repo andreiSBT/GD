@@ -941,6 +941,25 @@ class Game {
     }
   }
 
+  // Find the nearest solid surface below a given position (platform top or ground)
+  _findGroundY(pixelX, pixelY) {
+    let bestY = GROUND_Y - PLAYER_SIZE; // default: ground level
+    if (!this.level) return bestY;
+
+    for (const obs of this.level.obstacles) {
+      if (obs.type !== 'platform') continue;
+      // Platform must overlap horizontally with the player
+      if (pixelX + PLAYER_SIZE <= obs.x || pixelX >= obs.x + obs.w) continue;
+      // Platform top must be at or below the spawn point
+      const platTop = obs.y;
+      if (platTop < pixelY) continue;
+      // Pick the closest one below
+      const landY = platTop - PLAYER_SIZE;
+      if (landY < bestY) bestY = landY;
+    }
+    return bestY;
+  }
+
   _startLevel(levelId) {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
@@ -968,7 +987,8 @@ class Game {
     this.practiceMode = true;
     this.attempts = 1;
     const startPixelX = (levelData.startX || 0) * GRID;
-    const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    const rawStartY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    const startPixelY = this._findGroundY(startPixelX, rawStartY);
     const musicOffset = startPixelX / (SCROLL_SPEED * FPS);
     // Set start pos as a persistent checkpoint so player always respawns here
     if (levelData.startX != null || levelData.startY != null) {
@@ -1007,7 +1027,8 @@ class Game {
     this.newBestTriggered = false;
     // Use start pos if set (same as test mode)
     const startPixelX = (levelData.startX || 0) * GRID;
-    const startPixelY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    const rawStartY = levelData.startY != null ? GROUND_Y - (levelData.startY + 1) * GRID : GROUND_Y - PLAYER_SIZE;
+    const startPixelY = this._findGroundY(startPixelX, rawStartY);
     const musicOffset = startPixelX / (SCROLL_SPEED * FPS);
     if (levelData.startX != null || levelData.startY != null) {
       this.editorStartCheckpoint = {
