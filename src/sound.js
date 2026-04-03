@@ -54,9 +54,9 @@ export function getMusicVolume() { return musicVolume; }
 export function getSFXVolume() { return sfxVolume; }
 
 // Resume audio context on first user interaction
-export function resumeAudio() {
+export async function resumeAudio() {
   const c = getCtx();
-  if (c.state === 'suspended') c.resume();
+  if (c.state === 'suspended') await c.resume();
 }
 
 function playTone(freq, duration, type = 'sine', volume = 0.3, freqEnd = null) {

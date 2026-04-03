@@ -1065,16 +1065,17 @@ class Game {
     else if (sliderId === 'volume_sfx') Sound.setSFXVolume(ratio);
   }
 
-  _playEditorMusic(offset = 0) {
+  async _playEditorMusic(offset = 0) {
+    await Sound.resumeAudio();
     const musicKey = this.editor._getMusicKey();
     if (musicKey && Sound.hasCustomMusic(musicKey)) {
-      Sound.playMusic(musicKey, offset);
+      await Sound.playMusic(musicKey, offset);
     } else {
-      Sound.playMusic(this.editor.themeId, offset);
+      await Sound.playMusic(this.editor.themeId, offset);
     }
   }
 
-  _restart() {
+  async _restart() {
     Sound.stopDeath();
     Sound.stopMusic();
     this.attempts++;
@@ -1155,7 +1156,7 @@ class Game {
     }
 
     // Restart music: from checkpoint offset (practice), editor start pos, or beginning
-    Sound.resumeAudio();
+    await Sound.resumeAudio();
     let musicOffset = 0;
     if (this.practiceMode && this.lastCheckpoint && this.lastCheckpoint.musicTime) {
       musicOffset = this.lastCheckpoint.musicTime;
@@ -1165,12 +1166,12 @@ class Game {
     if (this.editorLevelData) {
       const musicKey = this.editor._getMusicKey();
       if (musicKey && Sound.hasCustomMusic(musicKey)) {
-        Sound.playMusic(musicKey, musicOffset);
+        await Sound.playMusic(musicKey, musicOffset);
       } else {
-        Sound.playMusic(this.editor.themeId, musicOffset);
+        await Sound.playMusic(this.editor.themeId, musicOffset);
       }
     } else {
-      Sound.playMusic(this.level.id, musicOffset);
+      await Sound.playMusic(this.level.id, musicOffset);
     }
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
