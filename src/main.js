@@ -1468,6 +1468,11 @@ class Game {
             this._die();
             return;
           } else if (result.type === 'land') {
+            // Don't land if player just jumped (vy strongly away from surface)
+            // This prevents collision from cancelling a jump before player.update moves the player
+            const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) ||
+                               (this.player.gravityMult < 0 && this.player.vy > 2);
+            if (jumpingOff) continue;
             // Snap player so mini/full rect aligns with platform surface
             this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
             this.player.prevY = this.player.y; // prevent interpolation jitter on landing
