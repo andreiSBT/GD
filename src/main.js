@@ -960,7 +960,7 @@ class Game {
     return bestY;
   }
 
-  _startLevel(levelId) {
+  async _startLevel(levelId) {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
     this.level = new Level(levelId);
@@ -975,6 +975,17 @@ class Game {
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
     this._levelStartTime = performance.now();
+    // Ensure official music is downloaded before first play
+    if (!Sound.hasCustomMusic(levelId)) {
+      try {
+        const ab = await downloadOfficialMusic(levelId);
+        if (ab) {
+          const blob = new Blob([ab], { type: 'audio/mpeg' });
+          const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
+          await Sound.loadCustomMusic(levelId, file);
+        }
+      } catch {}
+    }
     this._restart();
   }
 
