@@ -180,17 +180,4 @@ export const THEMES = {
     portalGravity: '#FFD700',
     portalSpeed: '#FF6600',
   },
-  10: {
-    name: 'xStep',
-    bgTop: '#001818',
-    bgBot: '#003030',
-    ground: '#004848',
-    groundLine: '#00DDDD',
-    accent: '#00DDDD',
-    player: '#44FFFF',
-    spike: '#CCFFFF',
-    platform: '#006666',
-    portalGravity: '#FFD700',
-    portalSpeed: '#FF6600',
-  },
 };

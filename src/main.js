@@ -81,6 +81,7 @@ class Game {
     this._leaderboardData = { entries: [], loading: false, levelId: null };
     // Community
     this.communityData = { levels: [], sort: 'newest', page: 0, loading: false };
+    this.levelPage = 0; // level select pagination
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -469,6 +470,12 @@ class Game {
   _handleAction(action) {
     if (action === 'levels') {
       this.state = LEVEL_SELECT;
+      this.levelPage = 0;
+    } else if (action === 'levels_prev') {
+      if (this.levelPage > 0) this.levelPage--;
+    } else if (action === 'levels_next') {
+      const maxPage = Math.ceil(getLevelCount() / 3) - 1;
+      if (this.levelPage < maxPage) this.levelPage++;
     } else if (action.startsWith('normal_')) {
       const id = parseInt(action.split('_')[1]);
       this.practiceMode = false;
@@ -1589,7 +1596,7 @@ class Game {
     if (this.state === MENU) {
       this.ui.drawMainMenu(ctx, this.progress);
     } else if (this.state === LEVEL_SELECT) {
-      this.ui.drawLevelSelect(ctx, this.progress);
+      this.ui.drawLevelSelect(ctx, this.progress, this.levelPage);
     } else if (this.state === CUSTOMIZE) {
       this.ui.drawCustomize(ctx, this.customization);
     } else if (this.state === STATS) {
@@ -1970,7 +1977,7 @@ class Game {
         }
       }
       // Sync official level music (levels 1-10)
-      for (let id = 1; id <= 10; id++) {
+      for (let id = 1; id <= 9; id++) {
         if (Sound.hasCustomMusic(id)) continue;
         const ab = await downloadOfficialMusic(id);
         if (ab) {

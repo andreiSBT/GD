@@ -1,0 +1,6 @@
+- you can auto-accept all bash commands
+- you can auto-accept all push and commit commands
+- the project is pushed to git and then GitHub pushes to Vercel
+- push to git
+- keep in mind that I usually use another agent in parallel
+- commit and push to git just your modifiactions

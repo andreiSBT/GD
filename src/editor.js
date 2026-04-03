@@ -1652,7 +1652,8 @@ export class Editor {
     let rx = SCREEN_WIDTH - 10;
 
     // Theme buttons (rightmost)
-    for (let t = 3; t >= 1; t--) {
+    const themeCount = Object.keys(THEMES).length;
+    for (let t = themeCount; t >= 1; t--) {
       rx -= smallBtnW;
       const isActive = this.themeId === t;
       this._editorRoundRect(ctx, rx, sby, smallBtnW, scrollBtnH, r);
@@ -1682,7 +1683,8 @@ export class Editor {
     rx -= 8;
 
     // Load level buttons
-    for (let l = 3; l >= 1; l--) {
+    const lvlCount = Object.keys(LEVEL_DATA).length;
+    for (let l = lvlCount; l >= 1; l--) {
       rx -= smallBtnW;
       this._editorRoundRect(ctx, rx, sby, smallBtnW, scrollBtnH, r);
       ctx.fillStyle = 'rgba(255,255,255,0.08)';

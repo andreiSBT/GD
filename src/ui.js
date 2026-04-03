@@ -163,7 +163,7 @@ export class UI {
     ctx.fillText(IS_MOBILE ? 'TAP to jump' : 'SPACE / CLICK to jump   •   ESC for menu', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
   }
 
-  drawLevelSelect(ctx, progress) {
+  drawLevelSelect(ctx, progress, page = 0) {
     this.buttons = [];
 
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
@@ -186,21 +186,26 @@ export class UI {
     ctx.restore();
 
     const count = getLevelCount();
+    const perPage = 3;
+    const maxPage = Math.ceil(count / perPage) - 1;
+    const firstIdx = page * perPage + 1;
+    const lastIdx = Math.min(firstIdx + perPage - 1, count);
+    const visibleCount = lastIdx - firstIdx + 1;
+
     const cardW = 280;
     const cardH = 340;
     const gap = 40;
-    const totalW = count * cardW + (count - 1) * gap;
+    const totalW = visibleCount * cardW + (visibleCount - 1) * gap;
     const startX = (SCREEN_WIDTH - totalW) / 2;
     const r = 14;
 
-    for (let i = 1; i <= count; i++) {
+    for (let slot = 0; slot < visibleCount; slot++) {
+      const i = firstIdx + slot;
       const theme = THEMES[i] || THEMES[1];
-      const x = startX + (i - 1) * (cardW + gap);
+      const x = startX + slot * (cardW + gap);
       const y = 95;
       const prog = progress[i] || { attempts: 0, bestProgress: 0, completed: false };
 
-      // Register entire card as clickable (normal mode)
-      // Buttons on top will take priority since they're checked later
       this.buttons.push({ x, y, w: cardW, h: cardH, id: `normal_${i}` });
 
       // Card shadow
@@ -221,7 +226,6 @@ export class UI {
       ctx.fillStyle = cgrad;
       ctx.fill();
 
-      // Inner highlight at top
       ctx.globalAlpha = 0.08;
       this._roundRect(ctx, x, y, cardW, cardH / 2, r);
       ctx.fillStyle = '#FFF';
@@ -254,12 +258,8 @@ export class UI {
       ctx.fillText(`${i}`, x + cardW / 2, y + 105);
       ctx.restore();
 
-      // Progress bar with rounded ends
-      const barX = x + 30;
-      const barY = y + 140;
-      const barW = cardW - 60;
-      const barH = 10;
-      const barR = 5;
+      // Progress bar
+      const barX = x + 30, barY = y + 140, barW = cardW - 60, barH = 10, barR = 5;
       this._roundRect(ctx, barX, barY, barW, barH, barR);
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.fill();
@@ -278,38 +278,26 @@ export class UI {
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ctx.fillText(`Attempts: ${prog.attempts}`, x + cardW / 2, y + 195);
 
-      // Coins display
+      // Coins
       const levelData = LEVEL_DATA[i];
       const totalCoins = levelData ? levelData.objects.filter(o => o.type === 'coin').length : 0;
       if (totalCoins > 0) {
         const collected = prog.bestCoins || 0;
-        ctx.fillStyle = collected >= totalCoins ? '#FFD700' : 'rgba(255,255,255,0.5)';
-        ctx.font = '14px monospace';
-        ctx.textAlign = 'center';
-        // Draw coin circles
-        const coinY = y + 218;
-        const coinSpacing = 22;
+        const coinY = y + 218, coinSpacing = 22;
         const coinStartX = x + cardW / 2 - ((totalCoins - 1) * coinSpacing) / 2;
         for (let c = 0; c < totalCoins; c++) {
           const cx = coinStartX + c * coinSpacing;
           const got = c < collected;
           ctx.beginPath();
           ctx.arc(cx, coinY, 8, 0, Math.PI * 2);
-          if (got) {
-            ctx.fillStyle = '#FFD700';
-            ctx.fill();
-            ctx.strokeStyle = '#FFA500';
-          } else {
-            ctx.fillStyle = 'rgba(255,215,0,0.15)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,215,0,0.3)';
-          }
+          ctx.fillStyle = got ? '#FFD700' : 'rgba(255,215,0,0.15)';
+          ctx.fill();
+          ctx.strokeStyle = got ? '#FFA500' : 'rgba(255,215,0,0.3)';
           ctx.lineWidth = 1.5;
           ctx.stroke();
         }
       }
 
-      // Completed badge
       if (prog.completed) {
         ctx.save();
         ctx.shadowColor = '#00FF64';
@@ -320,17 +308,30 @@ export class UI {
         ctx.restore();
       }
 
-      // Normal and Practice buttons inside card
-      const btnW = IS_MOBILE ? 115 : 110;
-      const btnH = IS_MOBILE ? 50 : 40;
-      const btnGap = 10;
+      // Buttons
+      const btnW = IS_MOBILE ? 115 : 110, btnH = IS_MOBILE ? 50 : 40, btnGap = 10;
       const btnY = y + cardH - btnH - 12;
       const btnX1 = x + (cardW - btnW * 2 - btnGap) / 2;
       const btnX2 = btnX1 + btnW + btnGap;
-
       this._drawButton(ctx, btnX1, btnY, btnW, btnH, 'NORMAL', `normal_${i}`, '#00C864', IS_MOBILE ? 17 : 15);
       this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', IS_MOBILE ? 17 : 15);
     }
+
+    // Page arrows
+    const arrowY = 95 + cardH / 2 - 25;
+    const arrowW = IS_MOBILE ? 56 : 48, arrowH = IS_MOBILE ? 56 : 50;
+    if (page > 0) {
+      this._drawButton(ctx, 15, arrowY, arrowW, arrowH, '<', 'levels_prev', '#224466', 28);
+    }
+    if (page < maxPage) {
+      this._drawButton(ctx, SCREEN_WIDTH - arrowW - 15, arrowY, arrowW, arrowH, '>', 'levels_next', '#224466', 28);
+    }
+
+    // Page indicator
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${page + 1} / ${maxPage + 1}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60);
 
     // Back button
     const backH = IS_MOBILE ? 52 : 44;

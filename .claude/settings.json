@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /Volumes/Andrei Work/Development/Geometry Dash/*.js /Volumes/Andrei Work/Development/Geometry Dash/*.html)",
+      "Bash(wc -l \"/Volumes/Andrei Work/Development/Geometry Dash/src\"/*.js)"
+    ]
+  }
+}
