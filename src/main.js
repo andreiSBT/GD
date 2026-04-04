@@ -1683,10 +1683,13 @@ class Game {
             if (piece.type === 'slope') continue;
             const prevBottom = this.player.prevY + PLAYER_SIZE;
             const prevTop = this.player.prevY;
-            const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < 8;
-            const wasBelow = this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
-            const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < 8;
-            const wasAboveInv = this.player.gravityMult < 0 && prevTop < piece.y + 4;
+            const prevRight = this.player.prevX + PLAYER_SIZE;
+            const pieceLeft = piece.x;
+            const wasHorizInside = prevRight > pieceLeft + 4;
+            const wasOnTop = wasHorizInside && this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < 8;
+            const wasBelow = wasHorizInside && this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
+            const wasOnBottom = wasHorizInside && this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < 8;
+            const wasAboveInv = wasHorizInside && this.player.gravityMult < 0 && prevTop < piece.y + 4;
             // Skip death if player is rising near a slope in this group (just jumped off)
             const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
             // Hitting from below = death (unless near a slope)
@@ -1729,11 +1732,15 @@ class Game {
             const prevTop = this.player.prevY;
             const platTop = obs.y;
             const platBottom = obs.y + obs.h;
+            // Check if player was horizontally overlapping with platform last frame
+            const prevRight = this.player.prevX + PLAYER_SIZE;
+            const platLeft = obs.x;
+            const wasHorizontallyInside = prevRight > platLeft + 4;
             // Was on top of platform, below it, or above it (not approaching from side)
-            const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < 8;
-            const wasBelow = this.player.gravityMult > 0 && prevBottom > platBottom - 4;
-            const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
-            const wasAboveInv = this.player.gravityMult < 0 && prevTop < platTop + 4;
+            const wasOnTop = wasHorizontallyInside && this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < 8;
+            const wasBelow = wasHorizontallyInside && this.player.gravityMult > 0 && prevBottom > platBottom - 4;
+            const wasOnBottom = wasHorizontallyInside && this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
+            const wasAboveInv = wasHorizontallyInside && this.player.gravityMult < 0 && prevTop < platTop + 4;
             // Hitting platform from below = death
             if (wasBelow || wasAboveInv) {
               this._die(); return;
