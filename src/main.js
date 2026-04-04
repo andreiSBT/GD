@@ -1475,13 +1475,17 @@ class Game {
           // Use the exact sub-piece bounds, not the group bounding box
           const piece = result._piece || obs;
           if (result.type === 'death') {
+            // Never die from a slope piece — slopes are safe surfaces
+            if (piece.type === 'slope') continue;
             const prevBottom = this.player.prevY + PLAYER_SIZE;
             const prevTop = this.player.prevY;
             const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < 8;
             const wasBelow = this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
             const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < 8;
             const wasAboveInv = this.player.gravityMult < 0 && prevTop < piece.y + 4;
-            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv) {
+            // Also skip death if player was on any slope in this group (just jumped off)
+            const wasOnGroupSlope = this.player.onPlatform && obs.pieces.some(p => p.type === 'slope');
+            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv || wasOnGroupSlope) {
               if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
                 if (this.player.gravityMult > 0) { this.player.y = piece.y + piece.h + miniOffset; this.player.vy = 0; }
                 else { this.player.y = piece.y - PLAYER_SIZE + miniOffset; this.player.vy = 0; }
