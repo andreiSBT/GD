@@ -55,7 +55,7 @@ function _buildAchievements() {
     { id: 'coins_15', category: 'coins', title: 'MY PRECIOUS', desc: 'Collect 15 total coins', check: (p) => _totalCoins(p) >= 15 },
     { id: 'coins_20', category: 'coins', title: 'GOLD DIGGER', desc: 'Collect 20 total coins', check: (p) => _totalCoins(p) >= 20 },
     { id: 'coins_25', category: 'coins', title: 'X MARKS THE SPOT', desc: 'Collect 25 total coins', check: (p) => _totalCoins(p) >= 25 },
-    { id: 'coins_30', category: 'coins', title: 'SHOW ME THE MONEY', desc: 'Collect 30 total coins', check: (p) => _totalCoins(p) >= 30 },
+    { id: 'coins_30', category: 'coins', title: 'I LIKE MONEY', desc: 'Collect 30 total coins', check: (p) => _totalCoins(p) >= 30 },
     { id: 'coins_40', category: 'coins', title: 'MIDAS TOUCH', desc: 'Collect 40 total coins', check: (p) => _totalCoins(p) >= 40 },
     { id: 'coins_50', category: 'coins', title: 'SCROOGE McDUCK', desc: 'Collect 50 total coins', check: (p) => _totalCoins(p) >= 50 },
     { id: 'coins_60', category: 'coins', title: 'COIN MASTER', desc: 'Collect 60 total coins', check: (p) => _totalCoins(p) >= 60 },
