@@ -1897,12 +1897,14 @@ class Game {
       );
     }
 
-    // Trail particles
-    this.particles.emitTrail(
-      this.player.x - 5,
-      this.player.y + PLAYER_SIZE / 2,
-      this.theme.accent
-    );
+    // Trail particles (skip for dashed trail style)
+    if (this.player.trailStyle !== 'dotted') {
+      this.particles.emitTrail(
+        this.player.x - 5,
+        this.player.y + PLAYER_SIZE / 2,
+        this.theme.accent
+      );
+    }
     this.particles.update(dt);
     this.shakeIntensity *= 0.9;
 
