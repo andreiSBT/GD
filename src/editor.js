@@ -13,60 +13,58 @@ const NAV_BAR_PAD = 8;
 
 const TOOL_CATEGORIES = [
   { id: 'hazards', label: 'HAZARDS', color: '#FF4444', tools: [
-    { id: 'spike', label: 'Spike', key: '1', color: '#FF4444' },
-    { id: 'saw', label: 'Saw', key: 'W', color: '#FF6666' },
+    { id: 'spike', label: 'Spike', color: '#FF4444' },
+    { id: 'saw:1', label: 'Saw S', color: '#FF6666', toolType: 'saw', subType: '1' },
+    { id: 'saw:2', label: 'Saw M', color: '#FF4444', toolType: 'saw', subType: '2' },
+    { id: 'saw:3', label: 'Saw L', color: '#FF2222', toolType: 'saw', subType: '3' },
   ]},
-  { id: 'platforms', label: 'PLATFORMS', color: '#4488FF', tools: [
-    { id: 'platform', label: 'Platform', key: '2', color: '#4488FF' },
-    { id: 'slope', label: 'Slope', key: 'S', color: '#88CCFF' },
-    { id: 'moving', label: 'Moving', key: '3', color: '#44AAFF' },
-    { id: 'transport', label: 'Transport', key: 'T', color: '#44FF88' },
+  { id: 'platforms', label: 'BLOCKS', color: '#4488FF', tools: [
+    { id: 'platform', label: 'Platform', color: '#4488FF' },
+    { id: 'slope:up', label: 'Slope ↗', color: '#88CCFF', toolType: 'slope', subType: 'up' },
+    { id: 'slope:down', label: 'Slope ↘', color: '#88CCFF', toolType: 'slope', subType: 'down' },
+    { id: 'moving', label: 'Moving', color: '#44AAFF' },
+    { id: 'transport', label: 'Transport', color: '#44FF88' },
   ]},
   { id: 'orbs', label: 'ORBS', color: '#FFD700', tools: [
-    { id: 'orb:yellow_orb', label: 'Yellow', key: '', color: '#FFD700', toolType: 'orb', subType: 'yellow_orb' },
-    { id: 'orb:pink_orb', label: 'Pink', key: '', color: '#FF69B4', toolType: 'orb', subType: 'pink_orb' },
-    { id: 'orb:dash_orb', label: 'Dash', key: '', color: '#00FF00', toolType: 'orb', subType: 'dash_orb' },
-    { id: 'orb:blue_orb', label: 'Blue', key: '', color: '#00CCFF', toolType: 'orb', subType: 'blue_orb' },
+    { id: 'orb:yellow_orb', label: 'Yellow', color: '#FFD700', toolType: 'orb', subType: 'yellow_orb' },
+    { id: 'orb:pink_orb', label: 'Pink', color: '#FF69B4', toolType: 'orb', subType: 'pink_orb' },
+    { id: 'orb:dash_orb', label: 'Dash', color: '#00FF00', toolType: 'orb', subType: 'dash_orb' },
+    { id: 'orb:blue_orb', label: 'Blue', color: '#00CCFF', toolType: 'orb', subType: 'blue_orb' },
   ]},
   { id: 'pads', label: 'PADS', color: '#FFAA00', tools: [
-    { id: 'pad:yellow_pad', label: 'Yellow', key: '', color: '#FFD700', toolType: 'pad', subType: 'yellow_pad' },
-    { id: 'pad:pink_pad', label: 'Pink', key: '', color: '#FF69B4', toolType: 'pad', subType: 'pink_pad' },
-    { id: 'pad:blue_pad', label: 'Blue', key: '', color: '#00CCFF', toolType: 'pad', subType: 'blue_pad' },
+    { id: 'pad:yellow_pad', label: 'Yellow', color: '#FFD700', toolType: 'pad', subType: 'yellow_pad' },
+    { id: 'pad:pink_pad', label: 'Pink', color: '#FF69B4', toolType: 'pad', subType: 'pink_pad' },
+    { id: 'pad:blue_pad', label: 'Blue', color: '#00CCFF', toolType: 'pad', subType: 'blue_pad' },
   ]},
   { id: 'portals', label: 'PORTALS', color: '#FF00FF', tools: [
-    { id: 'portal:gravity', label: 'Gravity', key: '', color: '#FFD700', toolType: 'portal', subType: 'gravity' },
-    { id: 'portal:speed_up', label: 'Speed+', key: '', color: '#FF6600', toolType: 'portal', subType: 'speed_up' },
-    { id: 'portal:speed_down', label: 'Speed-', key: '', color: '#00AAFF', toolType: 'portal', subType: 'speed_down' },
-    { id: 'portal:ship', label: 'Ship', key: '', color: '#FF00FF', toolType: 'portal', subType: 'ship' },
-    { id: 'portal:wave', label: 'Wave', key: '', color: '#00FFAA', toolType: 'portal', subType: 'wave' },
-    { id: 'portal:cube', label: 'Cube', key: '', color: '#00C8FF', toolType: 'portal', subType: 'cube' },
-    { id: 'portal:ball', label: 'Ball', key: '', color: '#FF8800', toolType: 'portal', subType: 'ball' },
-    { id: 'portal:mini', label: 'Mini', key: '', color: '#FF44FF', toolType: 'portal', subType: 'mini' },
-    { id: 'portal:big', label: 'Big', key: '', color: '#44AAFF', toolType: 'portal', subType: 'big' },
+    { id: 'portal:gravity', label: 'Gravity', color: '#FFD700', toolType: 'portal', subType: 'gravity' },
+    { id: 'portal:speed_up', label: 'Spd +', color: '#FF6600', toolType: 'portal', subType: 'speed_up' },
+    { id: 'portal:speed_down', label: 'Spd -', color: '#00AAFF', toolType: 'portal', subType: 'speed_down' },
+    { id: 'portal:ship', label: 'Ship', color: '#FF00FF', toolType: 'portal', subType: 'ship' },
+    { id: 'portal:wave', label: 'Wave', color: '#00FFAA', toolType: 'portal', subType: 'wave' },
+    { id: 'portal:cube', label: 'Cube', color: '#00C8FF', toolType: 'portal', subType: 'cube' },
+    { id: 'portal:ball', label: 'Ball', color: '#FF8800', toolType: 'portal', subType: 'ball' },
+    { id: 'portal:mini', label: 'Mini', color: '#FF44FF', toolType: 'portal', subType: 'mini' },
+    { id: 'portal:big', label: 'Big', color: '#44AAFF', toolType: 'portal', subType: 'big' },
   ]},
   { id: 'special', label: 'SPECIAL', color: '#00FF88', tools: [
-    { id: 'coin', label: 'Coin', key: 'C', color: '#FFD700' },
-    { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
-    { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
-    { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
-    { id: 'color_trigger', label: 'Color', key: 'R', color: '#FF66AA' },
+    { id: 'coin', label: 'Coin', color: '#FFD700' },
+    { id: 'checkpoint', label: 'Check', color: '#00FF44' },
+    { id: 'start', label: 'Start', color: '#00FF88' },
+    { id: 'end', label: 'End', color: '#00FFFF' },
+    { id: 'color_trigger', label: 'Color', color: '#FF66AA' },
   ]},
   { id: 'edit', label: 'EDIT', color: '#FFAA00', tools: [
-    { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
-    { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
+    { id: 'move', label: 'Move', color: '#FFAA00' },
+    { id: 'erase', label: 'Erase', color: '#FF0000' },
   ]},
 ];
 
-// Flat list for backwards compatibility (use toolType for compound IDs)
+// Flat list for backwards compatibility
 const TOOLS = TOOL_CATEGORIES.flatMap(c => c.tools);
 
 const SUBTYPES = {
-  orb: ['yellow_orb', 'pink_orb', 'dash_orb', 'blue_orb'],
-  pad: ['yellow_pad', 'pink_pad', 'blue_pad'],
-  portal: ['gravity', 'speed_up', 'speed_down', 'ship', 'wave', 'cube', 'ball', 'mini', 'big', 'reverse', 'forward'],
   color_trigger: ['blue', 'magenta', 'green', 'orange', 'purple', 'red', 'cyan', 'yellow', 'custom'],
-  slope: ['up', 'down'],
-  saw: ['1', '2', '3'],
 };
 
 const SUBTYPE_COLORS = {
@@ -557,15 +555,30 @@ export class Editor {
     }
 
     // Tool shortcuts
-    for (const cat of TOOL_CATEGORIES) {
-      for (const tool of cat.tools) {
-        if (e.key === tool.key || e.key === tool.key.toLowerCase()) {
-          this.selectedCategory = cat.id;
-          this.selectedTool = tool.id;
-          this.subType = null;
-          return true;
-        }
-      }
+    const keyMap = {
+      '1': { cat: 'hazards', tool: 'spike' },
+      '2': { cat: 'platforms', tool: 'platform' },
+      '3': { cat: 'platforms', tool: 'moving' },
+      '4': { cat: 'orbs', tool: 'orb', sub: 'yellow_orb' },
+      '5': { cat: 'pads', tool: 'pad', sub: 'yellow_pad' },
+      '6': { cat: 'portals', tool: 'portal', sub: 'gravity' },
+      '7': { cat: 'special', tool: 'checkpoint' },
+      '8': { cat: 'special', tool: 'end' },
+      '9': { cat: 'special', tool: 'start' },
+      'w': { cat: 'hazards', tool: 'saw', sub: '1' },
+      's': { cat: 'platforms', tool: 'slope', sub: 'up' },
+      't': { cat: 'platforms', tool: 'transport' },
+      'c': { cat: 'special', tool: 'coin' },
+      'r': { cat: 'special', tool: 'color_trigger' },
+      'm': { cat: 'edit', tool: 'move' },
+      'x': { cat: 'edit', tool: 'erase' },
+    };
+    const km = keyMap[e.key.toLowerCase()];
+    if (km) {
+      this.selectedCategory = km.cat;
+      this.selectedTool = km.tool;
+      this.subType = km.sub || null;
+      return true;
     }
 
     if (e.key === 'ArrowLeft') { this.cameraX = Math.max(0, this.cameraX - GRID * 4); return true; }
@@ -1512,11 +1525,7 @@ export class Editor {
       ctx.fillStyle = isActive ? '#FFF' : '#999';
       ctx.font = `bold ${Math.min(11, Math.max(9, btnW / 5))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(tool.label, bx + btnW / 2, btnY + 13);
-
-      ctx.fillStyle = isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)';
-      ctx.font = '8px monospace';
-      ctx.fillText(tool.key, bx + btnW / 2, btnY + 24);
+      ctx.fillText(tool.label, bx + btnW / 2, btnY + 18);
 
       this.buttons.push({ id: 'tool_' + tool.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
