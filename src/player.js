@@ -433,24 +433,20 @@ export class Player {
     ctx.fillStyle = trailColor;
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
-      // Draw connected dash segments with gaps
-      const dashOn = 5, dashOff = 3, cycle = dashOn + dashOff;
-      for (let i = 0; i < this.trail.length; i++) {
-        if (i % cycle >= dashOn) continue;
+      // Draw thin dashes with equal gaps: - - - -
+      const dashLen = 12, gapLen = 10;
+      const h = 3;
+      let dx = 0;
+      for (let i = this.trail.length - 1; i >= 0; i--) {
         const t = this.trail[i];
-        const alpha = (i / this.trail.length) * 0.4;
-        const sz = 3 + (i / this.trail.length) * 6;
         const tsx = t.x - cameraX + PLAYER_X_OFFSET;
-        // Connect to next trail point in same dash segment
-        const nextI = i + 1;
-        let w = sz;
-        if (nextI < this.trail.length && nextI % cycle < dashOn) {
-          const nt = this.trail[nextI];
-          const ntsx = nt.x - cameraX + PLAYER_X_OFFSET;
-          w = Math.max(sz, Math.abs(ntsx - tsx) + 1);
-        }
+        const prevX = i > 0 ? this.trail[i - 1].x - cameraX + PLAYER_X_OFFSET : tsx;
+        dx += Math.abs(tsx - prevX);
+        const pos = dx % (dashLen + gapLen);
+        if (pos >= dashLen) continue;
+        const alpha = (i / this.trail.length) * 0.5;
         ctx.globalAlpha = alpha;
-        ctx.fillRect(tsx, t.y - sz / 2, w, sz);
+        ctx.fillRect(tsx, t.y - h / 2, 2, h);
       }
     } else {
       for (let i = 0; i < this.trail.length; i++) {
