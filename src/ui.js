@@ -1759,7 +1759,9 @@ export class UI {
         ctx.fillStyle = '#CCFFEE';
         ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(lv.name.slice(0, 30), margin + 16, cy + 26);
+        const maxChars = IS_MOBILE ? 18 : 28;
+        const dispName = lv.name.length > maxChars ? lv.name.slice(0, maxChars) + '...' : lv.name;
+        ctx.fillText(dispName, margin + 16, cy + 26);
 
         // Creator + stats on second line
         ctx.fillStyle = '#669988';
@@ -1870,15 +1872,25 @@ export class UI {
       ctx.fillText('No scores yet — be the first!', SCREEN_WIDTH / 2, 300);
     } else {
       // Column headers
+      // Responsive column layout
+      const margin = Math.round(SCREEN_WIDTH * 0.1);
+      const tableW = SCREEN_WIDTH - margin * 2;
+      const col1 = margin;                    // #
+      const col2 = margin + 40;               // PLAYER
+      const col3 = margin + tableW * 0.65;    // ATTEMPTS
+      const col4 = margin + tableW - 10;      // TIME (right-aligned)
+      const rowBgX = margin - 10;
+      const rowBgW = tableW + 20;
+
       const hdrY = 100;
       ctx.fillStyle = '#998866';
       ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText('#', 200, hdrY);
-      ctx.fillText('PLAYER', 240, hdrY);
-      ctx.fillText('ATTEMPTS', 600, hdrY);
+      ctx.fillText('#', col1, hdrY);
+      ctx.fillText('PLAYER', col2, hdrY);
+      ctx.fillText('ATTEMPTS', col3, hdrY);
       ctx.textAlign = 'right';
-      ctx.fillText('TIME', 950, hdrY);
+      ctx.fillText('TIME', col4, hdrY);
 
       const rowH = 32;
       const listStartY = 128;
@@ -1890,6 +1902,7 @@ export class UI {
       ctx.rect(0, listStartY - 16, SCREEN_WIDTH, visibleH + 16);
       ctx.clip();
 
+      const maxNameLen = IS_MOBILE ? 14 : 22;
       for (let i = 0; i < data.entries.length; i++) {
         const e = data.entries[i];
         const ry = listStartY + i * rowH - this.scrollY;
@@ -1897,22 +1910,23 @@ export class UI {
         const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
         const color = i < 3 ? rankColors[i] : '#AABB99';
 
-        // Alternating row bg
         if (i % 2 === 0) {
           ctx.fillStyle = 'rgba(255,215,0,0.03)';
-          ctx.fillRect(180, ry - 16, 790, 30);
+          ctx.fillRect(rowBgX, ry - 16, rowBgW, 30);
         }
 
+        const name = e.username || 'Anonymous';
+        const displayName = name.length > maxNameLen ? name.slice(0, maxNameLen) + '...' : name;
         ctx.fillStyle = color;
         ctx.font = i < 3 ? 'bold 15px monospace' : '14px monospace';
         ctx.textAlign = 'left';
-        ctx.fillText(String(i + 1), 200, ry);
-        ctx.fillText(e.username || 'Anonymous', 240, ry);
-        ctx.fillText(String(e.attempts), 600, ry);
+        ctx.fillText(String(i + 1), col1, ry);
+        ctx.fillText(displayName, col2, ry);
+        ctx.fillText(String(e.attempts), col3, ry);
         ctx.textAlign = 'right';
         const timeMs = e.completion_time_ms;
         const timeFmt = timeMs ? `${(timeMs / 1000).toFixed(1)}s` : '--';
-        ctx.fillText(timeFmt, 950, ry);
+        ctx.fillText(timeFmt, col4, ry);
       }
       ctx.restore();
     }

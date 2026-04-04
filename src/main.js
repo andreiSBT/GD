@@ -1983,15 +1983,16 @@ class Game {
       const toast = this._achievementToasts[i];
       const t = toast.timer / toast.duration;
       // Slide in for first 15%, hold, slide out for last 15%
+      const baseY = 65; // below pause button
       let slideY;
       if (t < 0.15) {
-        slideY = -70 + (70 + 12 + i * 70) * (t / 0.15);
+        slideY = -70 + (70 + baseY + i * 70) * (t / 0.15);
       } else if (t > 0.85) {
-        slideY = (12 + i * 70) - (70 + 12 + i * 70) * ((t - 0.85) / 0.15);
+        slideY = (baseY + i * 70) - (70 + baseY + i * 70) * ((t - 0.85) / 0.15);
       } else {
-        slideY = 12 + i * 70;
+        slideY = baseY + i * 70;
       }
-      const toastW = 340;
+      const toastW = IS_MOBILE ? 280 : 340;
       const toastH = 56;
       const tx = SCREEN_WIDTH / 2 - toastW / 2;
       this.ctx.save();
