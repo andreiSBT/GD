@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 6,
-  name: "Can't Let Go",
+  name: 'Level 6',
   speed: 1.0,
   objects: [
     // === SECTION 1: Aggressive opening (0-100) ===

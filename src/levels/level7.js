@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 7,
-  name: 'Jumper',
+  name: 'Level 7',
   speed: 1.0,
   objects: [
     // === SECTION 1: Fast-paced opening (0-100) ===

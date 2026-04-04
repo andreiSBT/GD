@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 4,
-  name: 'Dry Out',
+  name: 'Level 4',
   speed: 1.0,
   objects: [
     // === SECTION 1: Slopes intro (0-110) ===

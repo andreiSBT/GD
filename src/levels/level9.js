@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 9,
-  name: 'Cycles',
+  name: 'Level 9',
   speed: 1.0,
   objects: [
     // === SECTION 1: Relentless opening (0-100) ===

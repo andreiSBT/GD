@@ -108,7 +108,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   4: {
-    name: 'Dry Out',
+    name: 'Level 4',
     bgTop: '#2A1400',
     bgBot: '#5A3000',
     ground: '#704000',
@@ -121,7 +121,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   5: {
-    name: 'Base After Base',
+    name: 'Level 5',
     bgTop: '#0A0028',
     bgBot: '#2A0060',
     ground: '#3A0080',
@@ -134,7 +134,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   6: {
-    name: "Can't Let Go",
+    name: 'Level 6',
     bgTop: '#1A0000',
     bgBot: '#4A0000',
     ground: '#660000',
@@ -147,7 +147,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   7: {
-    name: 'Jumper',
+    name: 'Level 7',
     bgTop: '#001A1A',
     bgBot: '#004040',
     ground: '#006060',
@@ -160,7 +160,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   8: {
-    name: 'Time Machine',
+    name: 'Level 8',
     bgTop: '#1A1400',
     bgBot: '#3A2A00',
     ground: '#554400',
@@ -173,7 +173,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   9: {
-    name: 'Cycles',
+    name: 'Level 9',
     bgTop: '#0A0018',
     bgBot: '#1A0038',
     ground: '#280050',

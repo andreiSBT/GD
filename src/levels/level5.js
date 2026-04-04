@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 5,
-  name: 'Base After Base',
+  name: 'Level 5',
   speed: 1.0,
   objects: [
     // === SECTION 1: Intense opening (0-100) ===

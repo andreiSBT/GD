@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 8,
-  name: 'Time Machine',
+  name: 'Level 8',
   speed: 1.0,
   objects: [
     // === SECTION 1: Brutal opening (0-100) ===
