@@ -2034,15 +2034,16 @@ class Game {
 
       // Track new best silently during gameplay (only normal mode, only if there's a previous record to beat)
       if ((this.state === PLAYING || this.state === EDITOR_TESTING) && !this.practiceMode && !this.editorLevelData) {
-        if (this.previousBest < 1 && progress > this.previousBest) {
+        if (this.previousBest < 1 && progress > this.previousBest && Math.round(progress * 100) > 0) {
           this.newBestTriggered = true;
+          this.newBestValue = progress;
         }
       }
 
       // Show NEW BEST! only on death screen, never in practice mode
       const showNewBest = this.state === DEAD && this.newBestTriggered && !this.practiceMode;
       const totalCoins = this.level ? Math.min(3, this.level.totalCoins) : 0;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null);
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0);
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;

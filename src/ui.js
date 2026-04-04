@@ -631,7 +631,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -753,7 +753,7 @@ export class UI {
       ctx.shadowBlur = 10;
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 22px monospace';
-      ctx.fillText(`${Math.floor(progress * 100)}%`, 0, 18);
+      ctx.fillText(`${Math.round(newBestValue * 100)}%`, 0, 18);
 
       ctx.restore();
     }
@@ -797,7 +797,7 @@ export class UI {
     ctx.fillStyle = isNewBest ? '#FFD700' : 'rgba(255,255,255,0.9)';
     ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.floor(progress * 100)}%`, SCREEN_WIDTH / 2, 295);
+    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, 295);
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = '16px monospace';
     ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 325);
