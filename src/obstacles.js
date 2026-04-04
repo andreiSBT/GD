@@ -882,7 +882,7 @@ export class Portal {
     clearGlow(ctx);
     const icons = {
       gravity: '\u2195', speed_up: '\u25B6\u25B6', speed_down: '\u25B6',
-      ship: '\u2708', wave: '\u223F', cube: '\u25A0', ball: '\u25CF',
+      ship: '\u223F', wave: '\u2708', cube: '\u25A0', ball: '\u25CF',
       mini: '\u25BC', big: '\u25B2', reverse: '\u21D0', forward: '\u21D2',
     };
     const icon = icons[this.portalType] || '?';
