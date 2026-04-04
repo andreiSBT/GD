@@ -54,7 +54,7 @@ function _buildAchievements() {
     { id: 'attempts_500', title: 'DEDICATED', desc: 'Make 500 total attempts', check: (p) => _totalAttempts(p) >= 500 },
     { id: 'attempts_1000', title: 'UNSTOPPABLE', desc: 'Make 1000 total attempts', check: (p) => _totalAttempts(p) >= 1000 },
     // Progress
-    { id: 'half_1', title: 'HALFWAY THERE', desc: 'Reach 50% on any level', check: (p) => Object.values(p).some(l => l.bestProgress >= 0.5) },
+    { id: 'half_1', title: 'HALFWAY THERE', desc: 'Reach 50% on any level', check: (p) => Object.values(p).some(l => l.bestProgress >= 0.5 && (l.attempts || 0) >= 2) },
     { id: 'ninety', title: 'SO CLOSE', desc: 'Reach 90% without completing', check: (p) => Object.values(p).some(l => !l.completed && l.bestProgress >= 0.9) },
   );
 
