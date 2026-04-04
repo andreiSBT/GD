@@ -1626,9 +1626,19 @@ export class UI {
         ctx.fillText(`♥ ${lv.likes}`, margin + cardW / 2 + 80, cy + 26);
         ctx.fillText(`◆ ${lv.objectCount || '?'} obj`, margin + cardW / 2, cy + 48);
 
+        // Delete button (owner or admin only)
+        const canDelete = data.isAdmin || (data.currentUserId && lv.userId === data.currentUserId);
+        const delBtnW = canDelete ? 44 : 0;
+        const rightPad = canDelete ? delBtnW + 8 : 0;
+
         // Play button (right side)
-        const pbW = 80, pbH = 36, pbX = margin + cardW - pbW - 12, pbY = cy + (cardH - pbH) / 2;
+        const pbW = 80, pbH = 36, pbX = margin + cardW - pbW - 12 - rightPad, pbY = cy + (cardH - pbH) / 2;
         this._drawButton(ctx, pbX, pbY, pbW, pbH, 'PLAY', 'community_play_' + i, '#00CC88', 14);
+
+        if (canDelete) {
+          const dbX = margin + cardW - delBtnW - 12, dbY = cy + (cardH - pbH) / 2;
+          this._drawButton(ctx, dbX, dbY, delBtnW, pbH, '✕', 'community_delete_' + i, '#883333', 16);
+        }
       }
       ctx.restore();
     }

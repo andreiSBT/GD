@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 
@@ -641,6 +641,16 @@ class Game {
         this.particles.clear();
         this.state = PLAYING;
         Sound.playMusic(level.themeId);
+      }
+    } else if (action.startsWith('community_delete_')) {
+      const idx = parseInt(action.replace('community_delete_', ''));
+      const level = this.communityData.levels[idx];
+      if (level) {
+        deletePublishedLevel(level.id).then(res => {
+          if (!res.error) {
+            this.communityData.levels.splice(idx, 1);
+          }
+        });
       }
     } else if (action === 'leaderboard') {
       if (this.level) {
@@ -1483,9 +1493,9 @@ class Game {
             const wasBelow = this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
             const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < 8;
             const wasAboveInv = this.player.gravityMult < 0 && prevTop < piece.y + 4;
-            // Also skip death if player was on any slope in this group (just jumped off)
-            const wasOnGroupSlope = this.player.onPlatform && obs.pieces.some(p => p.type === 'slope');
-            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv || wasOnGroupSlope) {
+            // Skip death if player is rising near a slope in this group (just jumped off)
+            const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
+            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv || risingNearSlope) {
               if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
                 if (this.player.gravityMult > 0) { this.player.y = piece.y + piece.h + miniOffset; this.player.vy = 0; }
                 else { this.player.y = piece.y - PLAYER_SIZE + miniOffset; this.player.vy = 0; }
@@ -1754,6 +1764,9 @@ class Game {
     } else if (this.state === FRIENDS) {
       this.ui.drawFriends(ctx, this.friendsData);
     } else if (this.state === COMMUNITY) {
+      const user = getAuthUser();
+      this.communityData.currentUserId = user ? user.id : null;
+      this.communityData.isAdmin = isAdmin();
       this.ui.drawCommunity(ctx, this.communityData);
     } else if (this.state === LEADERBOARD) {
       this.ui.drawLeaderboard(ctx, this._leaderboardData);

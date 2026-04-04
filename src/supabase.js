@@ -600,11 +600,22 @@ export async function getPublishedLevels(sort = 'newest', page = 0, limit = 12) 
     if (error || !data) return [];
     return data.map(r => ({
       id: r.id, name: r.name, creator: r.creator_name || 'Unknown',
+      userId: r.user_id,
       themeId: r.theme_id, objects: r.objects,
       objectCount: r.object_count, plays: r.plays || 0,
       likes: r.likes || 0, createdAt: r.created_at,
     }));
   } catch { return []; }
+}
+
+export async function deletePublishedLevel(levelId) {
+  const client = getClient();
+  if (!client) return { error: 'Not connected' };
+  try {
+    const { error } = await client.from('published_levels').delete().eq('id', levelId);
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch (e) { return { error: e.message }; }
 }
 
 export async function incrementPlays(levelId) {
