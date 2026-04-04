@@ -646,12 +646,20 @@ class Game {
       const idx = parseInt(action.replace('community_delete_', ''));
       const level = this.communityData.levels[idx];
       if (level) {
-        deletePublishedLevel(level.id).then(res => {
+        this.communityData.confirmDelete = { idx, id: level.id, name: level.name };
+      }
+    } else if (action === 'community_confirm_yes') {
+      const cd = this.communityData.confirmDelete;
+      if (cd) {
+        deletePublishedLevel(cd.id).then(res => {
           if (!res.error) {
-            this.communityData.levels.splice(idx, 1);
+            this.communityData.levels.splice(cd.idx, 1);
           }
         });
+        this.communityData.confirmDelete = null;
       }
+    } else if (action === 'community_confirm_no') {
+      this.communityData.confirmDelete = null;
     } else if (action === 'leaderboard') {
       if (this.level) {
         this._leaderboardData = { entries: [], loading: true, levelId: this.level.id };

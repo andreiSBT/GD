@@ -1645,6 +1645,52 @@ export class UI {
 
     const backH = IS_MOBILE ? 52 : 44;
     this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, 130, backH, 'BACK', 'back_community', '#445566', 18);
+
+    // Delete confirmation popup
+    if (data.confirmDelete) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+      const dlgW = Math.min(400, SCREEN_WIDTH - 40);
+      const dlgH = 180;
+      const dlgX = (SCREEN_WIDTH - dlgW) / 2;
+      const dlgY = (SCREEN_HEIGHT - dlgH) / 2;
+
+      // Dialog bg
+      const dlgGrad = ctx.createLinearGradient(dlgX, dlgY, dlgX, dlgY + dlgH);
+      dlgGrad.addColorStop(0, '#1a1a30');
+      dlgGrad.addColorStop(1, '#0e0e20');
+      ctx.fillStyle = dlgGrad;
+      this._roundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,80,80,0.4)';
+      ctx.lineWidth = 2;
+      this._roundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+      ctx.stroke();
+
+      // Title
+      ctx.fillStyle = '#FF6666';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('DELETE LEVEL?', SCREEN_WIDTH / 2, dlgY + 40);
+
+      // Level name
+      const dName = (data.confirmDelete.name || 'Untitled');
+      const dDisplay = dName.length > 25 ? dName.slice(0, 22) + '...' : dName;
+      ctx.fillStyle = '#AAB';
+      ctx.font = '14px monospace';
+      ctx.fillText('"' + dDisplay + '"', SCREEN_WIDTH / 2, dlgY + 68);
+      ctx.fillStyle = '#778';
+      ctx.font = '12px monospace';
+      ctx.fillText('This cannot be undone', SCREEN_WIDTH / 2, dlgY + 90);
+
+      // Buttons
+      const cbW = (dlgW - 30) / 2;
+      const cbH = 44;
+      const cbY = dlgY + dlgH - cbH - 18;
+      this._drawButton(ctx, dlgX + 10, cbY, cbW, cbH, 'CANCEL', 'community_confirm_no', '#445566', 16);
+      this._drawButton(ctx, dlgX + dlgW - cbW - 10, cbY, cbW, cbH, 'DELETE', 'community_confirm_yes', '#CC3333', 16);
+    }
   }
 
   drawLeaderboard(ctx, data) {
