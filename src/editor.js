@@ -567,6 +567,14 @@ export class Editor {
     this.isTouchScrolling = false;
     this.touchMoved = false;
 
+    // Browse screen: track touch for scroll
+    if (this.browsing) {
+      this._browseScrollStartY = y;
+      this._browseScrollStart = this.browseScroll;
+      this._browseTouchMoved = false;
+      return;
+    }
+
     // Nav bar touch
     const navBtn = this.buttons.find(b => b.id === 'navbar');
     if (navBtn && x >= navBtn.x && x <= navBtn.x + navBtn.w && y >= navBtn.y && y <= navBtn.y + navBtn.h) {
@@ -618,6 +626,14 @@ export class Editor {
   }
 
   handleTouchMove(x, y) {
+    // Browse screen scroll
+    if (this.browsing) {
+      const dy = this._browseScrollStartY - y;
+      if (Math.abs(dy) > 5) this._browseTouchMoved = true;
+      this.browseScroll = Math.max(0, this._browseScrollStart + dy);
+      return;
+    }
+
     // Nav bar dragging
     if (this.navDragging) {
       this._navBarSeek(x);
@@ -701,6 +717,14 @@ export class Editor {
 
   handleTouchEnd() {
     this.touchPaintPending = false;
+
+    // Browse screen: tap only if didn't scroll
+    if (this.browsing) {
+      if (!this._browseTouchMoved) {
+        this._handleBrowseClick(this.touchStartX, this.touchStartY);
+      }
+      return;
+    }
 
     if (this.navDragging) {
       this.navDragging = false;

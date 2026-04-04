@@ -358,14 +358,19 @@ class Game {
       }
 
       // Start scroll tracking for scrollable screens
-      if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state)) {
+      const isScrollable = [FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state);
+      if (isScrollable) {
         this.ui.handleScrollTouchStart(y);
+        this._scrollTouchX = x;
+        this._scrollTouchY = y;
       }
 
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
           this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS ||
           this.state === COMMUNITY || this.state === LEADERBOARD) {
+        // For scrollable screens, defer button clicks to touchend (to avoid triggering on swipe)
+        if (isScrollable) return;
         const action = this.ui.handleClick(x, y);
         if (action) {
           // Volume slider interaction (touch)
@@ -429,6 +434,18 @@ class Game {
       e.preventDefault();
       if (this._draggingSlider) {
         this._draggingSlider = null;
+        return;
+      }
+      // Scrollable screens: process tap only if user didn't scroll
+      if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state) && !this.ui.isScrollDragging) {
+        const action = this.ui.handleClick(this._scrollTouchX, this._scrollTouchY);
+        if (action) {
+          Sound.playSelect();
+          this._handleAction(action);
+        }
+        return;
+      }
+      if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state)) {
         return;
       }
       // Only forward to editor if the touch STARTED in editor state
