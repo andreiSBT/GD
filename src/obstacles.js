@@ -794,78 +794,86 @@ export class Portal {
     this.animTimer += 0.04;
 
     const portalColors = {
-      gravity: '#FFD700',
-      speed_up: '#FF6600',
-      speed_down: '#00AAFF',
-      ship: '#FF00FF',
-      wave: '#00FFAA',
-      cube: '#00C8FF',
-      ball: '#FF8800',
-      mini: '#FF44FF',
-      big: '#44AAFF',
-      reverse: '#00FFFF',
-      forward: '#44FF44',
+      gravity: ['#FFD700', '#FF8800'],
+      speed_up: ['#FF6600', '#FF2200'],
+      speed_down: ['#00AAFF', '#0055FF'],
+      ship: ['#FF00FF', '#8800AA'],
+      wave: ['#00FFAA', '#008866'],
+      cube: ['#00C8FF', '#0066CC'],
+      ball: ['#FF8800', '#CC4400'],
+      mini: ['#FF44FF', '#AA00AA'],
+      big: ['#44AAFF', '#2266CC'],
+      reverse: ['#00FFFF', '#008888'],
+      forward: ['#44FF44', '#228822'],
     };
-    const color = portalColors[this.portalType] || '#FFD700';
+    const [color1, color2] = portalColors[this.portalType] || ['#FFD700', '#FF8800'];
 
     const cx = sx + this.w / 2;
-    const cy = sy + this.h / 2;
-    const rx = this.w / 2 + 8;
-    const ry = this.h / 2;
+    const barW = 10;
+    const barGap = 18;
+    const barH = this.h - 10;
+    const barTop = sy + 5;
+    const leftX = cx - barGap / 2 - barW;
+    const rightX = cx + barGap / 2;
 
     ctx.save();
-    ctx.globalAlpha = this.activated ? 0.2 : 1;
+    ctx.globalAlpha = this.activated ? 0.15 : 1;
 
-    // Outer glow
-    drawNeonGlow(ctx, color, 18);
+    // Glow behind bars
+    drawNeonGlow(ctx, color1, 20);
 
-    // Rotating particles around portal
-    for (let i = 0; i < 6; i++) {
-      const angle = this.animTimer * 2 + (i * Math.PI * 2) / 6;
-      const px = cx + Math.cos(angle) * rx;
-      const py = cy + Math.sin(angle) * ry * 0.6;
-      ctx.fillStyle = color;
-      ctx.globalAlpha = (this.activated ? 0.1 : 0.6) * (0.5 + Math.sin(this.animTimer + i) * 0.5);
-      ctx.fillRect(px - 2, py - 2, 4, 4);
-    }
-    ctx.globalAlpha = this.activated ? 0.2 : 1;
-
-    // Main ellipse
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
+    // Left bar — gradient top to bottom
+    const grad1 = ctx.createLinearGradient(0, barTop, 0, barTop + barH);
+    grad1.addColorStop(0, color1);
+    grad1.addColorStop(1, color2);
+    ctx.fillStyle = grad1;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Inner fill gradient
-    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, ry);
-    grad.addColorStop(0, color);
-    grad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = grad;
-    ctx.globalAlpha = this.activated ? 0.03 : 0.12;
+    ctx.roundRect(leftX, barTop, barW, barH, 5);
     ctx.fill();
-    ctx.globalAlpha = this.activated ? 0.2 : 1;
 
-    // Icon
+    // Right bar — gradient bottom to top (mirrored)
+    const grad2 = ctx.createLinearGradient(0, barTop, 0, barTop + barH);
+    grad2.addColorStop(0, color2);
+    grad2.addColorStop(1, color1);
+    ctx.fillStyle = grad2;
+    ctx.beginPath();
+    ctx.roundRect(rightX, barTop, barW, barH, 5);
+    ctx.fill();
+
     clearGlow(ctx);
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const icons = {
-      gravity: '↕',
-      speed_up: '▶▶',
-      speed_down: '▶',
-      ship: '🚀',
-      wave: '〰',
-      cube: '■',
-      ball: '●',
-      mini: '▼',
-      big: '▲',
-      reverse: '⇐',
-      forward: '⇒',
-    };
-    ctx.fillText(icons[this.portalType] || '?', cx, cy);
+
+    // Bright edge highlights on bars
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.roundRect(leftX, barTop, 3, barH, [3, 0, 0, 3]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.roundRect(rightX + barW - 3, barTop, 3, barH, [0, 3, 3, 0]);
+    ctx.fill();
+
+    // Animated energy particles between bars
+    for (let i = 0; i < 4; i++) {
+      const t = (this.animTimer * 1.5 + i * 0.25) % 1;
+      const py = barTop + t * barH;
+      const px = cx + Math.sin(this.animTimer * 3 + i * 1.5) * (barGap / 2 - 2);
+      const alpha = (this.activated ? 0.1 : 0.5) * (1 - Math.abs(t - 0.5) * 2);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = color1;
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = this.activated ? 0.15 : 1;
+
+    // Top and bottom caps (horizontal bars connecting the two pillars)
+    ctx.fillStyle = color1;
+    ctx.beginPath();
+    ctx.roundRect(leftX - 2, barTop - 4, barW * 2 + barGap + 4, 5, 3);
+    ctx.fill();
+    ctx.fillStyle = color2;
+    ctx.beginPath();
+    ctx.roundRect(leftX - 2, barTop + barH - 1, barW * 2 + barGap + 4, 5, 3);
+    ctx.fill();
 
     ctx.restore();
   }
