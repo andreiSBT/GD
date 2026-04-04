@@ -2180,7 +2180,7 @@ class Game {
       updateView();
     });
 
-    document.getElementById('acc-secrets')?.addEventListener('click', () => {
+    document.getElementById('acc-avatar')?.addEventListener('click', () => {
       overlay.style.display = 'none';
       this.ui.resetScroll();
       this.secretsData.message = null;

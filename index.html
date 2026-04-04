@@ -69,11 +69,10 @@
           </div>
         </div>
         <div id="account-logged-in" style="display:none;">
-          <div class="acc-avatar">&#9733;</div>
+          <div id="acc-avatar" class="acc-avatar" style="cursor:pointer;">&#9733;</div>
           <p style="color:#667788; font-size:13px; margin-bottom:4px; letter-spacing:2px; text-transform:uppercase;">Logged in as</p>
           <p id="acc-display-name" class="acc-username"></p>
           <div class="acc-sync-badge">&#x2601; SYNCED ACROSS DEVICES</div>
-          <button id="acc-secrets" class="acc-btn acc-btn-secret">SECRET CODES</button>
           <button id="acc-logout" class="acc-btn acc-btn-red">LOG OUT</button>
         </div>
         <button id="acc-close" class="acc-btn acc-btn-back">BACK</button>
@@ -167,12 +166,6 @@
         box-shadow: 0 4px 16px rgba(200,50,50,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
       }
       .acc-btn-red:hover { box-shadow: 0 6px 24px rgba(200,50,50,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
-      .acc-btn-secret {
-        background: linear-gradient(180deg, #AA0044 0%, #770033 100%);
-        box-shadow: 0 4px 16px rgba(170,0,68,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
-        letter-spacing: 2px;
-      }
-      .acc-btn-secret:hover { box-shadow: 0 6px 24px rgba(170,0,68,0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
       .acc-btn-back {
         background: rgba(255,255,255,0.06);
         border: 1px solid rgba(255,255,255,0.1);
