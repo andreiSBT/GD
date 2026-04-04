@@ -1454,6 +1454,21 @@ export class Slope {
     const bbox = { x: this.x, y: this.y, w: this.w, h: this.h };
     if (!rectsOverlap(playerRect, bbox)) return null;
 
+    // Check vertical wall collision (the tall flat side of the slope)
+    // 'up' slope: low-left to high-right → tall wall on RIGHT
+    // 'down' slope: high-left to low-right → tall wall on LEFT
+    // Player always approaches from the left, so 'down' slope wall is hit first
+    const playerRight = playerRect.x + playerRect.w;
+    const playerBottom_ = playerRect.y + playerRect.h;
+    if (this.direction === 'down') {
+      // Tall wall on the left side — player hits this coming from the left
+      // Wall spans from this.y to this.y + this.h at x = this.x
+      if (playerRight > this.x && playerRight < this.x + 14 &&
+          playerBottom_ > this.y + 6 && playerRect.y < this.y + this.h - 6) {
+        return { type: 'death' };
+      }
+    }
+
     // Compute surface Y at player's center X
     const playerCenterX = playerRect.x + playerRect.w / 2;
     const surfaceY = this.getSurfaceY(playerCenterX);
