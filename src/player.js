@@ -145,6 +145,8 @@ export class Player {
 
   setMode(mode) {
     this.mode = mode;
+    this.rotation = 0;
+    this.targetRotation = 0;
     if (mode === MODE_SHIP) {
       this.vy = 0;
     } else if (mode === MODE_BALL) {
