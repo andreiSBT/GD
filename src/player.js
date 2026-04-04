@@ -106,7 +106,8 @@ export class Player {
       // Ball: click flips gravity with gentle arc (~55 degrees)
       if (this.grounded || this.coyoteCounter > 0) {
         this.gravityMult *= -1;
-        this.vy = 0;
+        this.vy = -2 * this.gravityMult;
+        this.y += -2 * this.gravityMult;
         this.flipEaseTimer = 12;
         this.grounded = false;
         this.onPlatform = false;
@@ -134,7 +135,8 @@ export class Player {
       this.dashTimer = 120; // max dash duration (safety limit)
     } else if (type === 'blue_orb' || type === 'blue_pad') {
       this.gravityMult *= -1;
-      this.vy = 0;
+      this.vy = -2 * this.gravityMult;
+      this.y += -2 * this.gravityMult;
       this.flipEaseTimer = 12;
     } else if (type === 'yellow_pad') {
       this.vy = PAD_JUMP_VEL * this.gravityMult;
