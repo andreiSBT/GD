@@ -102,10 +102,10 @@ export class Player {
       }
       return false;
     } else if (this.mode === MODE_BALL) {
-      // Ball: click flips gravity with a small impulse for smooth transition
+      // Ball: click flips gravity with gentle arc (~55 degrees)
       if (this.grounded || this.coyoteCounter > 0) {
         this.gravityMult *= -1;
-        this.vy = -5 * this.gravityMult;
+        this.vy = -3 * this.gravityMult;
         this.grounded = false;
         this.onPlatform = false;
         this.platformRef = null;
