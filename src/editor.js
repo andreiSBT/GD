@@ -490,7 +490,11 @@ export class Editor {
   handleKeyDown(e) {
     if (this.browsing) {
       if (e.key === 'Escape') {
-        if (this.onBack) this.onBack();
+        if (this.browseFromMenu) {
+          if (this.onBack) this.onBack();
+        } else {
+          this.browsing = false;
+        }
       }
       return true;
     }
@@ -1240,6 +1244,7 @@ export class Editor {
 
   showBrowser(fromMenu = false) {
     this.browsing = true;
+    this.browseFromMenu = fromMenu;
     this.browseScroll = 0;
     this.buttons = [];
     if (fromMenu) this.currentSlot = null;
@@ -2501,7 +2506,11 @@ export class Editor {
         if (btn.id === 'browse_new') {
           this._newLevel();
         } else if (btn.id === 'browse_back') {
-          if (this.onBack) this.onBack();
+          if (this.browseFromMenu) {
+            if (this.onBack) this.onBack();
+          } else {
+            this.browsing = false;
+          }
         } else if (btn.id.startsWith('browse_play_')) {
           const slotId = btn.id.replace('browse_play_', '');
           if (this.loadFromSlot(slotId)) {
