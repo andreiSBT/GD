@@ -173,10 +173,6 @@ export class UI {
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'COMMUNITY', 'community', '#00AA88');
 
-    // Secrets button
-    by += gap;
-    this._drawButton(ctx, bx, by, bw, bh, 'SECRETS', 'secrets', '#AA0044');
-
     // Account button (top right)
     const username = getUsername();
     const accH = IS_MOBILE ? 48 : 38;

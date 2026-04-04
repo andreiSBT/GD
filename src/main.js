@@ -620,10 +620,6 @@ class Game {
         this.communityData.levels = levels;
         this.communityData.loading = false;
       });
-    } else if (action === 'secrets') {
-      this.ui.resetScroll();
-      this.secretsData.message = null;
-      this.state = SECRETS;
     } else if (action === 'back_secrets') {
       this._hideSecretsInput();
       this.state = MENU;
@@ -2182,6 +2178,13 @@ class Game {
       await signOut();
       this._clearLocalData();
       updateView();
+    });
+
+    document.getElementById('acc-secrets')?.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      this.ui.resetScroll();
+      this.secretsData.message = null;
+      this.state = SECRETS;
     });
 
     document.getElementById('acc-close').addEventListener('click', () => {
