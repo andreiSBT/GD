@@ -412,12 +412,38 @@ export class UI {
     const cardW = 340;
     const cardH = 90;
     const cardGap = 18;
-    const startY = 130;
+    const startY = 115;
     const cardX = (SCREEN_WIDTH - cardW) / 2;
+
+    // Achievements data
+    const achievements = getAchievements();
+    const unlocked = loadUnlocked();
+    const unlockedCount = achievements.filter(a => unlocked.has(a.id)).length;
+    const achCols = 3;
+    const achCardW = 200;
+    const achCardH = 54;
+    const achGapX = 14;
+    const achGapY = 10;
+    const achRows = Math.ceil(achievements.length / achCols);
+
+    // Calculate total content height
+    const statsH = statItems.length * (cardH + cardGap);
+    const achHeaderH = 60;
+    const achGridH = achRows * (achCardH + achGapY) - achGapY;
+    const totalContentH = statsH + achHeaderH + achGridH + 20;
+    const visibleH = SCREEN_HEIGHT - startY - 80;
+    this.maxScrollY = Math.max(0, totalContentH - visibleH);
+
+    // Scrollable content area
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, startY, SCREEN_WIDTH, visibleH);
+    ctx.clip();
 
     for (let i = 0; i < statItems.length; i++) {
       const stat = statItems[i];
-      const cy = startY + i * (cardH + cardGap);
+      const cy = startY + i * (cardH + cardGap) - this.scrollY;
+      if (cy + cardH < startY || cy > startY + visibleH) continue;
 
       // Card background
       this._roundRect(ctx, cardX, cy, cardW, cardH, 12);
@@ -454,10 +480,7 @@ export class UI {
     }
 
     // ---- Achievements section ----
-    const achievements = getAchievements();
-    const unlocked = loadUnlocked();
-    const unlockedCount = achievements.filter(a => unlocked.has(a.id)).length;
-    const achStartY = startY + statItems.length * (cardH + cardGap) + 16;
+    const achStartY = startY + statsH + 16 - this.scrollY;
 
     // "ACHIEVEMENTS" sub-title
     ctx.save();
@@ -477,11 +500,6 @@ export class UI {
     ctx.fillText(`${unlockedCount} / ${achievements.length} Unlocked`, SCREEN_WIDTH / 2, achStartY + 22);
 
     // Achievement grid: 3 columns
-    const achCols = 3;
-    const achCardW = 200;
-    const achCardH = 54;
-    const achGapX = 14;
-    const achGapY = 10;
     const gridW = achCols * achCardW + (achCols - 1) * achGapX;
     const gridStartX = (SCREEN_WIDTH - gridW) / 2;
     const gridTopY = achStartY + 38;
@@ -492,6 +510,7 @@ export class UI {
       const row = Math.floor(i / achCols);
       const ax = gridStartX + col * (achCardW + achGapX);
       const ay = gridTopY + row * (achCardH + achGapY);
+      if (ay + achCardH < startY || ay > startY + visibleH) continue;
       const isUnlocked = unlocked.has(ach.id);
 
       // Card background
@@ -532,6 +551,8 @@ export class UI {
 
       ctx.textBaseline = 'alphabetic';
     }
+
+    ctx.restore();
 
     // Back button
     const statsBkH = IS_MOBILE ? 56 : 48;
