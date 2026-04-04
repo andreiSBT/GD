@@ -362,7 +362,6 @@ export async function syncCustomizationToCloud(customization) {
       trail_index: customization.trailIndex,
       icon_index: customization.iconIndex,
       shape_index: customization.shapeIndex,
-      trail_style_index: customization.trailStyleIndex || 0,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' });
   } catch (e) {
@@ -388,7 +387,6 @@ export async function loadCustomizationFromCloud() {
       trailIndex: data.trail_index,
       iconIndex: data.icon_index,
       shapeIndex: data.shape_index,
-      trailStyleIndex: data.trail_style_index || 0,
     };
   } catch (e) {
     console.warn('Supabase customization load failed:', e.message);
