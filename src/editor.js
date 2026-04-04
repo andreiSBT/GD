@@ -2482,11 +2482,7 @@ export class Editor {
         if (btn.id === 'browse_new') {
           this._newLevel();
         } else if (btn.id === 'browse_back') {
-          if (this.currentSlot) {
-            this.browsing = false;
-          } else if (this.onBack) {
-            this.onBack();
-          }
+          if (this.onBack) this.onBack();
         } else if (btn.id.startsWith('browse_play_')) {
           const slotId = btn.id.replace('browse_play_', '');
           if (this.loadFromSlot(slotId)) {
