@@ -102,10 +102,10 @@ export class Player {
       }
       return false;
     } else if (this.mode === MODE_BALL) {
-      // Ball: click flips gravity instantly (no jump impulse)
+      // Ball: click flips gravity with a small impulse for smooth transition
       if (this.grounded || this.coyoteCounter > 0) {
         this.gravityMult *= -1;
-        this.vy = 0;
+        this.vy = -5 * this.gravityMult;
         this.grounded = false;
         this.onPlatform = false;
         this.platformRef = null;
@@ -130,6 +130,9 @@ export class Player {
       this.vy = 0; // horizontal dash — no vertical movement
       this.dashing = true;
       this.dashTimer = 120; // max dash duration (safety limit)
+    } else if (type === 'blue_orb' || type === 'blue_pad') {
+      this.gravityMult *= -1;
+      this.vy = -6 * this.gravityMult;
     } else if (type === 'yellow_pad') {
       this.vy = PAD_JUMP_VEL * this.gravityMult;
     } else if (type === 'pink_pad') {
