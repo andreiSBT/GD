@@ -1466,6 +1466,8 @@ export class Slope {
       const pSize = playerRect.h + 8;
       const prevBottom = prevPlayerY + pSize;
       const forgiveness = 12;
+      // Don't land if player was well below the surface and rising (hitting from underneath)
+      if (prevBottom > surfaceY + forgiveness + 4) return null;
       if (playerBottom >= surfaceY - forgiveness && prevBottom <= surfaceY + forgiveness + 8) {
         return { type: 'land', y: surfaceY, slopeRatio };
       }
@@ -1476,6 +1478,8 @@ export class Slope {
       // Inverted gravity: player lands on bottom of slope
       const playerTop = playerRect.y;
       const forgiveness = 12;
+      // Don't land if player was well above the surface and falling (hitting from other side)
+      if (prevPlayerY < surfaceY - forgiveness - 4) return null;
       if (playerTop <= surfaceY + forgiveness && prevPlayerY >= surfaceY - forgiveness - 8) {
         return { type: 'land', y: surfaceY, slopeRatio };
       }
