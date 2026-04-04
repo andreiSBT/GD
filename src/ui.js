@@ -215,6 +215,42 @@ export class UI {
     const count = getLevelCount();
     const perPage = 3;
     const maxPage = Math.ceil(count / perPage) - 1;
+    // Pages beyond maxPage show "COMING SOON"
+    const isComingSoon = page > maxPage;
+
+    if (isComingSoon) {
+      // Coming soon screen
+      ctx.save();
+      ctx.shadowColor = '#00C8FF';
+      ctx.shadowBlur = 15;
+      ctx.fillStyle = '#00C8FF';
+      ctx.font = 'bold 36px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('COMING SOON', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 20);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('More levels are on the way!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
+
+      // Arrows: left goes back, right wraps to page 0
+      const arrowY = 32;
+      const arrowW = IS_MOBILE ? 56 : 48, arrowH = IS_MOBILE ? 44 : 38;
+      this._drawButton(ctx, 15, arrowY, arrowW, arrowH, '<', 'levels_prev', '#224466', 28);
+      this._drawButton(ctx, SCREEN_WIDTH - arrowW - 15, arrowY, arrowW, arrowH, '>', 'levels_wrap_start', '#224466', 28);
+
+      // Page indicator
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${page + 1} / ${maxPage + 2}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60);
+
+      const backH = IS_MOBILE ? 52 : 44;
+      this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, IS_MOBILE ? 150 : 130, backH, 'BACK', 'back', '#445566', 20);
+      return;
+    }
+
     const firstIdx = page * perPage + 1;
     const lastIdx = Math.min(firstIdx + perPage - 1, count);
     const visibleCount = lastIdx - firstIdx + 1;
@@ -344,21 +380,17 @@ export class UI {
       this._drawButton(ctx, btnX2, btnY, btnW, btnH, 'PRACTICE', `practice_${i}`, '#C8A000', IS_MOBILE ? 17 : 15);
     }
 
-    // Page arrows (top, near title, at edges)
+    // Page arrows - always visible on both sides
     const arrowY = 32;
     const arrowW = IS_MOBILE ? 56 : 48, arrowH = IS_MOBILE ? 44 : 38;
-    if (page > 0) {
-      this._drawButton(ctx, 15, arrowY, arrowW, arrowH, '<', 'levels_prev', '#224466', 28);
-    }
-    if (page < maxPage) {
-      this._drawButton(ctx, SCREEN_WIDTH - arrowW - 15, arrowY, arrowW, arrowH, '>', 'levels_next', '#224466', 28);
-    }
+    this._drawButton(ctx, 15, arrowY, arrowW, arrowH, '<', page > 0 ? 'levels_prev' : 'levels_wrap_end', '#224466', 28);
+    this._drawButton(ctx, SCREEN_WIDTH - arrowW - 15, arrowY, arrowW, arrowH, '>', 'levels_next', '#224466', 28);
 
     // Page indicator
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = '13px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${page + 1} / ${maxPage + 1}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60);
+    ctx.fillText(`${page + 1} / ${maxPage + 2}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60);
 
     // Back button
     const backH = IS_MOBILE ? 52 : 44;
@@ -1626,7 +1658,7 @@ export class UI {
       ctx.fillText(secretsData.inputText || 'Tap to enter code...', SCREEN_WIDTH / 2, inputY + 47);
 
       // Make the input area clickable
-      this.buttons.push({ x: inputX, y: inputY + 20, w: inputW, h: 44, action: 'secrets_input' });
+      this.buttons.push({ x: inputX, y: inputY + 20, w: inputW, h: 44, id: 'secrets_input' });
     }
 
     // Submit button
