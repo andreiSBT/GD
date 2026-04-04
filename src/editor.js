@@ -1672,8 +1672,25 @@ export class Editor {
     ctx.textAlign = 'left';
     ctx.fillText(`Obj: ${this.objects.length}  X: ${this.hoverGx}  Y: ${this.hoverGy}`, swipeX + swipeBtnW + 10, sby + 19);
 
-    // Right side: L1 L2 L3 | T1 T2 T3
+    // Right side: MENU | L1 L2 L3 | T1 T2 T3
     let rx = SCREEN_WIDTH - 10;
+
+    // Menu button (far right)
+    const menuBtnW = 50;
+    rx -= menuBtnW;
+    this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
+    ctx.fillStyle = 'rgba(200,50,50,0.3)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,80,80,0.4)';
+    ctx.lineWidth = 1;
+    this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
+    ctx.stroke();
+    ctx.fillStyle = '#FF8888';
+    ctx.font = 'bold 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('MENU', rx + menuBtnW / 2, sby + 19);
+    this.buttons.push({ id: 'action_back', x: rx, y: sby, w: menuBtnW, h: scrollBtnH });
+    rx -= btnGap;
 
     // Theme buttons (rightmost)
     const themeCount = Object.keys(THEMES).length;
