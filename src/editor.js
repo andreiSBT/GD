@@ -2494,7 +2494,9 @@ export class Editor {
       return;
     }
 
-    for (const btn of this.buttons) {
+    // Check buttons in reverse so later-drawn buttons (BACK) take priority
+    for (let bi = this.buttons.length - 1; bi >= 0; bi--) {
+      const btn = this.buttons[bi];
       if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
         if (btn.id === 'browse_new') {
           this._newLevel();
