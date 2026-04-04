@@ -38,6 +38,9 @@ export const PLAYER_TRAIL_COLORS = [
   '#FF0000', '#AA00FF', '#00FFAA', '#FF69B4', '#FFFFFF',
 ];
 
+// Trail styles
+export const PLAYER_TRAIL_STYLES = ['normal', 'dotted'];
+
 // Cube shape variants (visual only, hitbox stays the same)
 export const CUBE_SHAPES = [
   'square',     // classic square

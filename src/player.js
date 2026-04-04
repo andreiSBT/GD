@@ -30,6 +30,7 @@ export class Player {
     this.trail = [];  // position history for glow trail
     this.customColor = null;     // custom player color (null = use theme)
     this.customTrailColor = null; // custom trail color (null = use accent)
+    this.trailStyle = 'normal';  // 'normal' or 'dotted'
     this.cubeIcon = 'default';   // cube face icon id
     this.cubeShape = 'square';   // cube shape variant
     this.reset(0);
@@ -430,14 +431,22 @@ export class Player {
     ctx.shadowColor = trailColor;
     ctx.shadowBlur = 8;
     ctx.fillStyle = trailColor;
+    const dotted = this.trailStyle === 'dotted';
     for (let i = 0; i < this.trail.length; i++) {
+      if (dotted && i % 3 !== 0) continue;
       const t = this.trail[i];
       const alpha = (i / this.trail.length) * 0.4;
-      const sz = 3 + (i / this.trail.length) * 6;
+      const sz = dotted ? 4 + (i / this.trail.length) * 5 : 3 + (i / this.trail.length) * 6;
       const tsx = t.x - cameraX + PLAYER_X_OFFSET;
-      const tsy = t.y - sz / 2;
+      const tsy = t.y;
       ctx.globalAlpha = alpha;
-      ctx.fillRect(tsx, tsy, sz, sz);
+      if (dotted) {
+        ctx.beginPath();
+        ctx.arc(tsx, tsy, sz / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(tsx, tsy - sz / 2, sz, sz);
+      }
     }
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;

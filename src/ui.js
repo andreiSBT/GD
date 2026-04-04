@@ -1,6 +1,6 @@
 /** UI screens: menu, level select, HUD, death screen, complete screen */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE } from './settings.js';
 import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
@@ -1039,7 +1039,7 @@ export class UI {
   drawCustomize(ctx, customization) {
     this.buttons = [];
 
-    const { colorIndex, trailIndex, iconIndex, shapeIndex } = customization;
+    const { colorIndex, trailIndex, iconIndex, shapeIndex, trailStyleIndex } = customization;
 
     // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
@@ -1174,8 +1174,49 @@ export class UI {
       this.buttons.push({ id: `trail_${i}`, x: tx, y: ty, w: trailSize, h: trailSize });
     }
 
+    // === TRAIL STYLE SECTION (only if dotted unlocked) ===
+    const dottedUnlocked = !!localStorage.getItem('gd_dotted_trail');
+    let trailStyleOffset = 0;
+    if (dottedUnlocked) {
+      trailStyleOffset = IS_MOBILE ? 80 : 70;
+      const sectionYTS = (IS_MOBILE ? 285 : 270) + (IS_MOBILE ? 75 : 65);
+      ctx.fillStyle = '#AA77DD';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TRAIL STYLE', SCREEN_WIDTH / 2, sectionYTS);
+
+      const tsLabels = ['NORMAL', 'DOTTED'];
+      const tsBtnW = IS_MOBILE ? 120 : 100;
+      const tsBtnH = IS_MOBILE ? 40 : 32;
+      const tsGap = 14;
+      const tsTotalW = tsLabels.length * tsBtnW + (tsLabels.length - 1) * tsGap;
+      const tsStartX = (SCREEN_WIDTH - tsTotalW) / 2;
+
+      for (let i = 0; i < tsLabels.length; i++) {
+        const bx = tsStartX + i * (tsBtnW + tsGap);
+        const by = sectionYTS + 10;
+        const selected = (trailStyleIndex || 0) === i;
+
+        this._roundRect(ctx, bx, by, tsBtnW, tsBtnH, 6);
+        ctx.fillStyle = selected ? 'rgba(170,0,255,0.4)' : 'rgba(255,255,255,0.08)';
+        ctx.fill();
+        if (selected) {
+          ctx.strokeStyle = '#AA44FF';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = selected ? '#FFF' : 'rgba(255,255,255,0.5)';
+        ctx.font = `bold ${IS_MOBILE ? 14 : 12}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(tsLabels[i], bx + tsBtnW / 2, by + tsBtnH / 2 + 4);
+
+        this.buttons.push({ id: `trailstyle_${i}`, x: bx, y: by, w: tsBtnW, h: tsBtnH });
+      }
+    }
+
     // === SHAPE SECTION ===
-    const sectionY3 = IS_MOBILE ? 395 : 365;
+    const sectionY3 = (IS_MOBILE ? 395 : 365) + trailStyleOffset;
     ctx.fillStyle = '#AA77DD';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
@@ -1207,7 +1248,7 @@ export class UI {
     }
 
     // === ICON SECTION ===
-    const sectionY4 = IS_MOBILE ? 520 : 475;
+    const sectionY4 = (IS_MOBILE ? 520 : 475) + trailStyleOffset;
     ctx.fillStyle = '#AA77DD';
     ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';

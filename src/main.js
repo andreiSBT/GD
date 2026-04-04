@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, SCROLL_SPEED, FPS } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, SCROLL_SPEED, FPS } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { Editor } from './editor.js';
@@ -592,6 +592,9 @@ class Game {
     } else if (action.startsWith('shape_')) {
       this.customization.shapeIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
+    } else if (action.startsWith('trailstyle_')) {
+      this.customization.trailStyleIndex = parseInt(action.split('_')[1]);
+      this._applyCustomization();
     } else if (action === 'pause') {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
@@ -1107,6 +1110,7 @@ class Game {
     const SECRET_CODES = {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
       'GD GO!': { reward: 'rainbow', desc: 'Rainbow color unlocked!' },
+      '...': { reward: 'dotted_trail', desc: 'Dotted trail unlocked!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1128,6 +1132,8 @@ class Game {
       localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
     } else if (entry.reward === 'rainbow') {
       localStorage.setItem('gd_rainbow_color', '1');
+    } else if (entry.reward === 'dotted_trail') {
+      localStorage.setItem('gd_dotted_trail', '1');
     }
 
     this._redeemedCodes.add(code);
@@ -2367,7 +2373,7 @@ class Game {
     } catch (e) {
       console.warn('Failed to load customization:', e);
     }
-    return { colorIndex: 0, trailIndex: 0, iconIndex: 0, shapeIndex: 0 };
+    return { colorIndex: 0, trailIndex: 0, iconIndex: 0, shapeIndex: 0, trailStyleIndex: 0 };
   }
 
   _saveCustomization() {
@@ -2380,9 +2386,10 @@ class Game {
   }
 
   _applyCustomization() {
-    const { colorIndex, trailIndex, iconIndex, shapeIndex } = this.customization;
+    const { colorIndex, trailIndex, iconIndex, shapeIndex, trailStyleIndex } = this.customization;
     this.player.customColor = PLAYER_COLORS[colorIndex] || null;
     this.player.customTrailColor = PLAYER_TRAIL_COLORS[trailIndex] || null;
+    this.player.trailStyle = PLAYER_TRAIL_STYLES[trailStyleIndex || 0] || 'normal';
     this.player.cubeIcon = CUBE_ICONS[iconIndex] || 'default';
     this.player.cubeShape = CUBE_SHAPES[shapeIndex || 0] || 'square';
   }
