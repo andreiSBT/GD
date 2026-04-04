@@ -421,7 +421,7 @@ export class UI {
     const unlockedCount = achievements.filter(a => unlocked.has(a.id)).length;
     const achCols = 3;
     const achCardW = 200;
-    const achCardH = 54;
+    const achCardH = 68;
     const achGapX = 14;
     const achGapY = 10;
     const achRows = Math.ceil(achievements.length / achCols);
@@ -538,28 +538,24 @@ export class UI {
       ctx.fillStyle = isUnlocked ? '#FFD700' : '#555555';
       ctx.fillText(isUnlocked ? '\u2713' : '\u{1F512}', ax + 8, ay + achCardH / 2 - 2);
 
-      // Title (truncate to fit card)
+      // Title (word wrap)
       ctx.font = 'bold 12px monospace';
       ctx.fillStyle = isUnlocked ? '#FFD700' : '#666666';
       ctx.textBaseline = 'top';
-      const titleMaxW = achCardW - 38;
-      let titleText = ach.title;
-      while (ctx.measureText(titleText).width > titleMaxW && titleText.length > 1) {
-        titleText = titleText.slice(0, -1);
+      const textMaxW = achCardW - 38;
+      const titleLines = this._wrapText(ctx, ach.title, textMaxW);
+      for (let l = 0; l < titleLines.length; l++) {
+        ctx.fillText(titleLines[l], ax + 30, ay + 8 + l * 14);
       }
-      if (titleText !== ach.title) titleText += '…';
-      ctx.fillText(titleText, ax + 30, ay + 8);
 
-      // Description (truncate to fit card)
+      // Description (word wrap)
       ctx.font = '10px monospace';
       ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)';
-      const descMaxW = achCardW - 38;
-      let descText = ach.desc;
-      while (ctx.measureText(descText).width > descMaxW && descText.length > 1) {
-        descText = descText.slice(0, -1);
+      const descTopY = ay + 8 + titleLines.length * 14 + 4;
+      const descLines = this._wrapText(ctx, ach.desc, textMaxW);
+      for (let l = 0; l < descLines.length; l++) {
+        ctx.fillText(descLines[l], ax + 30, descTopY + l * 12);
       }
-      if (descText !== ach.desc) descText += '…';
-      ctx.fillText(descText, ax + 30, ay + 28);
 
       ctx.textBaseline = 'alphabetic';
     }
@@ -1411,6 +1407,23 @@ export class UI {
         ctx.stroke();
         break;
     }
+  }
+
+  _wrapText(ctx, text, maxW) {
+    const words = text.split(' ');
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxW && line) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = test;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
   }
 
   _roundRect(ctx, x, y, w, h, r) {
