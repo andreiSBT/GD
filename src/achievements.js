@@ -69,7 +69,9 @@ function _totalAttempts(p) {
 }
 
 function _totalCoins(p) {
-  return Object.values(p).reduce((sum, l) => sum + (l.bestCoins || 0), 0);
+  const levelCoins = Object.values(p).reduce((sum, l) => sum + (l.bestCoins || 0), 0);
+  const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
+  return levelCoins + secretCoins;
 }
 
 export function getAchievements() {

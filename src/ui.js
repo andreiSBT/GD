@@ -173,6 +173,10 @@ export class UI {
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'COMMUNITY', 'community', '#00AA88');
 
+    // Secrets button
+    by += gap;
+    this._drawButton(ctx, bx, by, bw, bh, 'SECRETS', 'secrets', '#AA0044');
+
     // Account button (top right)
     const username = getUsername();
     const accH = IS_MOBILE ? 48 : 38;
@@ -1564,6 +1568,128 @@ export class UI {
       ctx.font = '13px monospace';
       ctx.fillText(subtext, SCREEN_WIDTH / 2, centerY + 62);
     }
+  }
+
+  drawSecrets(ctx, secretsData, redeemedCodes) {
+    this.buttons = [];
+
+    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    grad.addColorStop(0, '#0A0010');
+    grad.addColorStop(1, '#1A0028');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    this._drawMenuParticles(ctx);
+
+    // Title
+    ctx.save();
+    ctx.shadowColor = '#FF0066';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#FF0066';
+    ctx.font = 'bold 44px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SECRET CODES', SCREEN_WIDTH / 2, 70);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    // Decorative line
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#FF0066';
+    ctx.fillRect(SCREEN_WIDTH / 2 - 150, 95, 300, 1);
+    ctx.globalAlpha = 1;
+
+    // Instructions
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Enter a secret code to unlock rewards', SCREEN_WIDTH / 2, 130);
+
+    // Redeemed count
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '12px monospace';
+    ctx.fillText(`${redeemedCodes.size} code${redeemedCodes.size !== 1 ? 's' : ''} redeemed`, SCREEN_WIDTH / 2, 155);
+
+    // Secret coins count
+    const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
+    if (secretCoins > 0) {
+      ctx.fillStyle = '#FFD700';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText(`Secret Coins: ${secretCoins}`, SCREEN_WIDTH / 2, 185);
+    }
+
+    // Input area
+    const inputW = 360;
+    const inputX = (SCREEN_WIDTH - inputW) / 2;
+    const inputY = 220;
+
+    // Label
+    ctx.fillStyle = '#FF0066';
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('CODE', SCREEN_WIDTH / 2, inputY + 10);
+
+    // Input box (canvas placeholder when HTML input not active)
+    if (!secretsData.inputActive) {
+      this._roundRect(ctx, inputX, inputY + 20, inputW, 44, 10);
+      ctx.fillStyle = 'rgba(0,10,30,0.8)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,0,102,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = '16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(secretsData.inputText || 'Tap to enter code...', SCREEN_WIDTH / 2, inputY + 47);
+
+      // Make the input area clickable
+      this.buttons.push({ x: inputX, y: inputY + 20, w: inputW, h: 44, action: 'secrets_input' });
+    }
+
+    // Submit button
+    const btnW = 180;
+    const btnH = IS_MOBILE ? 52 : 44;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - btnW / 2, inputY + 80, btnW, btnH, 'REDEEM', 'secrets_submit', '#FF0066');
+
+    // Message feedback
+    if (secretsData.message && secretsData.messageTimer > 0) {
+      ctx.save();
+      ctx.shadowColor = secretsData.message.color;
+      ctx.shadowBlur = 10;
+      ctx.fillStyle = secretsData.message.color;
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.globalAlpha = Math.min(1, secretsData.messageTimer);
+      ctx.fillText(secretsData.message.text, SCREEN_WIDTH / 2, inputY + 155);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    // Redeemed codes list
+    if (redeemedCodes.size > 0) {
+      const listY = inputY + 190;
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('REDEEMED', SCREEN_WIDTH / 2, listY);
+
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#FF0066';
+      ctx.fillRect(SCREEN_WIDTH / 2 - 80, listY + 5, 160, 1);
+      ctx.globalAlpha = 1;
+
+      let ry = listY + 22;
+      for (const code of redeemedCodes) {
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.font = '12px monospace';
+        ctx.fillText(code, SCREEN_WIDTH / 2, ry);
+        ry += 18;
+      }
+    }
+
+    // Back button
+    const bkH = IS_MOBILE ? 56 : 48;
+    this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - bkH - 28, 220, bkH, 'BACK', 'back_secrets', '#445566', 20);
   }
 
   drawCommunity(ctx, data) {

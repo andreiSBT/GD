@@ -34,6 +34,7 @@ const EDITOR_TESTING = 'editor_testing';
 const FRIENDS = 'friends';
 const COMMUNITY = 'community';
 const LEADERBOARD = 'leaderboard';
+const SECRETS = 'secrets';
 
 class Game {
   constructor() {
@@ -82,6 +83,9 @@ class Game {
     // Community
     this.communityData = { levels: [], sort: 'newest', page: 0, loading: false };
     this.levelPage = 0; // level select pagination
+    // Secret codes
+    this.secretsData = { inputActive: false, inputText: '', message: null, messageTimer: 0 };
+    this._redeemedCodes = this._loadRedeemedCodes();
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -238,6 +242,9 @@ class Game {
             this._hideFriendsInput();
             this.state = MENU;
           }
+        } else if (this.state === SECRETS) {
+          this._hideSecretsInput();
+          this.state = MENU;
         } else if (this.state === DEAD || this.state === COMPLETE) {
           Sound.stopMusic();
           this.shakeIntensity = 0;
@@ -272,7 +279,7 @@ class Game {
         return;
       }
 
-      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS || this.state === COMMUNITY || this.state === LEADERBOARD) {
+      if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS || this.state === COMMUNITY || this.state === LEADERBOARD || this.state === SECRETS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
           // Volume slider interaction
@@ -358,7 +365,7 @@ class Game {
       }
 
       // Start scroll tracking for scrollable screens
-      const isScrollable = [FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state);
+      const isScrollable = [FRIENDS, COMMUNITY, LEADERBOARD, STATS, SECRETS].includes(this.state);
       if (isScrollable) {
         this.ui.handleScrollTouchStart(y);
         this._scrollTouchX = x;
@@ -368,7 +375,7 @@ class Game {
       // Check UI buttons first for all menu-like states
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE ||
           this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS ||
-          this.state === COMMUNITY || this.state === LEADERBOARD) {
+          this.state === COMMUNITY || this.state === LEADERBOARD || this.state === SECRETS) {
         // For scrollable screens, defer button clicks to touchend (to avoid triggering on swipe)
         if (isScrollable) return;
         const action = this.ui.handleClick(x, y);
@@ -613,6 +620,17 @@ class Game {
         this.communityData.levels = levels;
         this.communityData.loading = false;
       });
+    } else if (action === 'secrets') {
+      this.ui.resetScroll();
+      this.secretsData.message = null;
+      this.state = SECRETS;
+    } else if (action === 'back_secrets') {
+      this._hideSecretsInput();
+      this.state = MENU;
+    } else if (action === 'secrets_input') {
+      this._showSecretsInput();
+    } else if (action === 'secrets_submit') {
+      this._submitSecretCode();
     } else if (action === 'back_community') {
       this.state = MENU;
     } else if (action.startsWith('community_sort_')) {
@@ -974,6 +992,99 @@ class Game {
       input.style.display = 'none';
       input.blur();
     }
+  }
+
+  // --- Secret codes ---
+  _loadRedeemedCodes() {
+    try {
+      const raw = localStorage.getItem('gd_redeemed_codes');
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  }
+
+  _saveRedeemedCodes() {
+    try { localStorage.setItem('gd_redeemed_codes', JSON.stringify([...this._redeemedCodes])); } catch {}
+  }
+
+  _showSecretsInput() {
+    let input = document.getElementById('secrets-input');
+    if (!input) {
+      input = document.createElement('input');
+      input.id = 'secrets-input';
+      input.type = 'text';
+      input.autocomplete = 'off';
+      document.body.appendChild(input);
+    }
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = rect.width / SCREEN_WIDTH;
+    const scaleY = rect.height / SCREEN_HEIGHT;
+    const inputW = 360;
+    const inputX = (SCREEN_WIDTH - inputW) / 2;
+    const inputY = 280;
+    const screenLeft = rect.left + inputX * scaleX;
+    const screenTop = rect.top + inputY * scaleY;
+    const screenW = inputW * scaleX;
+    const screenH = 44 * scaleY;
+    input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 14px;background:rgba(0,10,30,0.95);color:#fff;border:1px solid rgba(0,170,255,0.35);border-radius:10px;font:${Math.round(16 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;text-align:center;`;
+    input.value = this.secretsData.inputText || '';
+    input.placeholder = 'Enter secret code...';
+    input.style.display = 'block';
+    this.secretsData.inputActive = true;
+    input.focus();
+
+    input._onInput = () => { this.secretsData.inputText = input.value; };
+    input._onKeydown = (e) => { if (e.key === 'Enter') this._submitSecretCode(); };
+    input.removeEventListener('input', input._prevOnInput);
+    input.removeEventListener('keydown', input._prevOnKeydown);
+    input.addEventListener('input', input._onInput);
+    input.addEventListener('keydown', input._onKeydown);
+    input._prevOnInput = input._onInput;
+    input._prevOnKeydown = input._onKeydown;
+  }
+
+  _hideSecretsInput() {
+    this.secretsData.inputActive = false;
+    this.secretsData.inputText = '';
+    const input = document.getElementById('secrets-input');
+    if (input) { input.style.display = 'none'; input.blur(); }
+  }
+
+  _submitSecretCode() {
+    const code = (this.secretsData.inputText || '').trim().toUpperCase();
+    if (!code) return;
+
+    if (this._redeemedCodes.has(code)) {
+      this.secretsData.message = { text: 'Code already redeemed!', color: '#FF6644' };
+      this.secretsData.messageTimer = 3;
+      return;
+    }
+
+    // Define secret codes and their rewards
+    const SECRET_CODES = {
+      'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
+    };
+
+    const entry = SECRET_CODES[code];
+    if (!entry) {
+      this.secretsData.message = { text: 'Invalid code', color: '#FF6644' };
+      this.secretsData.messageTimer = 3;
+      return;
+    }
+
+    // Apply reward
+    if (entry.reward === 'coin') {
+      const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
+      localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
+    }
+
+    this._redeemedCodes.add(code);
+    this._saveRedeemedCodes();
+    this.secretsData.message = { text: entry.desc, color: '#00FF64' };
+    this.secretsData.messageTimer = 3;
+    this.secretsData.inputText = '';
+    const input = document.getElementById('secrets-input');
+    if (input) input.value = '';
+    this._checkAchievements();
   }
 
   // Find the nearest solid surface below a given position (platform top or ground)
@@ -1772,6 +1883,9 @@ class Game {
       this.ui.drawCommunity(ctx, this.communityData);
     } else if (this.state === LEADERBOARD) {
       this.ui.drawLeaderboard(ctx, this._leaderboardData);
+    } else if (this.state === SECRETS) {
+      if (this.secretsData.messageTimer > 0) this.secretsData.messageTimer -= 1 / FPS;
+      this.ui.drawSecrets(ctx, this.secretsData, this._redeemedCodes);
     } else {
       // Use interpolated camera for smooth rendering between physics steps
       // When paused or dead, don't interpolate — use final position to avoid jitter
