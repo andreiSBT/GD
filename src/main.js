@@ -1098,11 +1098,21 @@ class Game {
     // Define secret codes and their rewards
     const SECRET_CODES = {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
+      'COMING SOON': { reward: 'coin', desc: '+1 Secret Coin unlocked!', condition: () => {
+        const completedCount = Object.values(this.progress).filter(l => l.completed).length;
+        return completedCount >= 5;
+      }, failMsg: 'Not yet... keep playing!' },
     };
 
     const entry = SECRET_CODES[code];
     if (!entry) {
       this.secretsData.message = { text: 'Invalid code', color: '#FF6644' };
+      this.secretsData.messageTimer = 3;
+      return;
+    }
+
+    if (entry.condition && !entry.condition()) {
+      this.secretsData.message = { text: entry.failMsg, color: '#FF6644' };
       this.secretsData.messageTimer = 3;
       return;
     }
