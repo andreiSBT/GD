@@ -307,7 +307,7 @@ export class UI {
 
       // Coins
       const levelData = LEVEL_DATA[i];
-      const totalCoins = levelData ? levelData.objects.filter(o => o.type === 'coin').length : 0;
+      const totalCoins = levelData ? Math.min(3, levelData.objects.filter(o => o.type === 'coin').length) : 0;
       if (totalCoins > 0) {
         const collected = prog.bestCoins || 0;
         const coinY = y + 218, coinSpacing = 22;

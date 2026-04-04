@@ -1400,7 +1400,7 @@ class Game {
   _getAchievementStats() {
     const totalCoins = {};
     for (const [id, data] of Object.entries(LEVEL_DATA)) {
-      totalCoins[id] = data.objects ? data.objects.filter(o => o.type === 'coin').length : 0;
+      totalCoins[id] = data.objects ? Math.min(3, data.objects.filter(o => o.type === 'coin').length) : 0;
     }
     return { totalCoins };
   }
@@ -2000,7 +2000,7 @@ class Game {
 
       // Show NEW BEST! only on death screen, never in practice mode
       const showNewBest = this.state === DEAD && this.newBestTriggered && !this.practiceMode;
-      const totalCoins = this.level ? this.level.totalCoins : 0;
+      const totalCoins = this.level ? Math.min(3, this.level.totalCoins) : 0;
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null);
 
       if (this.state === PAUSED) {
