@@ -3,7 +3,7 @@
  *  ~860 grid units at normal speed */
 export default {
   id: 1,
-  name: 'Stereo Madness',
+  name: 'Level 1',
   speed: 1.0,
   objects: [
     // === SECTION 1: Intro - simple jumps (0-80) ===

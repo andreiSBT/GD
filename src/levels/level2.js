@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 2,
-  name: 'Back on Track',
+  name: 'Level 2',
   speed: 1.0,
   objects: [
     // === SECTION 1: Opening rhythm (0-100) ===

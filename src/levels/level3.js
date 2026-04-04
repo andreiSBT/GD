@@ -3,7 +3,7 @@
  *  ~860 grid units */
 export default {
   id: 3,
-  name: 'Polargeist',
+  name: 'Level 3',
   speed: 1.0,
   objects: [
     // === SECTION 1: Hard opening (0-100) ===

@@ -69,7 +69,7 @@ export const CUBE_ICONS = [
 // Level themes
 export const THEMES = {
   1: {
-    name: 'Stereo Madness',
+    name: 'Level 1',
     bgTop: '#001444',
     bgBot: '#003C78',
     ground: '#005099',
@@ -82,7 +82,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   2: {
-    name: 'Back on Track',
+    name: 'Level 2',
     bgTop: '#3C0028',
     bgBot: '#780050',
     ground: '#960064',
@@ -95,7 +95,7 @@ export const THEMES = {
     portalSpeed: '#FF6600',
   },
   3: {
-    name: 'Polargeist',
+    name: 'Level 3',
     bgTop: '#0A2800',
     bgBot: '#1E6400',
     ground: '#288200',
