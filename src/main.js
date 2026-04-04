@@ -279,6 +279,21 @@ class Game {
       const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
 
+      // Don't steal focus from active HTML inputs (secrets, friends, etc.)
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) {
+        // Only process button clicks, re-focus input after
+        if (this.state === SECRETS) {
+          const action = this.ui.handleClick(x, y);
+          if (action && action !== 'secrets_input') {
+            Sound.playSelect();
+            this._handleAction(action);
+          }
+          requestAnimationFrame(() => ae.focus());
+          return;
+        }
+      }
+
       this._mouseDownState = this.state;
 
       if (this.state === EDITOR) {
@@ -363,6 +378,20 @@ class Game {
       const touch = e.touches[0];
       const x = (touch.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (touch.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
+
+      // Don't steal focus from active HTML inputs
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) {
+        if (this.state === SECRETS) {
+          const action = this.ui.handleClick(x, y);
+          if (action && action !== 'secrets_input') {
+            Sound.playSelect();
+            this._handleAction(action);
+          }
+          requestAnimationFrame(() => ae.focus());
+          return;
+        }
+      }
 
       this._touchStartState = this.state;
 
@@ -2193,6 +2222,7 @@ class Game {
       this.ui.resetScroll();
       this.secretsData.message = null;
       this.state = SECRETS;
+      this._showSecretsInput();
     });
 
     document.getElementById('acc-close').addEventListener('click', () => {
