@@ -595,6 +595,7 @@ class Game {
     } else if (action.startsWith('trailstyle_')) {
       this.customization.trailStyleIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
+      this._saveCustomization();
     } else if (action === 'pause') {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
