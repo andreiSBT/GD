@@ -523,12 +523,20 @@ export class Player {
     this._strokeShape(ctx, size, hs, shape);
 
     // Bright edge highlight (only for shapes with a flat top)
-    if (shape === 'square' || shape === 'rounded') {
+    if (shape === 'square') {
       ctx.strokeStyle = lighten(color, 80);
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(-hs, -hs);
       ctx.lineTo(hs, -hs);
+      ctx.stroke();
+    } else if (shape === 'rounded') {
+      const r = size * 0.22;
+      ctx.strokeStyle = lighten(color, 80);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-hs + r, -hs);
+      ctx.lineTo(hs - r, -hs);
       ctx.stroke();
     }
   }
