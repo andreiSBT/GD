@@ -2325,6 +2325,12 @@ class Game {
     localStorage.removeItem('gd_customization');
     localStorage.removeItem('gd_editor_attempts');
     localStorage.removeItem('gd_total_jumps');
+    localStorage.removeItem('gd_achievements');
+    localStorage.removeItem('gd_secret_coins');
+    localStorage.removeItem('gd_redeemed_codes');
+    localStorage.removeItem('gd_scroll_coin');
+    // Clear replay ghosts
+    for (let i = 1; i <= 9; i++) localStorage.removeItem('gd_replay_' + i);
     // Clear editor slots
     try {
       const slots = JSON.parse(localStorage.getItem('gd_editor_slots') || '[]');
@@ -2334,11 +2340,10 @@ class Game {
     } catch {}
     localStorage.removeItem('gd_editor_slots');
     // Reset in-memory state
-    this.progress = {
-      1: { attempts: 0, bestProgress: 0, completed: false },
-      2: { attempts: 0, bestProgress: 0, completed: false },
-      3: { attempts: 0, bestProgress: 0, completed: false },
-    };
+    this.progress = {};
+    for (let i = 1; i <= 9; i++) {
+      this.progress[i] = { attempts: 0, bestProgress: 0, completed: false, bestCoins: 0 };
+    }
     this.customization = this._loadCustomization();
     this._applyCustomization();
     if (this.editor) {
