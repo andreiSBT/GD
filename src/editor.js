@@ -22,10 +22,27 @@ const TOOL_CATEGORIES = [
     { id: 'moving', label: 'Moving', key: '3', color: '#44AAFF' },
     { id: 'transport', label: 'Transport', key: 'T', color: '#44FF88' },
   ]},
-  { id: 'gameplay', label: 'GAMEPLAY', color: '#FFD700', tools: [
-    { id: 'orb', label: 'Orb', key: '4', color: '#FFD700' },
-    { id: 'pad', label: 'Pad', key: '5', color: '#FFAA00' },
-    { id: 'portal', label: 'Portal', key: '6', color: '#FF00FF' },
+  { id: 'orbs', label: 'ORBS', color: '#FFD700', tools: [
+    { id: 'orb:yellow_orb', label: 'Yellow', key: '', color: '#FFD700', toolType: 'orb', subType: 'yellow_orb' },
+    { id: 'orb:pink_orb', label: 'Pink', key: '', color: '#FF69B4', toolType: 'orb', subType: 'pink_orb' },
+    { id: 'orb:dash_orb', label: 'Dash', key: '', color: '#00FF00', toolType: 'orb', subType: 'dash_orb' },
+    { id: 'orb:blue_orb', label: 'Blue', key: '', color: '#00CCFF', toolType: 'orb', subType: 'blue_orb' },
+  ]},
+  { id: 'pads', label: 'PADS', color: '#FFAA00', tools: [
+    { id: 'pad:yellow_pad', label: 'Yellow', key: '', color: '#FFD700', toolType: 'pad', subType: 'yellow_pad' },
+    { id: 'pad:pink_pad', label: 'Pink', key: '', color: '#FF69B4', toolType: 'pad', subType: 'pink_pad' },
+    { id: 'pad:blue_pad', label: 'Blue', key: '', color: '#00CCFF', toolType: 'pad', subType: 'blue_pad' },
+  ]},
+  { id: 'portals', label: 'PORTALS', color: '#FF00FF', tools: [
+    { id: 'portal:gravity', label: 'Gravity', key: '', color: '#FFD700', toolType: 'portal', subType: 'gravity' },
+    { id: 'portal:speed_up', label: 'Speed+', key: '', color: '#FF6600', toolType: 'portal', subType: 'speed_up' },
+    { id: 'portal:speed_down', label: 'Speed-', key: '', color: '#00AAFF', toolType: 'portal', subType: 'speed_down' },
+    { id: 'portal:ship', label: 'Ship', key: '', color: '#FF00FF', toolType: 'portal', subType: 'ship' },
+    { id: 'portal:wave', label: 'Wave', key: '', color: '#00FFAA', toolType: 'portal', subType: 'wave' },
+    { id: 'portal:cube', label: 'Cube', key: '', color: '#00C8FF', toolType: 'portal', subType: 'cube' },
+    { id: 'portal:ball', label: 'Ball', key: '', color: '#FF8800', toolType: 'portal', subType: 'ball' },
+    { id: 'portal:mini', label: 'Mini', key: '', color: '#FF44FF', toolType: 'portal', subType: 'mini' },
+    { id: 'portal:big', label: 'Big', key: '', color: '#44AAFF', toolType: 'portal', subType: 'big' },
   ]},
   { id: 'special', label: 'SPECIAL', color: '#00FF88', tools: [
     { id: 'coin', label: 'Coin', key: 'C', color: '#FFD700' },
@@ -40,7 +57,7 @@ const TOOL_CATEGORIES = [
   ]},
 ];
 
-// Flat list for backwards compatibility
+// Flat list for backwards compatibility (use toolType for compound IDs)
 const TOOLS = TOOL_CATEGORIES.flatMap(c => c.tools);
 
 const SUBTYPES = {
@@ -878,7 +895,7 @@ export class Editor {
       const { sx, sy } = this._gridToScreen(this.hoverGx, this.hoverGy);
       ctx.save();
       ctx.globalAlpha = 0.6;
-      const tool = TOOLS.find(t => t.id === this.movingObj.type);
+      const tool = TOOLS.find(t => t.id === this.movingObj.type || t.toolType === this.movingObj.type);
       ctx.fillStyle = tool ? tool.color : '#FFF';
       ctx.fillRect(sx, sy, GRID, GRID);
       ctx.strokeStyle = '#FFF';
@@ -1474,7 +1491,9 @@ export class Editor {
     for (let i = 0; i < catTools.length; i++) {
       const tool = catTools[i];
       const bx = margin + i * (btnW + gap);
-      const isActive = this.selectedTool === tool.id;
+      const isActive = tool.toolType
+        ? (this.selectedTool === tool.toolType && this.subType === tool.subType)
+        : (this.selectedTool === tool.id);
 
       this._editorRoundRect(ctx, bx, btnY, btnW, btnH, r);
       if (isActive) {
@@ -1626,7 +1645,7 @@ export class Editor {
       const dx = barX + frac * barW;
       if (dx < barX || dx > barX + barW) continue;
 
-      const tool = TOOLS.find(t => t.id === o.type);
+      const tool = TOOLS.find(t => t.id === o.type || t.toolType === o.type);
       ctx.fillStyle = tool ? tool.color : '#888';
       ctx.globalAlpha = 0.7;
       const dotW = Math.max(2, ((o.w || 1) * GRID / totalWorldW) * barW);
@@ -2600,13 +2619,30 @@ export class Editor {
       this.selectedCategory = catId;
       // Select first tool of category if current tool isn't in it
       const cat = TOOL_CATEGORIES.find(c => c.id === catId);
-      if (cat && !cat.tools.some(t => t.id === this.selectedTool)) {
-        this.selectedTool = cat.tools[0].id;
-        this.subType = null;
+      if (cat) {
+        const isInCat = cat.tools.some(t => t.toolType ? t.toolType === this.selectedTool : t.id === this.selectedTool);
+        if (!isInCat) {
+          const first = cat.tools[0];
+          if (first.toolType) {
+            this.selectedTool = first.toolType;
+            this.subType = first.subType;
+          } else {
+            this.selectedTool = first.id;
+            this.subType = null;
+          }
+        }
       }
     } else if (id.startsWith('tool_')) {
-      this.selectedTool = id.replace('tool_', '');
-      this.subType = null;
+      const toolId = id.replace('tool_', '');
+      // Compound tool IDs like "orb:yellow_orb" set both tool and subtype
+      const compoundTool = TOOLS.find(t => t.id === toolId);
+      if (compoundTool && compoundTool.toolType) {
+        this.selectedTool = compoundTool.toolType;
+        this.subType = compoundTool.subType;
+      } else {
+        this.selectedTool = toolId;
+        this.subType = null;
+      }
       this.movingEndMode = false;
       this.movingStart = null;
       this.movingObj = null;
