@@ -2222,7 +2222,6 @@ class Game {
       this.ui.resetScroll();
       this.secretsData.message = null;
       this.state = SECRETS;
-      this._showSecretsInput();
     });
 
     document.getElementById('acc-close').addEventListener('click', () => {
