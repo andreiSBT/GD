@@ -53,6 +53,16 @@ function _buildAchievements() {
     { id: 'attempts_100', title: 'PERSISTENT', desc: 'Make 100 total attempts', check: (p) => _totalAttempts(p) >= 100 },
     { id: 'attempts_500', title: 'DEDICATED', desc: 'Make 500 total attempts', check: (p) => _totalAttempts(p) >= 500 },
     { id: 'attempts_1000', title: 'UNSTOPPABLE', desc: 'Make 1000 total attempts', check: (p) => _totalAttempts(p) >= 1000 },
+    // Jumps
+    { id: 'jumps_100', title: 'HOPPER', desc: '100 total jumps', check: () => _totalJumps() >= 100 },
+    { id: 'jumps_500', title: 'BOUNCY', desc: '500 total jumps', check: () => _totalJumps() >= 500 },
+    { id: 'jumps_1000', title: 'SPRING', desc: '1,000 total jumps', check: () => _totalJumps() >= 1000 },
+    { id: 'jumps_2000', title: 'KANGAROO', desc: '2,000 total jumps', check: () => _totalJumps() >= 2000 },
+    { id: 'jumps_5000', title: 'SKYDIVER', desc: '5,000 total jumps', check: () => _totalJumps() >= 5000 },
+    { id: 'jumps_10k', title: 'FREQUENT FLYER', desc: '10,000 total jumps', check: () => _totalJumps() >= 10000 },
+    { id: 'jumps_50k', title: 'ORBIT', desc: '50,000 total jumps', check: () => _totalJumps() >= 50000 },
+    { id: 'jumps_100k', title: 'STRATOSPHERE', desc: '100,000 total jumps', check: () => _totalJumps() >= 100000 },
+    { id: 'jumps_1m', title: 'TO THE MOON', desc: '1,000,000 total jumps', check: () => _totalJumps() >= 1000000 },
     // Progress
     { id: 'ninety', title: 'SO CLOSE', desc: 'Reach 90% without completing', check: (p) => Object.values(p).some(l => !l.completed && l.bestProgress >= 0.9) },
   );
@@ -65,6 +75,10 @@ let _cachedLevelCount = 0;
 
 function _totalAttempts(p) {
   return Object.values(p).reduce((sum, l) => sum + (l.attempts || 0), 0);
+}
+
+function _totalJumps() {
+  return parseInt(localStorage.getItem('gd_total_jumps') || '0');
 }
 
 function _totalCoins(p) {
