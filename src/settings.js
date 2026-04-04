@@ -29,6 +29,7 @@ export const MAX_PARTICLES = 200;
 export const PLAYER_COLORS = [
   '#00FF64', '#00C8FF', '#FF3296', '#FFD700', '#FF6600',
   '#FF0000', '#AA00FF', '#00FFAA', '#FF69B4', '#FFFFFF',
+  'rainbow',
 ];
 
 export const PLAYER_TRAIL_COLORS = [

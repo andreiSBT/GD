@@ -393,7 +393,11 @@ export class Player {
     const offset = this.mini ? (PLAYER_SIZE - size) / 2 : 0;
     const cx = sx + PLAYER_SIZE / 2;
     const cy = sy + PLAYER_SIZE / 2;
-    const color = this.customColor || theme.player;
+    let color = this.customColor || theme.player;
+    if (color === 'rainbow') {
+      const hue = (Date.now() / 10) % 360;
+      color = `hsl(${hue}, 100%, 60%)`;
+    }
 
     // --- GLOW TRAIL ---
     this._drawTrail(ctx, cameraX, theme);

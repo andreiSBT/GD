@@ -1065,7 +1065,11 @@ export class UI {
     const previewX = SCREEN_WIDTH / 2;
     const previewY = 110;
     const previewSize = PLAYER_SIZE * 1.6;
-    const previewColor = PLAYER_COLORS[colorIndex];
+    let previewColor = PLAYER_COLORS[colorIndex];
+    if (previewColor === 'rainbow') {
+      const hue = (Date.now() / 10) % 360;
+      previewColor = `hsl(${hue}, 100%, 60%)`;
+    }
     const trailColor = PLAYER_TRAIL_COLORS[trailIndex] || previewColor;
     const previewShape = CUBE_SHAPES[shapeIndex || 0] || 'square';
 
@@ -1097,14 +1101,27 @@ export class UI {
 
     const colorSize = IS_MOBILE ? 48 : 38;
     const colorGap = IS_MOBILE ? 8 : 10;
-    const colorTotalW = PLAYER_COLORS.length * (colorSize + colorGap) - colorGap;
+    const rainbowUnlocked = !!localStorage.getItem('gd_rainbow_color');
+    const visibleColors = PLAYER_COLORS.filter(c => c !== 'rainbow' || rainbowUnlocked);
+    const colorTotalW = visibleColors.length * (colorSize + colorGap) - colorGap;
     const colorStartX = (SCREEN_WIDTH - colorTotalW) / 2;
 
+    let colorSlot = 0;
     for (let i = 0; i < PLAYER_COLORS.length; i++) {
-      const cx = colorStartX + i * (colorSize + colorGap);
+      const isRainbow = PLAYER_COLORS[i] === 'rainbow';
+      if (isRainbow && !rainbowUnlocked) continue;
+
+      const cx = colorStartX + colorSlot * (colorSize + colorGap);
+      colorSlot++;
       const cy = sectionY1 + 10;
 
-      ctx.fillStyle = PLAYER_COLORS[i];
+      if (isRainbow) {
+        // Animated rainbow swatch
+        const hue = (Date.now() / 10) % 360;
+        ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+      } else {
+        ctx.fillStyle = PLAYER_COLORS[i];
+      }
       this._roundRect(ctx, cx, cy, colorSize, colorSize, 6);
       ctx.fill();
 

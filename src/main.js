@@ -1107,6 +1107,7 @@ class Game {
     // Define secret codes and their rewards
     const SECRET_CODES = {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
+      'GD GO!': { reward: 'rainbow', desc: 'Rainbow color unlocked!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1126,6 +1127,8 @@ class Game {
     if (entry.reward === 'coin') {
       const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
       localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
+    } else if (entry.reward === 'rainbow') {
+      localStorage.setItem('gd_rainbow_color', '1');
     }
 
     this._redeemedCodes.add(code);
