@@ -190,7 +190,7 @@ export class UI {
     ctx.fillText(IS_MOBILE ? 'TAP to jump' : 'SPACE / CLICK to jump   •   ESC for menu', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
   }
 
-  drawLevelSelect(ctx, progress, page = 0) {
+  drawLevelSelect(ctx, progress, page = 0, showScrollCoin = false) {
     this.buttons = [];
 
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
@@ -233,6 +233,33 @@ export class UI {
       ctx.font = '16px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('More levels are on the way!', SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
+
+      // Secret coin above COMING SOON
+      if (showScrollCoin) {
+        const coinX = SCREEN_WIDTH / 2;
+        const coinY = SCREEN_HEIGHT / 2 - 90;
+        const coinR = 20;
+        const pulse = 1 + Math.sin(Date.now() / 300) * 0.1;
+        ctx.save();
+        ctx.shadowColor = '#FFD700';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(coinX, coinY, coinR * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFD700';
+        ctx.fill();
+        ctx.strokeStyle = '#FFA500';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#886600';
+        ctx.font = 'bold 20px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('$', coinX, coinY);
+        ctx.textBaseline = 'alphabetic';
+        ctx.restore();
+        this.buttons.push({ x: coinX - coinR - 5, y: coinY - coinR - 5, w: (coinR + 5) * 2, h: (coinR + 5) * 2, id: 'collect_scroll_coin' });
+      }
 
       // Arrows: left goes back, right wraps to page 0
       const arrowY = 32;

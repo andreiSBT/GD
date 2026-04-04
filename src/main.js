@@ -87,6 +87,7 @@ class Game {
     this.secretsData = { inputActive: false, inputText: '', message: null, messageTimer: 0 };
     this._redeemedCodes = this._loadRedeemedCodes();
     this._levelScrollCount = 0;
+    this._showScrollCoin = false;
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -542,7 +543,14 @@ class Game {
   }
 
   _handleAction(action) {
-    if (action === 'levels') {
+    if (action === 'collect_scroll_coin') {
+      this._showScrollCoin = false;
+      const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
+      localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
+      localStorage.setItem('gd_scroll_coin', '1');
+      this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
+      this._checkAchievements();
+    } else if (action === 'levels') {
       this.state = LEVEL_SELECT;
       this.levelPage = 0;
     } else if (action === 'levels_prev') {
@@ -1134,11 +1142,7 @@ class Game {
     if (localStorage.getItem('gd_scroll_coin')) return;
     this._levelScrollCount++;
     if (this._levelScrollCount >= 5) {
-      const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
-      localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
-      localStorage.setItem('gd_scroll_coin', '1');
-      this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
-      this._checkAchievements();
+      this._showScrollCoin = true;
     }
   }
 
@@ -1926,7 +1930,7 @@ class Game {
     if (this.state === MENU) {
       this.ui.drawMainMenu(ctx, this.progress);
     } else if (this.state === LEVEL_SELECT) {
-      this.ui.drawLevelSelect(ctx, this.progress, this.levelPage);
+      this.ui.drawLevelSelect(ctx, this.progress, this.levelPage, this._showScrollCoin);
     } else if (this.state === CUSTOMIZE) {
       this.ui.drawCustomize(ctx, this.customization);
     } else if (this.state === STATS) {
