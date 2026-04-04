@@ -1616,7 +1616,7 @@ export class UI {
     // Input area
     const inputW = 360;
     const inputX = (SCREEN_WIDTH - inputW) / 2;
-    const inputY = 220;
+    const inputY = 170;
 
     // Label
     ctx.fillStyle = '#FF0066';

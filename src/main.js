@@ -1051,7 +1051,7 @@ class Game {
     const scaleY = rect.height / SCREEN_HEIGHT;
     const inputW = 360;
     const inputX = (SCREEN_WIDTH - inputW) / 2;
-    const inputY = 280;
+    const inputY = 230;
     const screenLeft = rect.left + inputX * scaleX;
     const screenTop = rect.top + inputY * scaleY;
     const screenW = inputW * scaleX;
