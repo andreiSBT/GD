@@ -1503,14 +1503,11 @@ class Game {
             const wasAboveInv = this.player.gravityMult < 0 && prevTop < piece.y + 4;
             // Skip death if player is rising near a slope in this group (just jumped off)
             const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
-            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv || risingNearSlope) {
-              // Block against platform underside for all modes
-              if (wasBelow || wasAboveInv) {
-                if (this.player.gravityMult > 0) { this.player.y = piece.y + piece.h + miniOffset; }
-                else { this.player.y = piece.y - PLAYER_SIZE + miniOffset; }
-                this.player.vy = 0;
-                this.player.prevY = this.player.y;
-              }
+            // Hitting from below = death (unless near a slope)
+            if ((wasBelow || wasAboveInv) && !risingNearSlope) {
+              this._die(); return;
+            }
+            if (wasOnTop || wasOnBottom || risingNearSlope) {
               continue;
             }
             this._die(); return;
@@ -1551,17 +1548,11 @@ class Game {
             const wasBelow = this.player.gravityMult > 0 && prevBottom > platBottom - 4;
             const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
             const wasAboveInv = this.player.gravityMult < 0 && prevTop < platTop + 4;
-            if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv) {
-              // Coming from underside — block against platform bottom
-              if (wasBelow || wasAboveInv) {
-                if (this.player.gravityMult > 0) {
-                  this.player.y = obs.y + obs.h + miniOffset;
-                } else {
-                  this.player.y = obs.y - PLAYER_SIZE + miniOffset;
-                }
-                this.player.vy = 0;
-                this.player.prevY = this.player.y;
-              }
+            // Hitting platform from below = death
+            if (wasBelow || wasAboveInv) {
+              this._die(); return;
+            }
+            if (wasOnTop || wasOnBottom) {
               continue;
             }
             // Side hit — always die
