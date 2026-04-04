@@ -411,9 +411,9 @@ export class Player {
     if (this.mode === MODE_CUBE) {
       this._drawCube(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_SHIP) {
-      this._drawShip(ctx, PLAYER_SIZE, color);
-    } else if (this.mode === MODE_WAVE) {
       this._drawWave(ctx, PLAYER_SIZE, color);
+    } else if (this.mode === MODE_WAVE) {
+      this._drawShip(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_BALL) {
       this._drawBall(ctx, PLAYER_SIZE, color);
     }
@@ -768,6 +768,27 @@ export class Player {
         // Smile curve
         ctx.strokeStyle = '#FFF';
         ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(2, 2, 7, 0.2, Math.PI - 0.2);
+        ctx.stroke();
+        break;
+      case 'wink':
+        // Open eye (left)
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-2, -3, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Winking eye (right) — a curved line
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(8, -3, 3, 0.3, Math.PI - 0.3);
+        ctx.stroke();
+        // Smile
         ctx.beginPath();
         ctx.arc(2, 2, 7, 0.2, Math.PI - 0.2);
         ctx.stroke();
