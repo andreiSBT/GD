@@ -86,6 +86,7 @@ class Game {
     // Secret codes
     this.secretsData = { inputActive: false, inputText: '', message: null, messageTimer: 0 };
     this._redeemedCodes = this._loadRedeemedCodes();
+    this._levelScrollCount = 0;
 
     // Editor
     this.editor = new Editor(this.canvas, this.ctx, this.renderer);
@@ -545,15 +546,15 @@ class Game {
       this.state = LEVEL_SELECT;
       this.levelPage = 0;
     } else if (action === 'levels_prev') {
-      if (this.levelPage > 0) this.levelPage--;
+      if (this.levelPage > 0) { this.levelPage--; this._onLevelScroll(); }
     } else if (action === 'levels_next') {
       const maxPage = Math.ceil(getLevelCount() / 3) - 1;
-      if (this.levelPage <= maxPage) this.levelPage++;
+      if (this.levelPage <= maxPage) { this.levelPage++; this._onLevelScroll(); }
     } else if (action === 'levels_wrap_start') {
-      this.levelPage = 0;
+      this.levelPage = 0; this._onLevelScroll();
     } else if (action === 'levels_wrap_end') {
       const maxPage = Math.ceil(getLevelCount() / 3) - 1;
-      this.levelPage = maxPage + 1;
+      this.levelPage = maxPage + 1; this._onLevelScroll();
     } else if (action.startsWith('normal_')) {
       const id = parseInt(action.split('_')[1]);
       this.practiceMode = false;
@@ -1098,10 +1099,6 @@ class Game {
     // Define secret codes and their rewards
     const SECRET_CODES = {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
-      'COMING SOON': { reward: 'coin', desc: '+1 Secret Coin unlocked!', condition: () => {
-        const totalAttempts = Object.values(this.progress).reduce((sum, l) => sum + (l.attempts || 0), 0);
-        return totalAttempts >= 5;
-      }, failMsg: 'Not yet... keep playing!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1131,6 +1128,18 @@ class Game {
     const input = document.getElementById('secrets-input');
     if (input) input.value = '';
     this._checkAchievements();
+  }
+
+  _onLevelScroll() {
+    if (localStorage.getItem('gd_scroll_coin')) return;
+    this._levelScrollCount++;
+    if (this._levelScrollCount >= 5) {
+      const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
+      localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
+      localStorage.setItem('gd_scroll_coin', '1');
+      this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
+      this._checkAchievements();
+    }
   }
 
   // Find the nearest solid surface below a given position (platform top or ground)
