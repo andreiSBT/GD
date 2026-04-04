@@ -11,24 +11,37 @@ const PANEL_W = 180;
 const NAV_BAR_H = 24;
 const NAV_BAR_PAD = 8;
 
-const TOOLS = [
-  { id: 'spike', label: 'Spike', key: '1', color: '#FF4444' },
-  { id: 'platform', label: 'Platform', key: '2', color: '#4488FF' },
-  { id: 'moving', label: 'Moving', key: '3', color: '#44AAFF' },
-  { id: 'transport', label: 'Transport', key: 'T', color: '#44FF88' },
-  { id: 'orb', label: 'Orb', key: '4', color: '#FFD700' },
-  { id: 'pad', label: 'Pad', key: '5', color: '#FFAA00' },
-  { id: 'portal', label: 'Portal', key: '6', color: '#FF00FF' },
-  { id: 'coin', label: 'Coin', key: 'C', color: '#FFD700' },
-  { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
-  { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
-  { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
-  { id: 'slope', label: 'Slope', key: 'S', color: '#88CCFF' },
-  { id: 'saw', label: 'Saw', key: 'W', color: '#FF6666' },
-  { id: 'color_trigger', label: 'Color', key: 'R', color: '#FF66AA' },
-  { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
-  { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
+const TOOL_CATEGORIES = [
+  { id: 'hazards', label: 'HAZARDS', color: '#FF4444', tools: [
+    { id: 'spike', label: 'Spike', key: '1', color: '#FF4444' },
+    { id: 'saw', label: 'Saw', key: 'W', color: '#FF6666' },
+  ]},
+  { id: 'platforms', label: 'PLATFORMS', color: '#4488FF', tools: [
+    { id: 'platform', label: 'Platform', key: '2', color: '#4488FF' },
+    { id: 'slope', label: 'Slope', key: 'S', color: '#88CCFF' },
+    { id: 'moving', label: 'Moving', key: '3', color: '#44AAFF' },
+    { id: 'transport', label: 'Transport', key: 'T', color: '#44FF88' },
+  ]},
+  { id: 'gameplay', label: 'GAMEPLAY', color: '#FFD700', tools: [
+    { id: 'orb', label: 'Orb', key: '4', color: '#FFD700' },
+    { id: 'pad', label: 'Pad', key: '5', color: '#FFAA00' },
+    { id: 'portal', label: 'Portal', key: '6', color: '#FF00FF' },
+  ]},
+  { id: 'special', label: 'SPECIAL', color: '#00FF88', tools: [
+    { id: 'coin', label: 'Coin', key: 'C', color: '#FFD700' },
+    { id: 'checkpoint', label: 'Check', key: '7', color: '#00FF44' },
+    { id: 'start', label: 'Start', key: '9', color: '#00FF88' },
+    { id: 'end', label: 'End', key: '8', color: '#00FFFF' },
+    { id: 'color_trigger', label: 'Color', key: 'R', color: '#FF66AA' },
+  ]},
+  { id: 'edit', label: 'EDIT', color: '#FFAA00', tools: [
+    { id: 'move', label: 'Move', key: 'M', color: '#FFAA00' },
+    { id: 'erase', label: 'Erase', key: 'X', color: '#FF0000' },
+  ]},
 ];
+
+// Flat list for backwards compatibility
+const TOOLS = TOOL_CATEGORIES.flatMap(c => c.tools);
 
 const SUBTYPES = {
   orb: ['yellow_orb', 'pink_orb', 'dash_orb', 'blue_orb'],
@@ -61,6 +74,7 @@ export class Editor {
     this.objects = [];
     this.liveObstacles = [];
     this.selectedTool = 'spike';
+    this.selectedCategory = 'hazards';
     this.subType = null;
     this.rotation = 0; // 0, 90, 180, 270 for spikes
     this.theme = THEMES[1];
@@ -526,11 +540,14 @@ export class Editor {
     }
 
     // Tool shortcuts
-    for (const tool of TOOLS) {
-      if (e.key === tool.key || e.key === tool.key.toLowerCase()) {
-        this.selectedTool = tool.id;
-        this.subType = null;
-        return true;
+    for (const cat of TOOL_CATEGORIES) {
+      for (const tool of cat.tools) {
+        if (e.key === tool.key || e.key === tool.key.toLowerCase()) {
+          this.selectedCategory = cat.id;
+          this.selectedTool = tool.id;
+          this.subType = null;
+          return true;
+        }
       }
     }
 
@@ -1385,11 +1402,50 @@ export class Editor {
     ctx.fillStyle = 'rgba(0,200,255,0.15)';
     ctx.fillRect(0, TOOLBAR_H - 1, SCREEN_WIDTH, 1);
 
-    const btnH = 40;
-    const btnY = 8;
     const gap = 3;
     const margin = 8;
     const r = 6;
+
+    // --- ROW 1: Category tabs (top) ---
+    const catH = 22;
+    const catY = 4;
+    const catGap = 4;
+    const catCount = TOOL_CATEGORIES.length;
+    const catTotalW = SCREEN_WIDTH - margin * 2 - (catCount - 1) * catGap;
+    const catW = Math.floor(catTotalW / catCount);
+
+    for (let i = 0; i < catCount; i++) {
+      const cat = TOOL_CATEGORIES[i];
+      const cx = margin + i * (catW + catGap);
+      const isActive = this.selectedCategory === cat.id;
+
+      this._editorRoundRect(ctx, cx, catY, catW, catH, 4);
+      if (isActive) {
+        ctx.fillStyle = cat.color;
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = cat.color;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fill();
+      }
+
+      ctx.fillStyle = isActive ? cat.color : '#666';
+      ctx.font = `bold 10px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(cat.label, cx + catW / 2, catY + 15);
+      this.buttons.push({ id: 'cat_' + cat.id, x: cx, y: catY, w: catW, h: catH });
+    }
+
+    // --- ROW 2: Tools for active category + action buttons ---
+    const btnH = 28;
+    const btnY = catY + catH + 4;
+
+    const activeCat = TOOL_CATEGORIES.find(c => c.id === this.selectedCategory) || TOOL_CATEGORIES[0];
+    const catTools = activeCat.tools;
 
     const actions = [
       { id: 'action_rotate', label: 'ROT', color: '#888' },
@@ -1408,16 +1464,15 @@ export class Editor {
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
 
-    // Calculate responsive button width
-    const totalItems = TOOLS.length + actions.length;
-    const totalGaps = (TOOLS.length - 1 + actions.length - 1 + 1) * gap;
+    const totalItems = catTools.length + actions.length;
+    const totalGaps = (catTools.length - 1 + actions.length - 1 + 1) * gap;
     const separatorGap = 12;
     const availW = SCREEN_WIDTH - margin * 2 - totalGaps - separatorGap;
-    const btnW = Math.min(64, Math.floor(availW / totalItems));
+    const btnW = Math.min(72, Math.floor(availW / totalItems));
 
-    // Tool buttons
-    for (let i = 0; i < TOOLS.length; i++) {
-      const tool = TOOLS[i];
+    // Tool buttons for active category
+    for (let i = 0; i < catTools.length; i++) {
+      const tool = catTools[i];
       const bx = margin + i * (btnW + gap);
       const isActive = this.selectedTool === tool.id;
 
@@ -1425,10 +1480,8 @@ export class Editor {
       if (isActive) {
         ctx.fillStyle = tool.color;
         ctx.fill();
-        // Inner darkening
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.fill();
-        // Glow border
         ctx.save();
         ctx.shadowColor = tool.color;
         ctx.shadowBlur = 6;
@@ -1442,13 +1495,13 @@ export class Editor {
       }
 
       ctx.fillStyle = isActive ? '#FFF' : '#999';
-      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 6))}px monospace`;
+      ctx.font = `bold ${Math.min(11, Math.max(9, btnW / 5))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(tool.label, bx + btnW / 2, btnY + 16);
+      ctx.fillText(tool.label, bx + btnW / 2, btnY + 13);
 
       ctx.fillStyle = isActive ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.3)';
-      ctx.font = '9px monospace';
-      ctx.fillText(tool.key, bx + btnW / 2, btnY + 32);
+      ctx.font = '8px monospace';
+      ctx.fillText(tool.key, bx + btnW / 2, btnY + 24);
 
       this.buttons.push({ id: 'tool_' + tool.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
@@ -1469,7 +1522,7 @@ export class Editor {
       ctx.fillStyle = '#FFF';
       ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 5))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(act.label, ax + btnW / 2, btnY + 24);
+      ctx.fillText(act.label, ax + btnW / 2, btnY + 18);
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
       ax += btnW + gap;
     }
@@ -2542,7 +2595,16 @@ export class Editor {
   }
 
   _handleButton(id) {
-    if (id.startsWith('tool_')) {
+    if (id.startsWith('cat_')) {
+      const catId = id.replace('cat_', '');
+      this.selectedCategory = catId;
+      // Select first tool of category if current tool isn't in it
+      const cat = TOOL_CATEGORIES.find(c => c.id === catId);
+      if (cat && !cat.tools.some(t => t.id === this.selectedTool)) {
+        this.selectedTool = cat.tools[0].id;
+        this.subType = null;
+      }
+    } else if (id.startsWith('tool_')) {
       this.selectedTool = id.replace('tool_', '');
       this.subType = null;
       this.movingEndMode = false;
