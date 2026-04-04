@@ -61,6 +61,11 @@ export class Level {
     this._mergePlatforms();
     // Sort by x for faster visibility filtering
     this.obstacles.sort((a, b) => a.x - b.x);
+    // Track max obstacle width for visibility search margin
+    this._maxObsWidth = SCREEN_WIDTH;
+    for (const o of this.obstacles) {
+      if (o.w > this._maxObsWidth) this._maxObsWidth = o.w;
+    }
     // Cache for getVisible
     this._visibleCache = null;
     this._visibleCacheKey = -Infinity;
@@ -192,8 +197,9 @@ export class Level {
     const right = cameraX + SCREEN_WIDTH + 100;
     const visibleLeft = cameraX - PLAYER_X_OFFSET - 100;
     // Binary search on o.x only (monotonic since sorted).
-    // Subtract max possible obstacle width so wide platforms aren't skipped.
-    const searchLeft = visibleLeft - SCREEN_WIDTH;
+    // Use a generous margin for wide PlatformGroups.
+    const maxWidth = this._maxObsWidth || SCREEN_WIDTH;
+    const searchLeft = visibleLeft - maxWidth;
     let lo = 0, hi = this.obstacles.length;
     while (lo < hi) {
       const mid = (lo + hi) >> 1;
