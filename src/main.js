@@ -549,7 +549,6 @@ class Game {
       localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
       localStorage.setItem('gd_scroll_coin', '1');
       this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
-      this._checkAchievements();
     } else if (action === 'levels') {
       this.state = LEVEL_SELECT;
       this.levelPage = 0;
@@ -1138,7 +1137,6 @@ class Game {
     this.secretsData.inputText = '';
     const input = document.getElementById('secrets-input');
     if (input) input.value = '';
-    this._checkAchievements();
   }
 
   _onLevelScroll() {
