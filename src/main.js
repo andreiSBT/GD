@@ -2253,6 +2253,20 @@ class Game {
       this.state = SECRETS;
     });
 
+    document.getElementById('acc-reset').addEventListener('click', () => {
+      if (!confirm('Reset all progress, coins, attempts, and jumps? This cannot be undone.')) return;
+      // Clear local progress
+      localStorage.removeItem('gd_progress');
+      localStorage.removeItem('gd_total_jumps');
+      localStorage.removeItem('gd_achievements');
+      const user = getAuthUser();
+      if (user) localStorage.removeItem('gd_total_jumps_' + user.id);
+      // Reload progress from empty defaults
+      this.progress = loadProgress();
+      overlay.style.display = 'none';
+      this.state = MENU;
+    });
+
     document.getElementById('acc-close').addEventListener('click', () => {
       overlay.style.display = 'none';
     });
