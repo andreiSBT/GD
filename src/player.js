@@ -320,7 +320,8 @@ export class Player {
       this.y = waveCeilY;
     }
 
-    this.rotation += 8;
+    // Point in the direction of movement (up or down)
+    this.rotation = this.vy < 0 ? -45 : this.vy > 0 ? 45 : 0;
   }
 
   _updateBall() {
