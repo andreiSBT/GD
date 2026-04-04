@@ -1504,9 +1504,11 @@ class Game {
             // Skip death if player is rising near a slope in this group (just jumped off)
             const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
             if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv || risingNearSlope) {
-              if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
-                if (this.player.gravityMult > 0) { this.player.y = piece.y + piece.h + miniOffset; this.player.vy = 0; }
-                else { this.player.y = piece.y - PLAYER_SIZE + miniOffset; this.player.vy = 0; }
+              // Block against platform underside for all modes
+              if (wasBelow || wasAboveInv) {
+                if (this.player.gravityMult > 0) { this.player.y = piece.y + piece.h + miniOffset; }
+                else { this.player.y = piece.y - PLAYER_SIZE + miniOffset; }
+                this.player.vy = 0;
                 this.player.prevY = this.player.y;
               }
               continue;
@@ -1550,15 +1552,14 @@ class Game {
             const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
             const wasAboveInv = this.player.gravityMult < 0 && prevTop < platTop + 4;
             if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv) {
-              // Coming from underside — ship/wave block, cube/ball pass through
-              if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
+              // Coming from underside — block against platform bottom
+              if (wasBelow || wasAboveInv) {
                 if (this.player.gravityMult > 0) {
                   this.player.y = obs.y + obs.h + miniOffset;
-                  this.player.vy = 0;
                 } else {
                   this.player.y = obs.y - PLAYER_SIZE + miniOffset;
-                  this.player.vy = 0;
                 }
+                this.player.vy = 0;
                 this.player.prevY = this.player.y;
               }
               continue;
