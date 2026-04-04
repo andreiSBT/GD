@@ -1701,6 +1701,12 @@ class Game {
             }
             this._die(); return;
           } else if (result.type === 'land') {
+            // If player was approaching from the left (side hit), die instead of landing
+            const prevRight = this.player.prevX + PLAYER_SIZE;
+            const landPiece = result._piece || piece;
+            if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
+              this._die(); return;
+            }
             const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) || (this.player.gravityMult < 0 && this.player.vy > 2);
             if (jumpingOff) continue;
             // Handle slope landing with diagonal vy
@@ -1752,6 +1758,11 @@ class Game {
             this._die();
             return;
           } else if (result.type === 'land') {
+            // If player was approaching from the left (side hit), die instead of landing
+            const prevRight = this.player.prevX + PLAYER_SIZE;
+            if (prevRight <= obs.x + 4) {
+              this._die(); return;
+            }
             // Don't land if player just jumped (vy strongly away from surface)
             // This prevents collision from cancelling a jump before player.update moves the player
             const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) ||
