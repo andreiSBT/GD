@@ -2033,7 +2033,7 @@ class Game {
 
       // Track new best silently during gameplay (only normal mode, only if there's a previous record to beat)
       if ((this.state === PLAYING || this.state === EDITOR_TESTING) && !this.practiceMode && !this.editorLevelData) {
-        if (this.previousBest > 0 && this.previousBest < 1 && progress > this.previousBest) {
+        if (this.previousBest < 1 && progress > this.previousBest) {
           this.newBestTriggered = true;
         }
       }
