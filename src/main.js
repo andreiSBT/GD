@@ -2369,13 +2369,14 @@ class Game {
   }
 
   _loadCustomization() {
+    const defaults = { colorIndex: 0, trailIndex: 0, iconIndex: 0, shapeIndex: 0, trailStyleIndex: 0 };
     try {
       const data = localStorage.getItem('gd_customization');
-      if (data) return JSON.parse(data);
+      if (data) return { ...defaults, ...JSON.parse(data) };
     } catch (e) {
       console.warn('Failed to load customization:', e);
     }
-    return { colorIndex: 0, trailIndex: 0, iconIndex: 0, shapeIndex: 0, trailStyleIndex: 0 };
+    return defaults;
   }
 
   _saveCustomization() {
