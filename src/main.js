@@ -1707,6 +1707,16 @@ class Game {
             if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
               this._die(); return;
             }
+            // If player was below platform piece and rising, die (hitting underside)
+            if (!result.slopeRatio && landPiece.type !== 'slope') {
+              const prevBot = this.player.prevY + PLAYER_SIZE;
+              if (this.player.gravityMult > 0 && prevBot > landPiece.y + 8 && this.player.vy < 0) {
+                this._die(); return;
+              }
+              if (this.player.gravityMult < 0 && this.player.prevY < landPiece.y + landPiece.h - 8 && this.player.vy > 0) {
+                this._die(); return;
+              }
+            }
             const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) || (this.player.gravityMult < 0 && this.player.vy > 2);
             if (jumpingOff) continue;
             // Handle slope landing with diagonal vy
@@ -1761,6 +1771,14 @@ class Game {
             // If player was approaching from the left (side hit), die instead of landing
             const prevRight = this.player.prevX + PLAYER_SIZE;
             if (prevRight <= obs.x + 4) {
+              this._die(); return;
+            }
+            // If player was below platform and rising, die (hitting underside)
+            const prevBot = this.player.prevY + PLAYER_SIZE;
+            if (this.player.gravityMult > 0 && prevBot > obs.y + 8 && this.player.vy < 0) {
+              this._die(); return;
+            }
+            if (this.player.gravityMult < 0 && this.player.prevY < obs.y + obs.h - 8 && this.player.vy > 0) {
               this._die(); return;
             }
             // Don't land if player just jumped (vy strongly away from surface)
