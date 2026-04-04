@@ -433,25 +433,40 @@ export class Player {
     ctx.fillStyle = trailColor;
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
-      // Draw dashes as solid rectangles with gaps: -  -  -  -
-      const dashW = 10, gapW = 8, h = 4;
-      const last = this.trail[this.trail.length - 1];
-      const first = this.trail[0];
-      const startX = first.x - cameraX + PLAYER_X_OFFSET;
-      const endX = last.x - cameraX + PLAYER_X_OFFSET;
-      const totalLen = endX - startX;
-      if (totalLen > 0) {
-        const cycle = dashW + gapW;
-        const numDashes = Math.ceil(totalLen / cycle);
-        for (let d = 0; d < numDashes; d++) {
-          const dx = startX + d * cycle;
-          const progress = (dx - startX) / totalLen;
-          const alpha = progress * 0.5;
-          // Find Y at this position by interpolating trail
-          const trailIdx = Math.floor(progress * (this.trail.length - 1));
-          const t = this.trail[Math.min(trailIdx, this.trail.length - 1)];
-          ctx.globalAlpha = alpha;
-          ctx.fillRect(dx, t.y - h / 2, dashW, h);
+      // Draw dashes following the trail path with gaps
+      const dashLen = 10, gapLen = 8, h = 4;
+      let dist = 0;
+      let drawing = true; // start with a dash
+      let segLeft = dashLen;
+      for (let i = 1; i < this.trail.length; i++) {
+        const prev = this.trail[i - 1];
+        const cur = this.trail[i];
+        const px = prev.x - cameraX + PLAYER_X_OFFSET;
+        const cx = cur.x - cameraX + PLAYER_X_OFFSET;
+        const py = prev.y, cy = cur.y;
+        const dx = cx - px, dy = cy - py;
+        const segDist = Math.sqrt(dx * dx + dy * dy);
+        if (segDist < 0.5) continue;
+
+        let consumed = 0;
+        while (consumed < segDist) {
+          const step = Math.min(segLeft, segDist - consumed);
+          if (drawing) {
+            const t0 = consumed / segDist;
+            const t1 = (consumed + step) / segDist;
+            const x0 = px + dx * t0, y0 = py + dy * t0;
+            const x1 = px + dx * t1, y1 = py + dy * t1;
+            const alpha = (i / this.trail.length) * 0.5;
+            ctx.globalAlpha = alpha;
+            ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1) - h / 2,
+              Math.abs(x1 - x0) + 2, Math.abs(y1 - y0) + h);
+          }
+          consumed += step;
+          segLeft -= step;
+          if (segLeft <= 0) {
+            drawing = !drawing;
+            segLeft = drawing ? dashLen : gapLen;
+          }
         }
       }
     } else {
