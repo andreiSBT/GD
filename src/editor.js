@@ -2332,7 +2332,7 @@ export class Editor {
     slots.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
     const cardW = Math.min(500, SCREEN_WIDTH - 60);
-    const cardH = 70;
+    const cardH = 95;
     const gap = 12;
     const startX = (SCREEN_WIDTH - cardW) / 2;
     const newBtnY = 95;
@@ -2429,6 +2429,34 @@ export class Editor {
       ctx.fillText('✕', delX + delS / 2, delY + delH / 2 + 7);
       this.buttons.push({ id: 'browse_del_' + slot.id, x: delX, y: delY, w: delS, h: delH });
 
+      // NAME and PUBLISH buttons (bottom row of card)
+      const smallH = 22;
+      const smallY = cy + cardH - smallH - 6;
+      const smallW = 60;
+      const smallGap = 6;
+
+      // NAME
+      ctx.fillStyle = 'rgba(120,120,40,0.6)';
+      this._editorRoundRect(ctx, startX + 10, smallY, smallW, smallH, 5);
+      ctx.fill();
+      ctx.fillStyle = '#CCCC66';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('NAME', startX + 10 + smallW / 2, smallY + smallH / 2 + 4);
+      this.buttons.push({ id: 'browse_name_' + slot.id, x: startX + 10, y: smallY, w: smallW, h: smallH });
+
+      // PUBLISH
+      if (getAuthUser()) {
+        const pubX = startX + 10 + smallW + smallGap;
+        ctx.fillStyle = 'rgba(0,120,80,0.6)';
+        this._editorRoundRect(ctx, pubX, smallY, smallW + 10, smallH, 5);
+        ctx.fill();
+        ctx.fillStyle = '#44DDAA';
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText('PUBLISH', pubX + (smallW + 10) / 2, smallY + smallH / 2 + 4);
+        this.buttons.push({ id: 'browse_pub_' + slot.id, x: pubX, y: smallY, w: smallW + 10, h: smallH });
+      }
+
       ctx.textAlign = 'center';
     }
 
@@ -2452,47 +2480,6 @@ export class Editor {
     ctx.font = 'bold 22px monospace';
     ctx.fillText('+ NEW LEVEL', SCREEN_WIDTH / 2, newBtnY + cardH / 2 + 8);
     this.buttons.push({ id: 'browse_new', x: startX, y: newBtnY, w: cardW, h: cardH });
-
-    // NAME and PUBLISH buttons below NEW LEVEL
-    const smallBtnH = 40;
-    const smallBtnGap = 10;
-    const smallBtnY = newBtnY + cardH + smallBtnGap;
-    const halfW = (cardW - smallBtnGap) / 2;
-
-    // NAME button
-    const nameGrad = ctx.createLinearGradient(startX, smallBtnY, startX, smallBtnY + smallBtnH);
-    nameGrad.addColorStop(0, '#AAAA44');
-    nameGrad.addColorStop(1, '#888830');
-    ctx.fillStyle = nameGrad;
-    this._editorRoundRect(ctx, startX, smallBtnY, halfW, smallBtnH, 10);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-    ctx.lineWidth = 1;
-    this._editorRoundRect(ctx, startX, smallBtnY, halfW, smallBtnH, 10);
-    ctx.stroke();
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText('NAME', startX + halfW / 2, smallBtnY + smallBtnH / 2 + 6);
-    this.buttons.push({ id: 'action_rename', x: startX, y: smallBtnY, w: halfW, h: smallBtnH });
-
-    // PUBLISH button
-    if (getAuthUser()) {
-      const pubGrad = ctx.createLinearGradient(startX + halfW + smallBtnGap, smallBtnY, startX + halfW + smallBtnGap, smallBtnY + smallBtnH);
-      pubGrad.addColorStop(0, '#00CC88');
-      pubGrad.addColorStop(1, '#009966');
-      ctx.fillStyle = pubGrad;
-      const pubX = startX + halfW + smallBtnGap;
-      this._editorRoundRect(ctx, pubX, smallBtnY, halfW, smallBtnH, 10);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 1;
-      this._editorRoundRect(ctx, pubX, smallBtnY, halfW, smallBtnH, 10);
-      ctx.stroke();
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 16px monospace';
-      ctx.fillText('PUBLISH', pubX + halfW / 2, smallBtnY + smallBtnH / 2 + 6);
-      this.buttons.push({ id: 'action_publish', x: pubX, y: smallBtnY, w: halfW, h: smallBtnH });
-    }
 
     // Back button
     const backW = 200;
@@ -2636,6 +2623,30 @@ export class Editor {
           const slotId = btn.id.replace('browse_open_', '');
           if (this.loadFromSlot(slotId)) {
             this.browsing = false;
+          }
+        } else if (btn.id.startsWith('browse_name_')) {
+          const slotId = btn.id.replace('browse_name_', '');
+          const raw = localStorage.getItem('gd_editor_slot_' + slotId);
+          if (raw) {
+            const data = JSON.parse(raw);
+            const name = prompt('Level name:', data.name || 'Untitled');
+            if (name != null && name.trim()) {
+              data.name = name.trim();
+              localStorage.setItem('gd_editor_slot_' + slotId, JSON.stringify(data));
+              if (this.currentSlot === slotId) this.levelName = data.name;
+              this._showToast('Renamed!');
+            }
+          }
+        } else if (btn.id.startsWith('browse_pub_')) {
+          const slotId = btn.id.replace('browse_pub_', '');
+          const raw = localStorage.getItem('gd_editor_slot_' + slotId);
+          if (raw) {
+            const data = JSON.parse(raw);
+            if ((data.objects || []).length < 5) { this._showToast('Level too short!'); return; }
+            publishLevel({ name: data.name || 'Untitled', themeId: data.themeId || 1, objects: data.objects }).then(res => {
+              if (res.error) this._showToast('Error: ' + res.error);
+              else this._showToast('Published!');
+            });
           }
         }
         return;
