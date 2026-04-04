@@ -431,22 +431,17 @@ export class Player {
     ctx.shadowColor = trailColor;
     ctx.shadowBlur = 8;
     ctx.fillStyle = trailColor;
-    const dotted = this.trailStyle === 'dotted';
+    const dashed = this.trailStyle === 'dotted';
     for (let i = 0; i < this.trail.length; i++) {
-      if (dotted && i % 3 !== 0) continue;
+      // Dashed: draw 4 on, skip 3 off
+      if (dashed && i % 7 >= 4) continue;
       const t = this.trail[i];
       const alpha = (i / this.trail.length) * 0.4;
-      const sz = dotted ? 4 + (i / this.trail.length) * 5 : 3 + (i / this.trail.length) * 6;
+      const sz = 3 + (i / this.trail.length) * 6;
       const tsx = t.x - cameraX + PLAYER_X_OFFSET;
-      const tsy = t.y;
+      const tsy = t.y - sz / 2;
       ctx.globalAlpha = alpha;
-      if (dotted) {
-        ctx.beginPath();
-        ctx.arc(tsx, tsy, sz / 2, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillRect(tsx, tsy - sz / 2, sz, sz);
-      }
+      ctx.fillRect(tsx, tsy, sz, sz);
     }
     ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
