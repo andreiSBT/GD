@@ -189,7 +189,7 @@ export class Player {
 
     // Store trail position
     this.trail.push({ x: this.x, y: this.y + PLAYER_SIZE / 2 });
-    const maxTrail = this.trailStyle === 'dotted' ? 35 : 20;
+    const maxTrail = this.trailStyle === 'dotted' ? 45 : 20;
     if (this.trail.length > maxTrail) this.trail.shift();
 
     // Mode-specific physics
