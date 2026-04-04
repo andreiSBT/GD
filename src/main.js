@@ -548,7 +548,12 @@ class Game {
       if (this.levelPage > 0) this.levelPage--;
     } else if (action === 'levels_next') {
       const maxPage = Math.ceil(getLevelCount() / 3) - 1;
-      if (this.levelPage < maxPage) this.levelPage++;
+      if (this.levelPage <= maxPage) this.levelPage++;
+    } else if (action === 'levels_wrap_start') {
+      this.levelPage = 0;
+    } else if (action === 'levels_wrap_end') {
+      const maxPage = Math.ceil(getLevelCount() / 3) - 1;
+      this.levelPage = maxPage + 1;
     } else if (action.startsWith('normal_')) {
       const id = parseInt(action.split('_')[1]);
       this.practiceMode = false;
