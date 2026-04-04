@@ -2261,12 +2261,14 @@ class Game {
       localStorage.removeItem('gd_achievements');
       localStorage.removeItem('gd_secret_coins');
       localStorage.removeItem('gd_redeemed_codes');
+      localStorage.removeItem('gd_scroll_coin');
       const user = getAuthUser();
       if (user) localStorage.removeItem('gd_total_jumps_' + user.id);
       // Reset in-memory state
       this.progress = loadProgress();
       this._redeemedCodes = new Set();
       this._achievementToasts = [];
+      this._showScrollCoin = false;
       overlay.style.display = 'none';
       this.state = MENU;
     });
