@@ -1111,6 +1111,7 @@ class Game {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
       'GD GO!': { reward: 'rainbow', desc: 'Rainbow color unlocked!' },
       '...': { reward: 'dotted_trail', desc: 'Dotted trail unlocked!' },
+      ';)': { reward: 'wink_icon', desc: 'Wink face unlocked!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1134,6 +1135,8 @@ class Game {
       localStorage.setItem('gd_rainbow_color', '1');
     } else if (entry.reward === 'dotted_trail') {
       localStorage.setItem('gd_dotted_trail', '1');
+    } else if (entry.reward === 'wink_icon') {
+      localStorage.setItem('gd_wink_icon', '1');
     }
 
     this._redeemedCodes.add(code);

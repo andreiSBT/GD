@@ -63,6 +63,7 @@ export const CUBE_ICONS = [
   'x_eyes',     // X eyes (dead look)
   'shades',     // sunglasses
   'smile',      // simple smile
+  'wink',       // wink face (secret)
 ];
 
 // Level themes

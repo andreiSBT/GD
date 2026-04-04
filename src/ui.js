@@ -1256,11 +1256,16 @@ export class UI {
 
     const iconSize = IS_MOBILE ? 60 : 55;
     const iconGap = IS_MOBILE ? 10 : 14;
-    const iconTotalW = CUBE_ICONS.length * (iconSize + iconGap) - iconGap;
+    const winkUnlocked = !!localStorage.getItem('gd_wink_icon');
+    const visibleIcons = CUBE_ICONS.filter(ic => ic !== 'wink' || winkUnlocked);
+    const iconTotalW = visibleIcons.length * (iconSize + iconGap) - iconGap;
     const iconStartX = (SCREEN_WIDTH - iconTotalW) / 2;
 
+    let iconSlot = 0;
     for (let i = 0; i < CUBE_ICONS.length; i++) {
-      const ix = iconStartX + i * (iconSize + iconGap);
+      if (CUBE_ICONS[i] === 'wink' && !winkUnlocked) continue;
+      const ix = iconStartX + iconSlot * (iconSize + iconGap);
+      iconSlot++;
       const iy = sectionY4 + 10;
 
       // Icon background
