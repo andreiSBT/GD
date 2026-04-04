@@ -2221,41 +2221,31 @@ export class Editor {
     const cardH = 70;
     const gap = 12;
     const startX = (SCREEN_WIDTH - cardW) / 2;
-    let startY = 95;
+    const newBtnY = 95;
+    const listStartY = newBtnY + cardH + gap * 2;
 
-    // "New Level" button with green glow
-    const newBtnY = startY;
-    ctx.shadowColor = '#00FF66';
-    ctx.shadowBlur = 12;
-    const newGrad = ctx.createLinearGradient(startX, newBtnY, startX, newBtnY + cardH);
-    newGrad.addColorStop(0, '#00CC55');
-    newGrad.addColorStop(1, '#009940');
-    ctx.fillStyle = newGrad;
-    this._editorRoundRect(ctx, startX, newBtnY, cardW, cardH, 12);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    // Subtle top highlight
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.lineWidth = 1;
-    this._editorRoundRect(ctx, startX, newBtnY, cardW, cardH, 12);
-    ctx.stroke();
-    ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 22px monospace';
-    ctx.fillText('+ NEW LEVEL', SCREEN_WIDTH / 2, newBtnY + cardH / 2 + 8);
-    this.buttons.push({ id: 'browse_new', x: startX, y: newBtnY, w: cardW, h: cardH });
-
-    startY += cardH + gap * 2;
+    // Clamp scroll to max
+    const listContentH = slots.length * (cardH + gap) - gap;
+    const listVisibleH = SCREEN_HEIGHT - listStartY - 80;
+    const maxBrowseScroll = Math.max(0, listContentH - listVisibleH);
+    if (this.browseScroll > maxBrowseScroll) this.browseScroll = maxBrowseScroll;
 
     if (slots.length === 0) {
       ctx.fillStyle = '#555';
       ctx.font = '18px monospace';
-      ctx.fillText('No saved levels yet', SCREEN_WIDTH / 2, startY + 30);
+      ctx.fillText('No saved levels yet', SCREEN_WIDTH / 2, listStartY + 30);
     }
+
+    // Scrollable level list (clipped)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, listStartY, SCREEN_WIDTH, listVisibleH);
+    ctx.clip();
 
     for (let i = 0; i < slots.length; i++) {
       const slot = slots[i];
-      const cy = startY + i * (cardH + gap) - this.browseScroll;
-      if (cy + cardH < 90 || cy > SCREEN_HEIGHT - 80) continue;
+      const cy = listStartY + i * (cardH + gap) - this.browseScroll;
+      if (cy + cardH < listStartY || cy > listStartY + listVisibleH) continue;
 
       // Card bg with gradient
       const cardGrad = ctx.createLinearGradient(startX, cy, startX, cy + cardH);
@@ -2327,6 +2317,27 @@ export class Editor {
 
       ctx.textAlign = 'center';
     }
+
+    ctx.restore();
+
+    // "New Level" button - drawn on top, not affected by scroll
+    ctx.shadowColor = '#00FF66';
+    ctx.shadowBlur = 12;
+    const newGrad = ctx.createLinearGradient(startX, newBtnY, startX, newBtnY + cardH);
+    newGrad.addColorStop(0, '#00CC55');
+    newGrad.addColorStop(1, '#009940');
+    ctx.fillStyle = newGrad;
+    this._editorRoundRect(ctx, startX, newBtnY, cardW, cardH, 12);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    this._editorRoundRect(ctx, startX, newBtnY, cardW, cardH, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText('+ NEW LEVEL', SCREEN_WIDTH / 2, newBtnY + cardH / 2 + 8);
+    this.buttons.push({ id: 'browse_new', x: startX, y: newBtnY, w: cardW, h: cardH });
 
     // Back button
     const backW = 200;
