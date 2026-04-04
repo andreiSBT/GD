@@ -433,20 +433,26 @@ export class Player {
     ctx.fillStyle = trailColor;
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
-      // Draw thin dashes with equal gaps: - - - -
-      const dashLen = 16, gapLen = 10;
-      const h = 6;
-      let dx = 0;
-      for (let i = this.trail.length - 1; i >= 0; i--) {
-        const t = this.trail[i];
-        const tsx = t.x - cameraX + PLAYER_X_OFFSET;
-        const prevX = i > 0 ? this.trail[i - 1].x - cameraX + PLAYER_X_OFFSET : tsx;
-        dx += Math.abs(tsx - prevX);
-        const pos = dx % (dashLen + gapLen);
-        if (pos >= dashLen) continue;
-        const alpha = (i / this.trail.length) * 0.5;
-        ctx.globalAlpha = alpha;
-        ctx.fillRect(tsx, t.y - h / 2, 3, h);
+      // Draw dashes as solid rectangles with gaps: -  -  -  -
+      const dashW = 10, gapW = 8, h = 4;
+      const last = this.trail[this.trail.length - 1];
+      const first = this.trail[0];
+      const startX = first.x - cameraX + PLAYER_X_OFFSET;
+      const endX = last.x - cameraX + PLAYER_X_OFFSET;
+      const totalLen = endX - startX;
+      if (totalLen > 0) {
+        const cycle = dashW + gapW;
+        const numDashes = Math.ceil(totalLen / cycle);
+        for (let d = 0; d < numDashes; d++) {
+          const dx = startX + d * cycle;
+          const progress = (dx - startX) / totalLen;
+          const alpha = progress * 0.5;
+          // Find Y at this position by interpolating trail
+          const trailIdx = Math.floor(progress * (this.trail.length - 1));
+          const t = this.trail[Math.min(trailIdx, this.trail.length - 1)];
+          ctx.globalAlpha = alpha;
+          ctx.fillRect(dx, t.y - h / 2, dashW, h);
+        }
       }
     } else {
       for (let i = 0; i < this.trail.length; i++) {
