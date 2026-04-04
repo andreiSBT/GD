@@ -1668,8 +1668,10 @@ class Game {
           Sound.playComplete();
           if (!this.practiceMode) {
             this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true, this.coinsCollected || 0);
-            this._checkAchievements();
+          } else {
+            this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, false, this.coinsCollected || 0, true);
           }
+          this._checkAchievements();
           // Save replay ghost & submit score
           if (!this.editorLevelData) {
             if (this._replayRecorder) saveReplay(this.level.id, this._replayRecorder.serialize());
