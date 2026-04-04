@@ -59,6 +59,7 @@ class Game {
     this.practiceMode = false;
     this.attempts = 0;
     this.currentProgress = 0;
+    this.peakProgress = 0;
     this.previousBest = 0;
     this.newBestTimer = 0;
     this.newBestTriggered = false;
@@ -1309,6 +1310,7 @@ class Game {
     this.coinsCollected = 0;
     this.newBestTriggered = false;
     this.newBestTimer = 0;
+    this.peakProgress = 0;
     // Update previousBest so NEW BEST only shows when actually beating the record
     if (this.level && !this.editorLevelData) {
       const lp = this.progress[this.level.id];
@@ -1420,8 +1422,10 @@ class Game {
 
     const progress = this.level.getProgress(this.player.x);
     this.currentProgress = progress;
+    // Use peak progress (highest point reached this run) for saving
+    const saveProgress = Math.max(progress, this.peakProgress);
     if (!this.practiceMode) {
-      this.progress = updateLevelProgress(this.progress, this.level.id, progress, false);
+      this.progress = updateLevelProgress(this.progress, this.level.id, saveProgress, false);
     }
 
     // Auto-retry after a short delay
@@ -2032,11 +2036,14 @@ class Game {
 
       const progress = this.level ? this.level.getProgress(this.player.x) : 0;
 
-      // Track new best silently during gameplay (only normal mode, only if there's a previous record to beat)
-      if ((this.state === PLAYING || this.state === EDITOR_TESTING) && !this.practiceMode && !this.editorLevelData) {
-        if (this.previousBest < 1 && Math.round(progress * 100) > Math.round(this.previousBest * 100) && Math.round(progress * 100) > 0) {
-          this.newBestTriggered = true;
-          this.newBestValue = progress;
+      // Track peak progress and new best during gameplay
+      if (this.state === PLAYING || this.state === EDITOR_TESTING) {
+        if (progress > this.peakProgress) this.peakProgress = progress;
+        if (!this.practiceMode && !this.editorLevelData && this.previousBest < 1) {
+          if (Math.round(this.peakProgress * 100) > Math.round(this.previousBest * 100) && Math.round(this.peakProgress * 100) > 0) {
+            this.newBestTriggered = true;
+            this.newBestValue = this.peakProgress;
+          }
         }
       }
 

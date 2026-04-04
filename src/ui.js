@@ -364,7 +364,7 @@ export class UI {
       ctx.fillStyle = 'rgba(255,255,255,0.6)';
       ctx.font = '14px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`Best: ${Math.floor(prog.bestProgress * 100)}%`, x + cardW / 2, y + 175);
+      ctx.fillText(`Best: ${Math.round(prog.bestProgress * 100)}%`, x + cardW / 2, y + 175);
       ctx.fillStyle = 'rgba(255,255,255,0.4)';
       ctx.fillText(`Attempts: ${prog.attempts}`, x + cardW / 2, y + 195);
 
@@ -917,7 +917,7 @@ export class UI {
       ctx.fillStyle = 'rgba(255,255,255,0.5)';
       ctx.font = '16px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`Best: ${Math.floor(bestProgress * 100)}%`, SCREEN_WIDTH / 2, 262);
+      ctx.fillText(`Best: ${Math.round(bestProgress * 100)}%`, SCREEN_WIDTH / 2, 262);
       infoBottom = 262;
 
       // Coins display under best
