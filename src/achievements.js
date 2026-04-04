@@ -91,7 +91,12 @@ function _buildAchievements() {
   achievements.push(
     { id: 'attempts_100', category: 'persistence', title: 'PERSISTENT', desc: 'Make 100 total attempts', check: (p) => _totalAttempts(p) >= 100 },
     { id: 'attempts_500', category: 'persistence', title: 'DEDICATED', desc: 'Make 500 total attempts', check: (p) => _totalAttempts(p) >= 500 },
-    { id: 'attempts_1000', category: 'persistence', title: 'UNSTOPPABLE', desc: 'Make 1000 total attempts', check: (p) => _totalAttempts(p) >= 1000 },
+    { id: 'attempts_1000', category: 'persistence', title: 'UNSTOPPABLE', desc: 'Make 1,000 total attempts', check: (p) => _totalAttempts(p) >= 1000 },
+    { id: 'attempts_2000', category: 'persistence', title: 'RELENTLESS', desc: 'Make 2,000 total attempts', check: (p) => _totalAttempts(p) >= 2000 },
+    { id: 'attempts_5000', category: 'persistence', title: 'IRON WILL', desc: 'Make 5,000 total attempts', check: (p) => _totalAttempts(p) >= 5000 },
+    { id: 'attempts_10k', category: 'persistence', title: 'NEVER GIVE UP', desc: 'Make 10,000 total attempts', check: (p) => _totalAttempts(p) >= 10000 },
+    { id: 'attempts_50k', category: 'persistence', title: 'UNBREAKABLE', desc: 'Make 50,000 total attempts', check: (p) => _totalAttempts(p) >= 50000 },
+    { id: 'attempts_100k', category: 'persistence', title: 'IMMORTAL', desc: 'Make 100,000 total attempts', check: (p) => _totalAttempts(p) >= 100000 },
   );
 
   // === SKILL ===
