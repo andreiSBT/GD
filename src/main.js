@@ -545,9 +545,9 @@ class Game {
   _handleAction(action) {
     if (action === 'collect_scroll_coin') {
       this._showScrollCoin = false;
-      this._levelScrollCount = 0;
       const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
       localStorage.setItem('gd_secret_coins', String(secretCoins + 1));
+      localStorage.setItem('gd_scroll_coin', '1');
       this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
       this._checkAchievements();
     } else if (action === 'levels') {
@@ -1139,6 +1139,7 @@ class Game {
   }
 
   _onLevelScroll() {
+    if (localStorage.getItem('gd_scroll_coin')) return;
     this._levelScrollCount++;
     if (this._levelScrollCount >= 3) {
       this._showScrollCoin = true;
