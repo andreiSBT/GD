@@ -1061,7 +1061,7 @@ class Game {
     input.placeholder = 'Enter secret code...';
     input.style.display = 'block';
     this.secretsData.inputActive = true;
-    input.focus();
+    requestAnimationFrame(() => input.focus());
 
     input._onInput = () => { this.secretsData.inputText = input.value; };
     input._onKeydown = (e) => { if (e.key === 'Enter') this._submitSecretCode(); };
@@ -1778,6 +1778,7 @@ class Game {
         }
       } else if (obs.type === 'coin') {
         if (obs.checkCollision(playerRect) === 'coin') {
+          if ((this.coinsCollected || 0) >= 3) continue; // max 3 coins per level
           this.coinsCollected = (this.coinsCollected || 0) + 1;
           Sound.playCheckpoint(); // reuse checkpoint sound for now
           this.particles.emitDeath(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700', 15);
