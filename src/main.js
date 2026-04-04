@@ -2274,6 +2274,9 @@ class Game {
       localStorage.removeItem('gd_secret_coins');
       localStorage.removeItem('gd_redeemed_codes');
       localStorage.removeItem('gd_scroll_coin');
+      localStorage.removeItem('gd_rainbow_color');
+      localStorage.removeItem('gd_dotted_trail');
+      localStorage.removeItem('gd_wink_icon');
       const user = getAuthUser();
       if (user) localStorage.removeItem('gd_total_jumps_' + user.id);
       // Reset in-memory state
@@ -2281,6 +2284,13 @@ class Game {
       this._redeemedCodes = new Set();
       this._achievementToasts = [];
       this._showScrollCoin = false;
+      this._levelScrollCount = 0;
+      // Reset secret customizations if currently using them
+      if (this.customization.colorIndex === PLAYER_COLORS.indexOf('rainbow')) this.customization.colorIndex = 0;
+      if (this.customization.trailStyleIndex === 1) this.customization.trailStyleIndex = 0;
+      if (CUBE_ICONS[this.customization.iconIndex] === 'wink') this.customization.iconIndex = 0;
+      this._applyCustomization();
+      this._saveCustomization();
       overlay.style.display = 'none';
       this.state = MENU;
     });
