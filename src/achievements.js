@@ -38,9 +38,17 @@ function _buildAchievements() {
       return true;
     }},
     { id: 'first_try', title: 'FLAWLESS', desc: 'Complete any level on first attempt', check: (p) => Object.values(p).some(l => l.completed && l.attempts === 1) },
-    // Coins
-    { id: 'coins_any', title: 'COIN COLLECTOR', desc: 'Get all coins in any level', check: (p, s) => Object.keys(s.totalCoins).some(id => (p[id]?.bestCoins || 0) >= s.totalCoins[id] && s.totalCoins[id] > 0) },
-    { id: 'coins_all', title: 'TREASURE HUNTER', desc: 'Get all coins in all levels', check: (p, s) => Object.keys(s.totalCoins).every(id => (p[id]?.bestCoins || 0) >= s.totalCoins[id]) },
+    // Coin milestones
+    { id: 'coins_5', title: 'POCKET CHANGE', desc: 'Collect 5 total coins', check: (p) => _totalCoins(p) >= 5 },
+    { id: 'coins_10', title: 'COIN COLLECTOR', desc: 'Collect 10 total coins', check: (p) => _totalCoins(p) >= 10 },
+    { id: 'coins_15', title: 'SHINY HOARDER', desc: 'Collect 15 total coins', check: (p) => _totalCoins(p) >= 15 },
+    { id: 'coins_20', title: 'GOLD DIGGER', desc: 'Collect 20 total coins', check: (p) => _totalCoins(p) >= 20 },
+    { id: 'coins_25', title: 'TREASURE SEEKER', desc: 'Collect 25 total coins', check: (p) => _totalCoins(p) >= 25 },
+    { id: 'coins_30', title: 'COIN MANIAC', desc: 'Collect 30 total coins', check: (p) => _totalCoins(p) >= 30 },
+    { id: 'coins_40', title: 'GOLDEN TOUCH', desc: 'Collect 40 total coins', check: (p) => _totalCoins(p) >= 40 },
+    { id: 'coins_50', title: 'TREASURE HUNTER', desc: 'Collect 50 total coins', check: (p) => _totalCoins(p) >= 50 },
+    { id: 'coins_60', title: 'COIN MASTER', desc: 'Collect 60 total coins', check: (p) => _totalCoins(p) >= 60 },
+    { id: 'coins_65', title: 'COMPLETIONIST', desc: 'Collect all 65 coins', check: (p) => _totalCoins(p) >= 65 },
     // Persistence
     { id: 'attempts_100', title: 'PERSISTENT', desc: 'Make 100 total attempts', check: (p) => _totalAttempts(p) >= 100 },
     { id: 'attempts_500', title: 'DEDICATED', desc: 'Make 500 total attempts', check: (p) => _totalAttempts(p) >= 500 },
@@ -58,6 +66,10 @@ let _cachedLevelCount = 0;
 
 function _totalAttempts(p) {
   return Object.values(p).reduce((sum, l) => sum + (l.attempts || 0), 0);
+}
+
+function _totalCoins(p) {
+  return Object.values(p).reduce((sum, l) => sum + (l.bestCoins || 0), 0);
 }
 
 export function getAchievements() {
