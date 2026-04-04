@@ -132,7 +132,7 @@ export class Player {
       this.dashTimer = 120; // max dash duration (safety limit)
     } else if (type === 'blue_orb' || type === 'blue_pad') {
       this.gravityMult *= -1;
-      this.vy = -6 * this.gravityMult;
+      this.vy = -3 * this.gravityMult;
     } else if (type === 'yellow_pad') {
       this.vy = PAD_JUMP_VEL * this.gravityMult;
     } else if (type === 'pink_pad') {

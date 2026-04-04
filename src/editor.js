@@ -40,8 +40,8 @@ const SUBTYPES = {
 };
 
 const SUBTYPE_COLORS = {
-  yellow_orb: '#FFD700', pink_orb: '#FF69B4', dash_orb: '#00FF00', blue_orb: '#4488FF',
-  yellow_pad: '#FFD700', pink_pad: '#FF69B4', blue_pad: '#4488FF',
+  yellow_orb: '#FFD700', pink_orb: '#FF69B4', dash_orb: '#00FF00', blue_orb: '#44AAFF',
+  yellow_pad: '#FFD700', pink_pad: '#FF69B4', blue_pad: '#44AAFF',
   gravity: '#FFD700', speed_up: '#FF6600', speed_down: '#00AAFF',
   ship: '#FF00FF', wave: '#00FFAA', cube: '#00C8FF',
   ball: '#FF8800', mini: '#FF44FF', big: '#44AAFF', reverse: '#00FFFF', forward: '#44FF44',

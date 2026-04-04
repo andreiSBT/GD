@@ -655,7 +655,7 @@ export class JumpOrb {
       yellow_orb: '#FFD700',
       pink_orb: '#FF69B4',
       dash_orb: '#00FF00',
-      blue_orb: '#4488FF',
+      blue_orb: '#44AAFF',
     };
     const color = colors[this.orbType] || '#FFD700';
 
@@ -730,7 +730,7 @@ export class JumpPad {
     const colors = {
       yellow_pad: '#FFD700',
       pink_pad: '#FF69B4',
-      blue_pad: '#4488FF',
+      blue_pad: '#44AAFF',
     };
     const color = colors[this.padType] || '#FFD700';
 
