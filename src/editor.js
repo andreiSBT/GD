@@ -1468,14 +1468,10 @@ export class Editor {
       { id: 'action_rotate', label: 'ROT', color: '#888' },
       { id: 'action_undo', label: '←', color: '#555' },
       { id: 'action_redo', label: '→', color: '#555' },
-      { id: 'action_test', label: 'TEST', color: '#00CC44' },
-      { id: 'action_save', label: 'SAVE', color: '#4488CC' },
+      { id: 'action_save_test', label: 'SAVE & TEST', color: '#00CC44' },
       { id: 'action_load', label: 'LOAD', color: '#6644AA' },
       { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
-      ...(getAuthUser() ? [{ id: 'action_publish', label: 'PUB', color: '#00CC88' }] : []),
-      { id: 'action_export', label: 'EXP', color: '#CC8800' },
       ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
-      { id: 'action_rename', label: 'NAME', color: '#AAAA44' },
       { id: 'action_info', label: 'INFO', color: '#44AACC' },
       { id: 'action_help', label: '?', color: '#666' },
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
@@ -2457,6 +2453,47 @@ export class Editor {
     ctx.fillText('+ NEW LEVEL', SCREEN_WIDTH / 2, newBtnY + cardH / 2 + 8);
     this.buttons.push({ id: 'browse_new', x: startX, y: newBtnY, w: cardW, h: cardH });
 
+    // NAME and PUBLISH buttons below NEW LEVEL
+    const smallBtnH = 40;
+    const smallBtnGap = 10;
+    const smallBtnY = newBtnY + cardH + smallBtnGap;
+    const halfW = (cardW - smallBtnGap) / 2;
+
+    // NAME button
+    const nameGrad = ctx.createLinearGradient(startX, smallBtnY, startX, smallBtnY + smallBtnH);
+    nameGrad.addColorStop(0, '#AAAA44');
+    nameGrad.addColorStop(1, '#888830');
+    ctx.fillStyle = nameGrad;
+    this._editorRoundRect(ctx, startX, smallBtnY, halfW, smallBtnH, 10);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    this._editorRoundRect(ctx, startX, smallBtnY, halfW, smallBtnH, 10);
+    ctx.stroke();
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText('NAME', startX + halfW / 2, smallBtnY + smallBtnH / 2 + 6);
+    this.buttons.push({ id: 'action_rename', x: startX, y: smallBtnY, w: halfW, h: smallBtnH });
+
+    // PUBLISH button
+    if (getAuthUser()) {
+      const pubGrad = ctx.createLinearGradient(startX + halfW + smallBtnGap, smallBtnY, startX + halfW + smallBtnGap, smallBtnY + smallBtnH);
+      pubGrad.addColorStop(0, '#00CC88');
+      pubGrad.addColorStop(1, '#009966');
+      ctx.fillStyle = pubGrad;
+      const pubX = startX + halfW + smallBtnGap;
+      this._editorRoundRect(ctx, pubX, smallBtnY, halfW, smallBtnH, 10);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      this._editorRoundRect(ctx, pubX, smallBtnY, halfW, smallBtnH, 10);
+      ctx.stroke();
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('PUBLISH', pubX + halfW / 2, smallBtnY + smallBtnH / 2 + 6);
+      this.buttons.push({ id: 'action_publish', x: pubX, y: smallBtnY, w: halfW, h: smallBtnH });
+    }
+
     // Back button
     const backW = 200;
     const backH = 48;
@@ -2667,18 +2704,10 @@ export class Editor {
       this._undo();
     } else if (id === 'action_redo') {
       this._redo();
-    } else if (id === 'action_test') {
-      if (this.currentSlot) this.saveToSlot(this.currentSlot);
+    } else if (id === 'action_save_test') {
+      if (!this.currentSlot) this.currentSlot = 'lvl_' + Date.now();
+      this.saveToSlot(this.currentSlot);
       if (this.onTest) this.onTest(this.getLevelData());
-    } else if (id === 'action_save') {
-      if (this.currentSlot) {
-        this.saveToSlot(this.currentSlot);
-        this._showToast('Saved!');
-      } else {
-        this.currentSlot = 'lvl_' + Date.now();
-        this.saveToSlot(this.currentSlot);
-        this._showToast('Saved!');
-      }
     } else if (id === 'action_save_official') {
       if (isAdmin()) {
         // Save current level first
