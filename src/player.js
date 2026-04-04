@@ -964,18 +964,18 @@ export class Player {
       ctx.fill();
     } else if (this.mode === MODE_SHIP) {
       ctx.beginPath();
-      ctx.moveTo(hs, 0);
-      ctx.lineTo(-hs, -hs + 4);
-      ctx.lineTo(-hs + 10, 0);
-      ctx.lineTo(-hs, hs - 4);
-      ctx.closePath();
-      ctx.fill();
-    } else if (this.mode === MODE_WAVE) {
-      ctx.beginPath();
       ctx.moveTo(0, -hs);
       ctx.lineTo(hs, 0);
       ctx.lineTo(0, hs);
       ctx.lineTo(-hs, 0);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.mode === MODE_WAVE) {
+      ctx.beginPath();
+      ctx.moveTo(hs, 0);
+      ctx.lineTo(-hs, -hs + 4);
+      ctx.lineTo(-hs + 10, 0);
+      ctx.lineTo(-hs, hs - 4);
       ctx.closePath();
       ctx.fill();
     } else if (this.mode === MODE_BALL) {
