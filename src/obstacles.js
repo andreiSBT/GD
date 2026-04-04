@@ -1033,36 +1033,91 @@ export class Coin {
     const sy = this.y;
 
     this.animTimer += 0.05;
-    const scale = Math.abs(Math.cos(this.animTimer)); // spinning effect
+    const spin = Math.cos(this.animTimer);
+    const scale = Math.abs(spin);
+    const isFront = spin >= 0;
 
     const cx = sx + GRID / 2;
     const cy = sy + GRID / 2;
-    const r = GRID * 0.35;
+    const r = GRID * 0.36;
+
+    // Floating bob
+    const bob = Math.sin(this.animTimer * 0.6) * 2.5;
 
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.scale(scale, 1); // horizontal squash for spin
+    ctx.translate(cx, cy + bob);
+    ctx.scale(Math.max(0.08, scale), 1);
 
-    // Gold coin
-    drawNeonGlow(ctx, '#FFD700', 10);
+    // Outer glow pulse
+    const glowPulse = 0.4 + Math.sin(this.animTimer * 1.5) * 0.15;
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 14 + Math.sin(this.animTimer * 2) * 4;
+    ctx.globalAlpha = glowPulse;
+    ctx.beginPath();
+    ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
     ctx.fillStyle = '#FFD700';
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+
+    // Rim / edge (dark gold border)
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#B8860B';
     ctx.fill();
-    clearGlow(ctx);
 
-    // Inner circle
-    ctx.fillStyle = '#FFC000';
+    // Main coin face gradient
+    const faceGrad = ctx.createRadialGradient(-r * 0.25, -r * 0.25, 0, 0, 0, r * 0.9);
+    if (isFront) {
+      faceGrad.addColorStop(0, '#FFF0A0');
+      faceGrad.addColorStop(0.4, '#FFD700');
+      faceGrad.addColorStop(0.85, '#DAA520');
+      faceGrad.addColorStop(1, '#B8860B');
+    } else {
+      faceGrad.addColorStop(0, '#E8C840');
+      faceGrad.addColorStop(0.5, '#C8A020');
+      faceGrad.addColorStop(1, '#A08018');
+    }
     ctx.beginPath();
-    ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+    ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+    ctx.fillStyle = faceGrad;
     ctx.fill();
 
-    // Star in center
-    ctx.fillStyle = '#FFF';
-    ctx.font = `bold ${Math.floor(r)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('★', 0, 1);
+    // Inner ring
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.68, 0, Math.PI * 2);
+    ctx.strokeStyle = isFront ? 'rgba(184,134,11,0.5)' : 'rgba(140,100,10,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    if (isFront) {
+      // Draw star shape instead of text
+      const sr = r * 0.38;
+      const ir = sr * 0.42;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const outerAngle = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+        const innerAngle = outerAngle + Math.PI / 5;
+        const ox = Math.cos(outerAngle) * sr;
+        const oy = Math.sin(outerAngle) * sr;
+        const ix = Math.cos(innerAngle) * ir;
+        const iy = Math.sin(innerAngle) * ir;
+        if (i === 0) ctx.moveTo(ox, oy);
+        else ctx.lineTo(ox, oy);
+        ctx.lineTo(ix, iy);
+      }
+      ctx.closePath();
+      ctx.fillStyle = '#FFF8DC';
+      ctx.globalAlpha = 0.9;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Top-left highlight
+      ctx.beginPath();
+      ctx.arc(-r * 0.3, -r * 0.3, r * 0.25, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+    }
 
     ctx.restore();
   }
