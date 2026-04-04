@@ -1141,7 +1141,7 @@ class Game {
   _onLevelScroll() {
     if (localStorage.getItem('gd_scroll_coin')) return;
     this._levelScrollCount++;
-    if (this._levelScrollCount >= 5) {
+    if (this._levelScrollCount >= 3) {
       this._showScrollCoin = true;
     }
   }
