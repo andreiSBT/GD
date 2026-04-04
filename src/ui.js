@@ -434,10 +434,15 @@ export class UI {
     const officialCount = getLevelCount();
     const createdLevels = getEditorLevelCount();
 
+    const levelCoins = Object.values(prog).reduce((sum, l) => sum + (l.bestCoins || 0), 0);
+    const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
+    const totalCoins = levelCoins + secretCoins;
+
     const statItems = [
       { label: 'TOTAL ATTEMPTS', value: `${totalAttempts}`, color: '#FFD700' },
       { label: 'TOTAL JUMPS', value: `${totalJumps}`, color: '#FFD700' },
       { label: 'LEVELS COMPLETED', value: `${completedLevels} / ${officialCount}`, color: '#00FF64' },
+      { label: 'COINS COLLECTED', value: `${totalCoins}`, color: '#FFD700' },
       { label: 'LEVELS CREATED', value: `${createdLevels}`, color: '#FF8844' },
     ];
 
