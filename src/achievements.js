@@ -51,26 +51,26 @@ function _buildAchievements() {
   // === COINS ===
   achievements.push(
     { id: 'coins_5', category: 'coins', title: 'POCKET CHANGE', desc: 'Collect 5 total coins', check: (p) => _totalCoins(p) >= 5 },
-    { id: 'coins_10', category: 'coins', title: 'COIN COLLECTOR', desc: 'Collect 10 total coins', check: (p) => _totalCoins(p) >= 10 },
-    { id: 'coins_15', category: 'coins', title: 'SHINY HOARDER', desc: 'Collect 15 total coins', check: (p) => _totalCoins(p) >= 15 },
+    { id: 'coins_10', category: 'coins', title: "IT'S-A ME!", desc: 'Collect 10 total coins', check: (p) => _totalCoins(p) >= 10 },
+    { id: 'coins_15', category: 'coins', title: 'MY PRECIOUS', desc: 'Collect 15 total coins', check: (p) => _totalCoins(p) >= 15 },
     { id: 'coins_20', category: 'coins', title: 'GOLD DIGGER', desc: 'Collect 20 total coins', check: (p) => _totalCoins(p) >= 20 },
-    { id: 'coins_25', category: 'coins', title: 'TREASURE SEEKER', desc: 'Collect 25 total coins', check: (p) => _totalCoins(p) >= 25 },
-    { id: 'coins_30', category: 'coins', title: 'COIN MANIAC', desc: 'Collect 30 total coins', check: (p) => _totalCoins(p) >= 30 },
-    { id: 'coins_40', category: 'coins', title: 'GOLDEN TOUCH', desc: 'Collect 40 total coins', check: (p) => _totalCoins(p) >= 40 },
-    { id: 'coins_50', category: 'coins', title: 'TREASURE HUNTER', desc: 'Collect 50 total coins', check: (p) => _totalCoins(p) >= 50 },
+    { id: 'coins_25', category: 'coins', title: 'X MARKS THE SPOT', desc: 'Collect 25 total coins', check: (p) => _totalCoins(p) >= 25 },
+    { id: 'coins_30', category: 'coins', title: 'SHOW ME THE MONEY', desc: 'Collect 30 total coins', check: (p) => _totalCoins(p) >= 30 },
+    { id: 'coins_40', category: 'coins', title: 'MIDAS TOUCH', desc: 'Collect 40 total coins', check: (p) => _totalCoins(p) >= 40 },
+    { id: 'coins_50', category: 'coins', title: 'SCROOGE McDUCK', desc: 'Collect 50 total coins', check: (p) => _totalCoins(p) >= 50 },
     { id: 'coins_60', category: 'coins', title: 'COIN MASTER', desc: 'Collect 60 total coins', check: (p) => _totalCoins(p) >= 60 },
     { id: 'coins_65', category: 'coins', title: 'COMPLETIONIST', desc: 'Collect all 65 coins', check: (p) => _totalCoins(p) >= 65 },
   );
 
   // === COMMUNITY ===
   achievements.push(
-    { id: 'comm_1', category: 'community', title: 'EXPLORER', desc: 'Complete 1 community level', check: () => _communityCompletions() >= 1 },
+    { id: 'comm_1', category: 'community', title: 'DORA THE EXPLORER', desc: 'Complete 1 community level', check: () => _communityCompletions() >= 1 },
     { id: 'comm_5', category: 'community', title: 'ADVENTURER', desc: 'Complete 5 community levels', check: () => _communityCompletions() >= 5 },
     { id: 'comm_10', category: 'community', title: 'PATHFINDER', desc: 'Complete 10 community levels', check: () => _communityCompletions() >= 10 },
     { id: 'comm_25', category: 'community', title: 'TRAILBLAZER', desc: 'Complete 25 community levels', check: () => _communityCompletions() >= 25 },
-    { id: 'comm_50', category: 'community', title: 'VETERAN EXPLORER', desc: 'Complete 50 community levels', check: () => _communityCompletions() >= 50 },
-    { id: 'comm_100', category: 'community', title: 'COMMUNITY HERO', desc: 'Complete 100 community levels', check: () => _communityCompletions() >= 100 },
-    { id: 'comm_500', category: 'community', title: 'LEGEND', desc: 'Complete 500 community levels', check: () => _communityCompletions() >= 500 },
+    { id: 'comm_50', category: 'community', title: 'INDIANA JONES', desc: 'Complete 50 community levels', check: () => _communityCompletions() >= 50 },
+    { id: 'comm_100', category: 'community', title: 'WITH GREAT POWER...', desc: 'Complete 100 community levels', check: () => _communityCompletions() >= 100 },
+    { id: 'comm_500', category: 'community', title: 'I AM LEGEND', desc: 'Complete 500 community levels', check: () => _communityCompletions() >= 500 },
   );
 
   // === JUMPS ===
@@ -81,8 +81,8 @@ function _buildAchievements() {
     { id: 'jumps_2000', category: 'jumps', title: 'KANGAROO', desc: '2,000 total jumps', check: () => _totalJumps() >= 2000 },
     { id: 'jumps_5000', category: 'jumps', title: 'SKYDIVER', desc: '5,000 total jumps', check: () => _totalJumps() >= 5000 },
     { id: 'jumps_10k', category: 'jumps', title: 'FREQUENT FLYER', desc: '10,000 total jumps', check: () => _totalJumps() >= 10000 },
-    { id: 'jumps_50k', category: 'jumps', title: 'ORBIT', desc: '50,000 total jumps', check: () => _totalJumps() >= 50000 },
-    { id: 'jumps_100k', category: 'jumps', title: 'STRATOSPHERE', desc: '100,000 total jumps', check: () => _totalJumps() >= 100000 },
+    { id: 'jumps_50k', category: 'jumps', title: 'GROUND CONTROL', desc: '50,000 total jumps', check: () => _totalJumps() >= 50000 },
+    { id: 'jumps_100k', category: 'jumps', title: 'INTERSTELLAR', desc: '100,000 total jumps', check: () => _totalJumps() >= 100000 },
     { id: 'jumps_1m', category: 'jumps', title: 'TO THE MOON', desc: '1,000,000 total jumps', check: () => _totalJumps() >= 1000000 },
     { id: 'jumps_10m', category: 'jumps', title: 'TO INFINITY AND BEYOND', desc: '10,000,000 total jumps', check: () => _totalJumps() >= 10000000 },
   );
@@ -90,18 +90,18 @@ function _buildAchievements() {
   // === PERSISTENCE ===
   achievements.push(
     { id: 'attempts_100', category: 'persistence', title: 'PERSISTENT', desc: 'Make 100 total attempts', check: (p) => _totalAttempts(p) >= 100 },
-    { id: 'attempts_500', category: 'persistence', title: 'DEDICATED', desc: 'Make 500 total attempts', check: (p) => _totalAttempts(p) >= 500 },
+    { id: 'attempts_500', category: 'persistence', title: 'JUST KEEP SWIMMING', desc: 'Make 500 total attempts', check: (p) => _totalAttempts(p) >= 500 },
     { id: 'attempts_1000', category: 'persistence', title: 'UNSTOPPABLE', desc: 'Make 1,000 total attempts', check: (p) => _totalAttempts(p) >= 1000 },
-    { id: 'attempts_2000', category: 'persistence', title: 'RELENTLESS', desc: 'Make 2,000 total attempts', check: (p) => _totalAttempts(p) >= 2000 },
-    { id: 'attempts_5000', category: 'persistence', title: 'IRON WILL', desc: 'Make 5,000 total attempts', check: (p) => _totalAttempts(p) >= 5000 },
-    { id: 'attempts_10k', category: 'persistence', title: 'NEVER GIVE UP', desc: 'Make 10,000 total attempts', check: (p) => _totalAttempts(p) >= 10000 },
-    { id: 'attempts_50k', category: 'persistence', title: 'UNBREAKABLE', desc: 'Make 50,000 total attempts', check: (p) => _totalAttempts(p) >= 50000 },
-    { id: 'attempts_100k', category: 'persistence', title: 'IMMORTAL', desc: 'Make 100,000 total attempts', check: (p) => _totalAttempts(p) >= 100000 },
+    { id: 'attempts_2000', category: 'persistence', title: "I'LL BE BACK", desc: 'Make 2,000 total attempts', check: (p) => _totalAttempts(p) >= 2000 },
+    { id: 'attempts_5000', category: 'persistence', title: 'IRON MAN', desc: 'Make 5,000 total attempts', check: (p) => _totalAttempts(p) >= 5000 },
+    { id: 'attempts_10k', category: 'persistence', title: 'NEVER GONNA GIVE YOU UP', desc: 'Make 10,000 total attempts', check: (p) => _totalAttempts(p) >= 10000 },
+    { id: 'attempts_50k', category: 'persistence', title: "WHAT DOESN'T KILL YOU", desc: 'Make 50,000 total attempts', check: (p) => _totalAttempts(p) >= 50000 },
+    { id: 'attempts_100k', category: 'persistence', title: 'THERE CAN BE ONLY ONE', desc: 'Make 100,000 total attempts', check: (p) => _totalAttempts(p) >= 100000 },
   );
 
   // === SKILL ===
   achievements.push(
-    { id: 'first_try', category: 'skill', title: 'FLAWLESS', desc: 'Complete any level on first attempt', check: (p) => Object.values(p).some(l => l.completed && l.attempts === 1) },
+    { id: 'first_try', category: 'skill', title: 'FLAWLESS VICTORY', desc: 'Complete any level on first attempt', check: (p) => Object.values(p).some(l => l.completed && l.attempts === 1) },
     { id: 'ninety', category: 'skill', title: 'SO CLOSE', desc: 'Reach 90% without completing', check: (p) => Object.values(p).some(l => !l.completed && l.bestProgress >= 0.9) },
   );
 
