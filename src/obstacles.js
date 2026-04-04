@@ -261,13 +261,17 @@ export class PlatformGroup {
   }
 
   checkCollision(playerRect, prevPlayerY, gravityMult) {
+    // Check slopes first (they return land, never death), then platforms
+    // This prevents a platform returning death when the player is actually on a slope
     for (const p of this.pieces) {
+      if (p.type !== 'slope') continue;
       const result = p.checkCollision(playerRect, prevPlayerY, gravityMult);
-      if (result) {
-        // Attach the sub-piece bounds so main.js can use exact dimensions
-        result._piece = p;
-        return result;
-      }
+      if (result) { result._piece = p; return result; }
+    }
+    for (const p of this.pieces) {
+      if (p.type === 'slope') continue;
+      const result = p.checkCollision(playerRect, prevPlayerY, gravityMult);
+      if (result) { result._piece = p; return result; }
     }
     return null;
   }
