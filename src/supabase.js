@@ -302,6 +302,18 @@ export async function syncProgressToCloud(localProgress) {
   }
 }
 
+export async function resetProgressInCloud() {
+  const client = getClient();
+  if (!client) return;
+  const userId = getUserId();
+  if (!userId) return;
+  try {
+    await client.from('progress').delete().eq('user_id', userId);
+  } catch (e) {
+    console.warn('Supabase reset failed:', e.message);
+  }
+}
+
 export async function loadProgressFromCloud() {
   const client = getClient();
   if (!client) return null;
