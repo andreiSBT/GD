@@ -65,6 +65,7 @@ export class Player {
     this.holdJumped = false;    // flag: did auto-jump from hold this frame
     this.mini = false;          // mini mode (0.5x size)
     this.reversed = false;      // reverse direction
+    this.flipEaseTimer = 0;     // gravity ease-in after ball/blue flip
   }
 
   // Called on key/click DOWN
@@ -105,7 +106,8 @@ export class Player {
       // Ball: click flips gravity with gentle arc (~55 degrees)
       if (this.grounded || this.coyoteCounter > 0) {
         this.gravityMult *= -1;
-        this.vy = -1 * this.gravityMult;
+        this.vy = 0;
+        this.flipEaseTimer = 12;
         this.grounded = false;
         this.onPlatform = false;
         this.platformRef = null;
@@ -132,7 +134,8 @@ export class Player {
       this.dashTimer = 120; // max dash duration (safety limit)
     } else if (type === 'blue_orb' || type === 'blue_pad') {
       this.gravityMult *= -1;
-      this.vy = -1 * this.gravityMult;
+      this.vy = 0;
+      this.flipEaseTimer = 12;
     } else if (type === 'yellow_pad') {
       this.vy = PAD_JUMP_VEL * this.gravityMult;
     } else if (type === 'pink_pad') {
@@ -333,7 +336,12 @@ export class Player {
 
   _updateBall() {
     // Ball: rolls on surfaces, click flips gravity
-    const grav = BALL_GRAVITY * this.gravityMult * (this.mini ? 0.7 : 1);
+    let gravScale = 1;
+    if (this.flipEaseTimer > 0) {
+      this.flipEaseTimer--;
+      gravScale = 1 - (this.flipEaseTimer / 12);  // 0 → 1 over 12 frames
+    }
+    const grav = BALL_GRAVITY * this.gravityMult * (this.mini ? 0.7 : 1) * gravScale;
     if (this.dashing) {
       this.y += this.vy;
     } else {
