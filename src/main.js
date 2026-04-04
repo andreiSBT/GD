@@ -196,6 +196,13 @@ class Game {
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
 
+      // Don't intercept keys when an HTML input is focused
+      const ae = document.activeElement;
+      if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) {
+        if (e.code === 'Escape') { ae.blur(); return; }
+        return;
+      }
+
       // Editor handles its own keys
       if (this.state === EDITOR) {
         if (this.editor.handleKeyDown(e)) return;
