@@ -1070,7 +1070,7 @@ class Game {
     const screenTop = rect.top + inputY * scaleY;
     const screenW = inputW * scaleX;
     const screenH = 44 * scaleY;
-    input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0 14px;background:rgba(0,10,30,0.95);color:#fff;border:1px solid rgba(0,170,255,0.35);border-radius:10px;font:${Math.round(16 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;text-align:center;`;
+    input.style.cssText = `position:fixed;left:${screenLeft}px;top:${screenTop}px;width:${screenW}px;height:${screenH}px;padding:0;background:transparent;color:transparent;border:none;font:${Math.round(16 * scaleY)}px monospace;outline:none;z-index:100;box-sizing:border-box;text-align:center;caret-color:transparent;`;
     input.value = this.secretsData.inputText || '';
     input.placeholder = 'Enter secret code...';
     input.style.display = 'block';
@@ -2254,15 +2254,19 @@ class Game {
     });
 
     document.getElementById('acc-reset').addEventListener('click', () => {
-      if (!confirm('Reset all progress, coins, attempts, and jumps? This cannot be undone.')) return;
-      // Clear local progress
+      if (!confirm('Reset ALL progress, coins, attempts, jumps, achievements, secret codes, and secret coins? This cannot be undone.')) return;
+      // Clear everything except editor levels, friends, customization
       localStorage.removeItem('gd_progress');
       localStorage.removeItem('gd_total_jumps');
       localStorage.removeItem('gd_achievements');
+      localStorage.removeItem('gd_secret_coins');
+      localStorage.removeItem('gd_redeemed_codes');
       const user = getAuthUser();
       if (user) localStorage.removeItem('gd_total_jumps_' + user.id);
-      // Reload progress from empty defaults
+      // Reset in-memory state
       this.progress = loadProgress();
+      this._redeemedCodes = new Set();
+      this._achievementToasts = [];
       overlay.style.display = 'none';
       this.state = MENU;
     });

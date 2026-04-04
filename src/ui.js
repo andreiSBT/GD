@@ -1675,21 +1675,20 @@ export class UI {
     ctx.textAlign = 'center';
     ctx.fillText('CODE', SCREEN_WIDTH / 2, inputY + 10);
 
-    // Input box (canvas placeholder when HTML input not active)
+    // Input box (always drawn on canvas)
+    this._roundRect(ctx, inputX, inputY + 20, inputW, 44, 10);
+    ctx.fillStyle = 'rgba(0,10,30,0.8)';
+    ctx.fill();
+    ctx.strokeStyle = secretsData.inputActive ? 'rgba(255,0,102,0.6)' : 'rgba(255,0,102,0.35)';
+    ctx.lineWidth = secretsData.inputActive ? 1.5 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle = secretsData.inputText ? '#fff' : 'rgba(255,255,255,0.3)';
+    ctx.font = '16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(secretsData.inputText || 'Tap to enter code...', SCREEN_WIDTH / 2, inputY + 47);
+
     if (!secretsData.inputActive) {
-      this._roundRect(ctx, inputX, inputY + 20, inputW, 44, 10);
-      ctx.fillStyle = 'rgba(0,10,30,0.8)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,0,102,0.35)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.font = '16px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(secretsData.inputText || 'Tap to enter code...', SCREEN_WIDTH / 2, inputY + 47);
-
-      // Make the input area clickable
       this.buttons.push({ x: inputX, y: inputY + 20, w: inputW, h: 44, id: 'secrets_input' });
     }
 
