@@ -16,7 +16,7 @@ export const MODE_BALL = 'ball';
 // Physics tuning
 const COYOTE_TIME = 6;        // frames of grace after leaving ground
 const JUMP_BUFFER = 8;        // frames to buffer a jump press
-const BALL_GRAVITY = 0.8;     // slightly lighter gravity for ball
+const BALL_GRAVITY = 0.45;    // gentle gravity for smooth ball arcs
 const SHIP_GRAVITY = 0.5;     // lighter gravity for ship
 const SHIP_LIFT = -1.1;       // per-frame lift when holding in ship mode
 const WAVE_SPEED = 6;         // wave diagonal speed
@@ -106,9 +106,7 @@ export class Player {
       // Ball: click flips gravity with gentle arc (~55 degrees)
       if (this.grounded || this.coyoteCounter > 0) {
         this.gravityMult *= -1;
-        this.vy = -2 * this.gravityMult;
-        this.y += -2 * this.gravityMult;
-        this.flipEaseTimer = 12;
+        this.vy = 0;
         this.grounded = false;
         this.onPlatform = false;
         this.platformRef = null;
@@ -135,9 +133,7 @@ export class Player {
       this.dashTimer = 120; // max dash duration (safety limit)
     } else if (type === 'blue_orb' || type === 'blue_pad') {
       this.gravityMult *= -1;
-      this.vy = -2 * this.gravityMult;
-      this.y += -2 * this.gravityMult;
-      this.flipEaseTimer = 12;
+      this.vy = 0;
     } else if (type === 'yellow_pad') {
       this.vy = PAD_JUMP_VEL * this.gravityMult;
     } else if (type === 'pink_pad') {
@@ -338,12 +334,7 @@ export class Player {
 
   _updateBall() {
     // Ball: rolls on surfaces, click flips gravity
-    let gravScale = 1;
-    if (this.flipEaseTimer > 0) {
-      this.flipEaseTimer--;
-      gravScale = 1 - (this.flipEaseTimer / 12);  // 0 → 1 over 12 frames
-    }
-    const grav = BALL_GRAVITY * this.gravityMult * (this.mini ? 0.7 : 1) * gravScale;
+    const grav = BALL_GRAVITY * this.gravityMult * (this.mini ? 0.7 : 1);
     if (this.dashing) {
       this.y += this.vy;
     } else {
