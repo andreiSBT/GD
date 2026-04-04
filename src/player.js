@@ -189,7 +189,8 @@ export class Player {
 
     // Store trail position
     this.trail.push({ x: this.x, y: this.y + PLAYER_SIZE / 2 });
-    if (this.trail.length > 20) this.trail.shift();
+    const maxTrail = this.trailStyle === 'dotted' ? 35 : 20;
+    if (this.trail.length > maxTrail) this.trail.shift();
 
     // Mode-specific physics
     if (this.mode === MODE_CUBE) {
@@ -442,7 +443,7 @@ export class Player {
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
       // Draw dashes following the trail path with gaps
-      const dashLen = 10, gapLen = 8, h = 6;
+      const dashLen = 10, gapLen = 12, h = 6;
       let dist = 0;
       let drawing = true; // start with a dash
       let segLeft = dashLen;
