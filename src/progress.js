@@ -4,11 +4,10 @@ import { syncProgressToCloud, loadProgressFromCloud, isConfigured } from './supa
 
 const STORAGE_KEY = 'gd_progress';
 
-const DEFAULT_PROGRESS = {
-  1: { attempts: 0, bestProgress: 0, completed: false },
-  2: { attempts: 0, bestProgress: 0, completed: false },
-  3: { attempts: 0, bestProgress: 0, completed: false },
-};
+const DEFAULT_PROGRESS = {};
+for (let i = 1; i <= 9; i++) {
+  DEFAULT_PROGRESS[i] = { attempts: 0, bestProgress: 0, completed: false };
+}
 
 export function loadProgress() {
   try {
@@ -73,15 +72,18 @@ export async function initProgress() {
   const cloud = await loadProgressFromCloud();
   if (!cloud) return local;
 
-  // Merge: keep the best of local and cloud
+  // Merge: keep the best of local and cloud for ALL keys
+  const allKeys = new Set([...Object.keys(DEFAULT_PROGRESS), ...Object.keys(local), ...Object.keys(cloud)]);
   const merged = { ...DEFAULT_PROGRESS };
-  for (const key of Object.keys(merged)) {
-    const l = local[key] || merged[key];
-    const c = cloud[key] || merged[key];
+  for (const key of allKeys) {
+    const def = { attempts: 0, bestProgress: 0, completed: false };
+    const l = local[key] || def;
+    const c = cloud[key] || def;
     merged[key] = {
-      attempts: Math.max(l.attempts, c.attempts),
-      bestProgress: Math.max(l.bestProgress, c.bestProgress),
-      completed: l.completed || c.completed,
+      attempts: Math.max(l.attempts || 0, c.attempts || 0),
+      bestProgress: Math.max(l.bestProgress || 0, c.bestProgress || 0),
+      completed: !!(l.completed || c.completed),
+      bestCoins: Math.max(l.bestCoins || 0, c.bestCoins || 0),
     };
   }
   saveProgress(merged);
