@@ -822,13 +822,15 @@ export class Portal {
     // Glow behind bars
     drawNeonGlow(ctx, color1, 20);
 
+    const r = barW / 2; // fully rounded ends
+
     // Left bar — gradient top to bottom
     const grad1 = ctx.createLinearGradient(0, barTop, 0, barTop + barH);
     grad1.addColorStop(0, color1);
     grad1.addColorStop(1, color2);
     ctx.fillStyle = grad1;
     ctx.beginPath();
-    ctx.roundRect(leftX, barTop, barW, barH, 5);
+    ctx.roundRect(leftX, barTop, barW, barH, r);
     ctx.fill();
 
     // Right bar — gradient bottom to top (mirrored)
@@ -837,7 +839,7 @@ export class Portal {
     grad2.addColorStop(1, color1);
     ctx.fillStyle = grad2;
     ctx.beginPath();
-    ctx.roundRect(rightX, barTop, barW, barH, 5);
+    ctx.roundRect(rightX, barTop, barW, barH, r);
     ctx.fill();
 
     clearGlow(ctx);
@@ -845,10 +847,10 @@ export class Portal {
     // Bright edge highlights on bars
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.beginPath();
-    ctx.roundRect(leftX, barTop, 3, barH, [3, 0, 0, 3]);
+    ctx.roundRect(leftX, barTop, 3, barH, [r, 0, 0, r]);
     ctx.fill();
     ctx.beginPath();
-    ctx.roundRect(rightX + barW - 3, barTop, 3, barH, [0, 3, 3, 0]);
+    ctx.roundRect(rightX + barW - 3, barTop, 3, barH, [0, r, r, 0]);
     ctx.fill();
 
     // Animated energy particles between bars
@@ -865,15 +867,41 @@ export class Portal {
     }
     ctx.globalAlpha = this.activated ? 0.15 : 1;
 
-    // Top and bottom caps (horizontal bars connecting the two pillars)
+    // Top and bottom caps (rounded)
+    const capR = 4;
     ctx.fillStyle = color1;
     ctx.beginPath();
-    ctx.roundRect(leftX - 2, barTop - 4, barW * 2 + barGap + 4, 5, 3);
+    ctx.roundRect(leftX - 2, barTop - 4, barW * 2 + barGap + 4, 6, capR);
     ctx.fill();
     ctx.fillStyle = color2;
     ctx.beginPath();
-    ctx.roundRect(leftX - 2, barTop + barH - 1, barW * 2 + barGap + 4, 5, 3);
+    ctx.roundRect(leftX - 2, barTop + barH - 2, barW * 2 + barGap + 4, 6, capR);
     ctx.fill();
+
+    // Icon in center
+    clearGlow(ctx);
+    const icons = {
+      gravity: '\u2195', speed_up: '\u25B6\u25B6', speed_down: '\u25B6',
+      ship: '\u2708', wave: '\u223F', cube: '\u25A0', ball: '\u25CF',
+      mini: '\u25BC', big: '\u25B2', reverse: '\u21D0', forward: '\u21D2',
+    };
+    const icon = icons[this.portalType] || '?';
+    const cy = sy + this.h / 2;
+    // Icon background circle
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+    ctx.fill();
+    // Icon border
+    ctx.strokeStyle = color1;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Icon text
+    ctx.fillStyle = '#FFF';
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(icon, cx, cy);
 
     ctx.restore();
   }
