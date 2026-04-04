@@ -1099,8 +1099,8 @@ class Game {
     const SECRET_CODES = {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
       'COMING SOON': { reward: 'coin', desc: '+1 Secret Coin unlocked!', condition: () => {
-        const completedCount = Object.values(this.progress).filter(l => l.completed).length;
-        return completedCount >= 5;
+        const totalAttempts = Object.values(this.progress).reduce((sum, l) => sum + (l.attempts || 0), 0);
+        return totalAttempts >= 5;
       }, failMsg: 'Not yet... keep playing!' },
     };
 
