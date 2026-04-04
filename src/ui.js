@@ -5,7 +5,7 @@ import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
 import { getMusicVolume, getSFXVolume } from './sound.js';
-import { getAchievements, loadUnlocked } from './achievements.js';
+import { getAchievements, loadUnlocked, CATEGORIES } from './achievements.js';
 
 function getEditorLevelCount() {
   try {
@@ -488,13 +488,18 @@ export class UI {
     const achCardH = 68;
     const achGapX = 14;
     const achGapY = 10;
-    const achRows = Math.ceil(achievements.length / achCols);
+    const catHeaderH = 36;
 
-    // Calculate total content height
+    // Calculate total content height with categories
     const statsH = statItems.length * (cardH + cardGap);
-    const achHeaderH = 60;
-    const achGridH = achRows * (achCardH + achGapY) - achGapY;
-    const totalContentH = statsH + achHeaderH + achGridH + 20;
+    let achTotalH = 60; // main header
+    for (const cat of CATEGORIES) {
+      const catAchs = achievements.filter(a => a.category === cat.id);
+      if (catAchs.length === 0) continue;
+      const rows = Math.ceil(catAchs.length / achCols);
+      achTotalH += catHeaderH + rows * (achCardH + achGapY) - achGapY + 16;
+    }
+    const totalContentH = statsH + achTotalH + 20;
     const visibleH = SCREEN_HEIGHT - startY - 80;
     this.maxScrollY = Math.max(0, totalContentH - visibleH);
 
@@ -509,12 +514,10 @@ export class UI {
       const cy = startY + i * (cardH + cardGap) - this.scrollY;
       if (cy + cardH < startY || cy > startY + visibleH) continue;
 
-      // Card background
       this._roundRect(ctx, cardX, cy, cardW, cardH, 12);
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fill();
 
-      // Card border with stat color glow
       ctx.save();
       ctx.shadowColor = stat.color;
       ctx.shadowBlur = 8;
@@ -526,7 +529,6 @@ export class UI {
       ctx.globalAlpha = 1;
       ctx.restore();
 
-      // Value
       ctx.save();
       ctx.shadowColor = stat.color;
       ctx.shadowBlur = 12;
@@ -536,7 +538,6 @@ export class UI {
       ctx.fillText(stat.value, SCREEN_WIDTH / 2, cy + 45);
       ctx.restore();
 
-      // Label
       ctx.fillStyle = 'rgba(255,255,255,0.45)';
       ctx.font = '13px monospace';
       ctx.textAlign = 'center';
@@ -544,84 +545,104 @@ export class UI {
     }
 
     // ---- Achievements section ----
-    const achStartY = startY + statsH + 16 - this.scrollY;
+    let achY = startY + statsH + 16 - this.scrollY;
 
-    // "ACHIEVEMENTS" sub-title
+    // Main header
     ctx.save();
     ctx.shadowColor = '#FFD700';
     ctx.shadowBlur = 12;
     ctx.fillStyle = '#FFD700';
     ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('ACHIEVEMENTS', SCREEN_WIDTH / 2, achStartY);
+    ctx.fillText('ACHIEVEMENTS', SCREEN_WIDTH / 2, achY);
     ctx.shadowBlur = 0;
     ctx.restore();
 
-    // Count
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = '14px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(`${unlockedCount} / ${achievements.length} Unlocked`, SCREEN_WIDTH / 2, achStartY + 22);
+    ctx.fillText(`${unlockedCount} / ${achievements.length} Unlocked`, SCREEN_WIDTH / 2, achY + 22);
+    achY += 46;
 
-    // Achievement grid: 3 columns
+    // Draw each category
     const gridW = achCols * achCardW + (achCols - 1) * achGapX;
     const gridStartX = (SCREEN_WIDTH - gridW) / 2;
-    const gridTopY = achStartY + 38;
 
-    for (let i = 0; i < achievements.length; i++) {
-      const ach = achievements[i];
-      const col = i % achCols;
-      const row = Math.floor(i / achCols);
-      const ax = gridStartX + col * (achCardW + achGapX);
-      const ay = gridTopY + row * (achCardH + achGapY);
-      if (ay + achCardH < startY || ay > startY + visibleH) continue;
-      const isUnlocked = unlocked.has(ach.id);
+    for (const cat of CATEGORIES) {
+      const catAchs = achievements.filter(a => a.category === cat.id);
+      if (catAchs.length === 0) continue;
+      const catUnlocked = catAchs.filter(a => unlocked.has(a.id)).length;
 
-      // Card background
-      this._roundRect(ctx, ax, ay, achCardW, achCardH, 8);
-      ctx.fillStyle = isUnlocked ? 'rgba(50,40,0,0.5)' : 'rgba(0,0,0,0.35)';
-      ctx.fill();
+      // Category header
+      if (achY + catHeaderH > startY && achY < startY + visibleH) {
+        ctx.fillStyle = '#FFD700';
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(cat.name, gridStartX, achY + 14);
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'right';
+        ctx.fillText(`${catUnlocked}/${catAchs.length}`, gridStartX + gridW, achY + 14);
+        // Line
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(gridStartX, achY + 22, gridW, 1);
+        ctx.globalAlpha = 1;
+      }
+      achY += catHeaderH;
 
-      // Card border
-      ctx.save();
-      const borderColor = isUnlocked ? '#FFD700' : '#444444';
-      ctx.shadowColor = isUnlocked ? '#FFD700' : 'transparent';
-      ctx.shadowBlur = isUnlocked ? 6 : 0;
-      this._roundRect(ctx, ax, ay, achCardW, achCardH, 8);
-      ctx.strokeStyle = borderColor;
-      ctx.lineWidth = 1.2;
-      ctx.globalAlpha = isUnlocked ? 0.6 : 0.3;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.restore();
+      // Achievement cards for this category
+      for (let i = 0; i < catAchs.length; i++) {
+        const ach = catAchs[i];
+        const col = i % achCols;
+        const row = Math.floor(i / achCols);
+        const ax = gridStartX + col * (achCardW + achGapX);
+        const ay = achY + row * (achCardH + achGapY);
+        if (ay + achCardH < startY || ay > startY + visibleH) continue;
+        const isUnlocked = unlocked.has(ach.id);
 
-      // Icon
-      ctx.font = '18px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle = isUnlocked ? '#FFD700' : '#555555';
-      ctx.fillText(isUnlocked ? '\u2713' : '\u{1F512}', ax + 8, ay + achCardH / 2 - 2);
+        this._roundRect(ctx, ax, ay, achCardW, achCardH, 8);
+        ctx.fillStyle = isUnlocked ? 'rgba(50,40,0,0.5)' : 'rgba(0,0,0,0.35)';
+        ctx.fill();
 
-      // Title (word wrap)
-      ctx.font = 'bold 12px monospace';
-      ctx.fillStyle = isUnlocked ? '#FFD700' : '#666666';
-      ctx.textBaseline = 'top';
-      const textMaxW = achCardW - 38;
-      const titleLines = this._wrapText(ctx, ach.title, textMaxW);
-      for (let l = 0; l < titleLines.length; l++) {
-        ctx.fillText(titleLines[l], ax + 30, ay + 8 + l * 14);
+        ctx.save();
+        ctx.shadowColor = isUnlocked ? '#FFD700' : 'transparent';
+        ctx.shadowBlur = isUnlocked ? 6 : 0;
+        this._roundRect(ctx, ax, ay, achCardW, achCardH, 8);
+        ctx.strokeStyle = isUnlocked ? '#FFD700' : '#444444';
+        ctx.lineWidth = 1.2;
+        ctx.globalAlpha = isUnlocked ? 0.6 : 0.3;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+
+        ctx.font = '18px monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = isUnlocked ? '#FFD700' : '#555555';
+        ctx.fillText(isUnlocked ? '\u2713' : '\u{1F512}', ax + 8, ay + achCardH / 2 - 2);
+
+        ctx.font = 'bold 12px monospace';
+        ctx.fillStyle = isUnlocked ? '#FFD700' : '#666666';
+        ctx.textBaseline = 'top';
+        const textMaxW = achCardW - 38;
+        const titleLines = this._wrapText(ctx, ach.title, textMaxW);
+        for (let l = 0; l < titleLines.length; l++) {
+          ctx.fillText(titleLines[l], ax + 30, ay + 8 + l * 14);
+        }
+
+        ctx.font = '10px monospace';
+        ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)';
+        const descTopY = ay + 8 + titleLines.length * 14 + 4;
+        const descLines = this._wrapText(ctx, ach.desc, textMaxW);
+        for (let l = 0; l < descLines.length; l++) {
+          ctx.fillText(descLines[l], ax + 30, descTopY + l * 12);
+        }
+        ctx.textBaseline = 'alphabetic';
       }
 
-      // Description (word wrap)
-      ctx.font = '10px monospace';
-      ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)';
-      const descTopY = ay + 8 + titleLines.length * 14 + 4;
-      const descLines = this._wrapText(ctx, ach.desc, textMaxW);
-      for (let l = 0; l < descLines.length; l++) {
-        ctx.fillText(descLines[l], ax + 30, descTopY + l * 12);
-      }
-
-      ctx.textBaseline = 'alphabetic';
+      const rows = Math.ceil(catAchs.length / achCols);
+      achY += rows * (achCardH + achGapY) - achGapY + 16;
     }
 
     ctx.restore();

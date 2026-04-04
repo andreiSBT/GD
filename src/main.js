@@ -1895,6 +1895,11 @@ class Game {
             this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, false, this.coinsCollected || 0, true);
           }
           this._checkAchievements();
+          // Track community/editor level completions
+          if (this.editorLevelData) {
+            const count = parseInt(localStorage.getItem('gd_community_completions') || '0');
+            localStorage.setItem('gd_community_completions', String(count + 1));
+          }
           // Save replay ghost & submit score
           if (!this.editorLevelData) {
             if (this._replayRecorder) saveReplay(this.level.id, this._replayRecorder.serialize());
