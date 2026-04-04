@@ -1679,8 +1679,8 @@ class Game {
           // Use the exact sub-piece bounds, not the group bounding box
           const piece = result._piece || obs;
           if (result.type === 'death') {
-            // Never die from a slope piece — slopes are safe surfaces
-            if (piece.type === 'slope') continue;
+            // Slopes are safe surfaces, except wall hits (flat vertical side)
+            if (piece.type === 'slope' && !result.wall) continue;
             const prevBottom = this.player.prevY + PLAYER_SIZE;
             const prevTop = this.player.prevY;
             const prevRight = this.player.prevX + PLAYER_SIZE;

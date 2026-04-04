@@ -1465,7 +1465,7 @@ export class Slope {
       // Wall spans from this.y to this.y + this.h at x = this.x
       if (playerRight > this.x && playerRight < this.x + 14 &&
           playerBottom_ > this.y + 6 && playerRect.y < this.y + this.h - 6) {
-        return { type: 'death' };
+        return { type: 'death', wall: true };
       }
     }
 
