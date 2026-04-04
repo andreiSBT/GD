@@ -650,11 +650,10 @@ class Game {
         this._colorTransition = null;
         this.practiceMode = false;
         this.attempts = 0;
-        this.player.reset(0);
-        this.camera.reset(0);
-        this.particles.clear();
-        this.state = PLAYING;
-        Sound.playMusic(level.themeId);
+        this.lastCheckpoint = null;
+        this.editorStartCheckpoint = null;
+        this._levelStartTime = performance.now();
+        this._restart();
       }
     } else if (action.startsWith('community_delete_')) {
       const idx = parseInt(action.replace('community_delete_', ''));
@@ -1255,9 +1254,10 @@ class Game {
     this._portalFlash = null;
     this.deathTimer = 0;
     this.pendingOrbHit = null;
-    // Reset replay
+    // Reset replay and timer
     this._replayRecorder = new ReplayRecorder();
     this._replayFrame = 0;
+    this._levelStartTime = performance.now();
     if (this._replayGhost) this._replayGhost.reset();
     // Reset theme and re-apply any color triggers before spawn point
     this._colorTransition = null;
