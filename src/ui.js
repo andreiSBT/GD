@@ -1600,19 +1600,6 @@ export class UI {
     ctx.textAlign = 'center';
     ctx.fillText('Enter a secret code to unlock rewards', SCREEN_WIDTH / 2, 130);
 
-    // Redeemed count
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = '12px monospace';
-    ctx.fillText(`${redeemedCodes.size} code${redeemedCodes.size !== 1 ? 's' : ''} redeemed`, SCREEN_WIDTH / 2, 155);
-
-    // Secret coins count
-    const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
-    if (secretCoins > 0) {
-      ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText(`Secret Coins: ${secretCoins}`, SCREEN_WIDTH / 2, 185);
-    }
-
     // Input area
     const inputW = 360;
     const inputX = (SCREEN_WIDTH - inputW) / 2;
@@ -1659,28 +1646,6 @@ export class UI {
       ctx.fillText(secretsData.message.text, SCREEN_WIDTH / 2, inputY + 155);
       ctx.globalAlpha = 1;
       ctx.restore();
-    }
-
-    // Redeemed codes list
-    if (redeemedCodes.size > 0) {
-      const listY = inputY + 190;
-      ctx.fillStyle = 'rgba(255,255,255,0.4)';
-      ctx.font = 'bold 13px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('REDEEMED', SCREEN_WIDTH / 2, listY);
-
-      ctx.globalAlpha = 0.15;
-      ctx.fillStyle = '#FF0066';
-      ctx.fillRect(SCREEN_WIDTH / 2 - 80, listY + 5, 160, 1);
-      ctx.globalAlpha = 1;
-
-      let ry = listY + 22;
-      for (const code of redeemedCodes) {
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.font = '12px monospace';
-        ctx.fillText(code, SCREEN_WIDTH / 2, ry);
-        ry += 18;
-      }
     }
 
     // Back button
