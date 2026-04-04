@@ -538,16 +538,28 @@ export class UI {
       ctx.fillStyle = isUnlocked ? '#FFD700' : '#555555';
       ctx.fillText(isUnlocked ? '\u2713' : '\u{1F512}', ax + 8, ay + achCardH / 2 - 2);
 
-      // Title
+      // Title (truncate to fit card)
       ctx.font = 'bold 12px monospace';
       ctx.fillStyle = isUnlocked ? '#FFD700' : '#666666';
       ctx.textBaseline = 'top';
-      ctx.fillText(ach.title, ax + 30, ay + 8);
+      const titleMaxW = achCardW - 38;
+      let titleText = ach.title;
+      while (ctx.measureText(titleText).width > titleMaxW && titleText.length > 1) {
+        titleText = titleText.slice(0, -1);
+      }
+      if (titleText !== ach.title) titleText += '…';
+      ctx.fillText(titleText, ax + 30, ay + 8);
 
-      // Description
+      // Description (truncate to fit card)
       ctx.font = '10px monospace';
       ctx.fillStyle = isUnlocked ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)';
-      ctx.fillText(ach.desc, ax + 30, ay + 28);
+      const descMaxW = achCardW - 38;
+      let descText = ach.desc;
+      while (ctx.measureText(descText).width > descMaxW && descText.length > 1) {
+        descText = descText.slice(0, -1);
+      }
+      if (descText !== ach.desc) descText += '…';
+      ctx.fillText(descText, ax + 30, ay + 28);
 
       ctx.textBaseline = 'alphabetic';
     }
