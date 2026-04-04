@@ -89,6 +89,7 @@ export class Editor {
     this.objects = [];
     this.liveObstacles = [];
     this.selectedTool = 'spike';
+    this.selectedCategory = 'hazards';
     this.subType = null;
     this.rotation = 0; // 0, 90, 180, 270 for spikes
     this.theme = THEMES[1];
@@ -555,25 +556,26 @@ export class Editor {
 
     // Tool shortcuts
     const keyMap = {
-      '1': { tool: 'spike' },
-      '2': { tool: 'platform' },
-      '3': { tool: 'moving' },
-      '4': { tool: 'orb', sub: 'yellow_orb' },
-      '5': { tool: 'pad', sub: 'yellow_pad' },
-      '6': { tool: 'portal', sub: 'gravity' },
-      '7': { tool: 'checkpoint' },
-      '8': { tool: 'end' },
-      '9': { tool: 'start' },
-      'w': { tool: 'saw', sub: '1' },
-      's': { tool: 'slope', sub: 'up' },
-      't': { tool: 'transport' },
-      'c': { tool: 'coin' },
-      'r': { tool: 'color_trigger' },
-      'm': { tool: 'move' },
-      'x': { tool: 'erase' },
+      '1': { cat: 'hazards', tool: 'spike' },
+      '2': { cat: 'platforms', tool: 'platform' },
+      '3': { cat: 'platforms', tool: 'moving' },
+      '4': { cat: 'orbs', tool: 'orb', sub: 'yellow_orb' },
+      '5': { cat: 'pads', tool: 'pad', sub: 'yellow_pad' },
+      '6': { cat: 'portals', tool: 'portal', sub: 'gravity' },
+      '7': { cat: 'special', tool: 'checkpoint' },
+      '8': { cat: 'special', tool: 'end' },
+      '9': { cat: 'special', tool: 'start' },
+      'w': { cat: 'hazards', tool: 'saw', sub: '1' },
+      's': { cat: 'platforms', tool: 'slope', sub: 'up' },
+      't': { cat: 'platforms', tool: 'transport' },
+      'c': { cat: 'special', tool: 'coin' },
+      'r': { cat: 'special', tool: 'color_trigger' },
+      'm': { cat: 'edit', tool: 'move' },
+      'x': { cat: 'edit', tool: 'erase' },
     };
     const km = keyMap[e.key.toLowerCase()];
     if (km) {
+      this.selectedCategory = km.cat;
       this.selectedTool = km.tool;
       this.subType = km.sub || null;
       return true;
@@ -1430,11 +1432,50 @@ export class Editor {
     ctx.fillStyle = 'rgba(0,200,255,0.15)';
     ctx.fillRect(0, TOOLBAR_H - 1, SCREEN_WIDTH, 1);
 
-    const btnH = 40;
-    const btnY = 8;
     const gap = 3;
     const margin = 8;
     const r = 6;
+
+    // --- ROW 1: Category tabs (top) ---
+    const catH = 22;
+    const catY = 4;
+    const catGap = 4;
+    const catCount = TOOL_CATEGORIES.length;
+    const catTotalW = SCREEN_WIDTH - margin * 2 - (catCount - 1) * catGap;
+    const catW = Math.floor(catTotalW / catCount);
+
+    for (let i = 0; i < catCount; i++) {
+      const cat = TOOL_CATEGORIES[i];
+      const cx = margin + i * (catW + catGap);
+      const isActive = this.selectedCategory === cat.id;
+
+      this._editorRoundRect(ctx, cx, catY, catW, catH, 4);
+      if (isActive) {
+        ctx.fillStyle = cat.color;
+        ctx.globalAlpha = 0.3;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = cat.color;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(255,255,255,0.05)';
+        ctx.fill();
+      }
+
+      ctx.fillStyle = isActive ? cat.color : '#666';
+      ctx.font = `bold 10px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(cat.label, cx + catW / 2, catY + 15);
+      this.buttons.push({ id: 'cat_' + cat.id, x: cx, y: catY, w: catW, h: catH });
+    }
+
+    // --- ROW 2: Tools for active category + action buttons ---
+    const btnH = 28;
+    const btnY = catY + catH + 4;
+
+    const activeCat = TOOL_CATEGORIES.find(c => c.id === this.selectedCategory) || TOOL_CATEGORIES[0];
+    const catTools = activeCat.tools;
 
     const actions = [
       { id: 'action_rotate', label: 'ROT', color: '#888' },
@@ -1449,16 +1490,15 @@ export class Editor {
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
 
-    // Calculate responsive button width
-    const totalItems = TOOLS.length + actions.length;
-    const totalGaps = (TOOLS.length - 1 + actions.length - 1 + 1) * gap;
+    const totalItems = catTools.length + actions.length;
+    const totalGaps = (catTools.length - 1 + actions.length - 1 + 1) * gap;
     const separatorGap = 12;
     const availW = SCREEN_WIDTH - margin * 2 - totalGaps - separatorGap;
-    const btnW = Math.min(64, Math.floor(availW / totalItems));
+    const btnW = Math.min(72, Math.floor(availW / totalItems));
 
-    // Tool buttons — single row, all expanded
-    for (let i = 0; i < TOOLS.length; i++) {
-      const tool = TOOLS[i];
+    // Tool buttons for active category
+    for (let i = 0; i < catTools.length; i++) {
+      const tool = catTools[i];
       const bx = margin + i * (btnW + gap);
       const isActive = tool.toolType
         ? (this.selectedTool === tool.toolType && this.subType === tool.subType)
@@ -1483,9 +1523,9 @@ export class Editor {
       }
 
       ctx.fillStyle = isActive ? '#FFF' : '#999';
-      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 6))}px monospace`;
+      ctx.font = `bold ${Math.min(11, Math.max(9, btnW / 5))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(tool.label, bx + btnW / 2, btnY + 24);
+      ctx.fillText(tool.label, bx + btnW / 2, btnY + 18);
 
       this.buttons.push({ id: 'tool_' + tool.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
@@ -1506,7 +1546,7 @@ export class Editor {
       ctx.fillStyle = '#FFF';
       ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 5))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(act.label, ax + btnW / 2, btnY + 24);
+      ctx.fillText(act.label, ax + btnW / 2, btnY + 18);
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
       ax += btnW + gap;
     }
@@ -2631,7 +2671,25 @@ export class Editor {
   }
 
   _handleButton(id) {
-    if (id.startsWith('tool_')) {
+    if (id.startsWith('cat_')) {
+      const catId = id.replace('cat_', '');
+      this.selectedCategory = catId;
+      // Select first tool of category if current tool isn't in it
+      const cat = TOOL_CATEGORIES.find(c => c.id === catId);
+      if (cat) {
+        const isInCat = cat.tools.some(t => t.toolType ? t.toolType === this.selectedTool : t.id === this.selectedTool);
+        if (!isInCat) {
+          const first = cat.tools[0];
+          if (first.toolType) {
+            this.selectedTool = first.toolType;
+            this.subType = first.subType;
+          } else {
+            this.selectedTool = first.id;
+            this.subType = null;
+          }
+        }
+      }
+    } else if (id.startsWith('tool_')) {
       const toolId = id.replace('tool_', '');
       // Compound tool IDs like "orb:yellow_orb" set both tool and subtype
       const compoundTool = TOOLS.find(t => t.id === toolId);
