@@ -442,7 +442,7 @@ export class Player {
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
       // Draw dashes following the trail path with gaps
-      const dashLen = 10, gapLen = 8, h = 4;
+      const dashLen = 10, gapLen = 8, h = 6;
       let dist = 0;
       let drawing = true; // start with a dash
       let segLeft = dashLen;
@@ -464,7 +464,8 @@ export class Player {
             const t1 = (consumed + step) / segDist;
             const x0 = px + dx * t0, y0 = py + dy * t0;
             const x1 = px + dx * t1, y1 = py + dy * t1;
-            const alpha = (i / this.trail.length) * 0.5;
+            const progress = i / this.trail.length;
+            const alpha = 0.15 + progress * 0.85;
             ctx.globalAlpha = alpha;
             ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1) - h / 2,
               Math.abs(x1 - x0) + 2, Math.abs(y1 - y0) + h);
