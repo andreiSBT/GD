@@ -426,7 +426,11 @@ export class Player {
 
   _drawTrail(ctx, cameraX, theme) {
     if (this.trail.length < 2) return;
-    const trailColor = this.customTrailColor || theme.accent;
+    let trailColor = this.customTrailColor || this.customColor || theme.player;
+    if (trailColor === 'rainbow') {
+      const hue = (Date.now() / 10) % 360;
+      trailColor = `hsl(${hue}, 100%, 60%)`;
+    }
     ctx.save();
     ctx.shadowColor = trailColor;
     ctx.shadowBlur = 8;
