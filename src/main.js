@@ -2313,8 +2313,9 @@ class Game {
     if (!isConfigured()) return;
     const cloud = await loadCustomizationFromCloud();
     if (cloud) {
-      this.customization = cloud;
-      localStorage.setItem('gd_customization', JSON.stringify(cloud));
+      const defaults = { colorIndex: 0, trailIndex: 0, iconIndex: 0, shapeIndex: 0, trailStyleIndex: 0 };
+      this.customization = { ...defaults, ...this.customization, ...cloud };
+      localStorage.setItem('gd_customization', JSON.stringify(this.customization));
       this._applyCustomization();
     }
   }
