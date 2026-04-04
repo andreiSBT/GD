@@ -1082,13 +1082,26 @@ export class UI {
     // Draw preview cube with shape
     this._drawPreviewCube(ctx, previewX, previewY, previewSize, previewColor, CUBE_ICONS[iconIndex], previewShape);
 
-    // Trail preview dots
-    for (let i = 0; i < 6; i++) {
-      const alpha = (i / 6) * 0.5;
-      const sz = 3 + (i / 6) * 8;
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = trailColor;
-      ctx.fillRect(previewX - 55 - i * 14, previewY - sz / 2, sz, sz);
+    // Trail preview
+    ctx.fillStyle = trailColor;
+    const isDotted = (trailStyleIndex || 0) === 1;
+    if (isDotted) {
+      // Dashed trail preview: - - - -
+      const dashW = 10, gapW = 8, h = 4;
+      let dx = 0;
+      for (let d = 0; d < 5; d++) {
+        const alpha = (d / 5) * 0.5;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(previewX - 55 - dx, previewY - h / 2, dashW, h);
+        dx += dashW + gapW;
+      }
+    } else {
+      for (let i = 0; i < 6; i++) {
+        const alpha = (i / 6) * 0.5;
+        const sz = 3 + (i / 6) * 8;
+        ctx.globalAlpha = alpha;
+        ctx.fillRect(previewX - 55 - i * 14, previewY - sz / 2, sz, sz);
+      }
     }
     ctx.globalAlpha = 1;
 
