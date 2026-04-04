@@ -508,11 +508,11 @@ export class Editor {
         this.showInfo = false;
         return true;
       }
-      // Auto-save and go back to browser
+      // Auto-save and go back to main menu
       if (this.currentSlot && this.objects.length > 0) {
         this.saveToSlot(this.currentSlot);
       }
-      this.showBrowser();
+      if (this.onBack) this.onBack();
       return true;
     }
 
