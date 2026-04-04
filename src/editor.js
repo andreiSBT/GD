@@ -89,7 +89,7 @@ export class Editor {
     this.objects = [];
     this.liveObstacles = [];
     this.selectedTool = 'spike';
-    this.selectedCategory = 'hazards';
+    this.selectedCategory = null;
     this.subType = null;
     this.rotation = 0; // 0, 90, 180, 270 for spikes
     this.theme = THEMES[1];
@@ -1432,50 +1432,16 @@ export class Editor {
     ctx.fillStyle = 'rgba(0,200,255,0.15)';
     ctx.fillRect(0, TOOLBAR_H - 1, SCREEN_WIDTH, 1);
 
+    const btnH = 40;
+    const btnY = 8;
     const gap = 3;
     const margin = 8;
     const r = 6;
 
-    // --- ROW 1: Category tabs (top) ---
-    const catH = 22;
-    const catY = 4;
-    const catGap = 4;
-    const catCount = TOOL_CATEGORIES.length;
-    const catTotalW = SCREEN_WIDTH - margin * 2 - (catCount - 1) * catGap;
-    const catW = Math.floor(catTotalW / catCount);
-
-    for (let i = 0; i < catCount; i++) {
-      const cat = TOOL_CATEGORIES[i];
-      const cx = margin + i * (catW + catGap);
-      const isActive = this.selectedCategory === cat.id;
-
-      this._editorRoundRect(ctx, cx, catY, catW, catH, 4);
-      if (isActive) {
-        ctx.fillStyle = cat.color;
-        ctx.globalAlpha = 0.3;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle = cat.color;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = 'rgba(255,255,255,0.05)';
-        ctx.fill();
-      }
-
-      ctx.fillStyle = isActive ? cat.color : '#666';
-      ctx.font = `bold 10px monospace`;
-      ctx.textAlign = 'center';
-      ctx.fillText(cat.label, cx + catW / 2, catY + 15);
-      this.buttons.push({ id: 'cat_' + cat.id, x: cx, y: catY, w: catW, h: catH });
-    }
-
-    // --- ROW 2: Tools for active category + action buttons ---
-    const btnH = 28;
-    const btnY = catY + catH + 4;
-
-    const activeCat = TOOL_CATEGORIES.find(c => c.id === this.selectedCategory) || TOOL_CATEGORIES[0];
-    const catTools = activeCat.tools;
+    // Category buttons (left side) + action buttons (right side) in one row
+    const catButtons = TOOL_CATEGORIES.map(cat => ({
+      id: 'cat_' + cat.id, label: cat.label, color: cat.color, isCat: true, catId: cat.id,
+    }));
 
     const actions = [
       { id: 'action_rotate', label: 'ROT', color: '#888' },
@@ -1490,44 +1456,54 @@ export class Editor {
       { id: 'action_back', label: 'EXIT', color: '#CC3333' },
     ];
 
-    const totalItems = catTools.length + actions.length;
-    const totalGaps = (catTools.length - 1 + actions.length - 1 + 1) * gap;
-    const separatorGap = 12;
-    const availW = SCREEN_WIDTH - margin * 2 - totalGaps - separatorGap;
-    const btnW = Math.min(72, Math.floor(availW / totalItems));
+    const allButtons = [...catButtons, ...actions];
+    const totalItems = allButtons.length;
+    const totalGaps = (totalItems - 1) * gap;
+    const availW = SCREEN_WIDTH - margin * 2 - totalGaps;
+    const btnW = Math.min(64, Math.floor(availW / totalItems));
 
-    // Tool buttons for active category
-    for (let i = 0; i < catTools.length; i++) {
-      const tool = catTools[i];
+    for (let i = 0; i < allButtons.length; i++) {
+      const btn = allButtons[i];
       const bx = margin + i * (btnW + gap);
-      const isActive = tool.toolType
-        ? (this.selectedTool === tool.toolType && this.subType === tool.subType)
-        : (this.selectedTool === tool.id);
+      const isActiveCat = btn.isCat && this.selectedCategory === btn.catId;
 
       this._editorRoundRect(ctx, bx, btnY, btnW, btnH, r);
-      if (isActive) {
-        ctx.fillStyle = tool.color;
+      if (isActiveCat) {
+        ctx.fillStyle = btn.color;
+        ctx.globalAlpha = 0.4;
         ctx.fill();
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.fill();
+        ctx.globalAlpha = 1;
         ctx.save();
-        ctx.shadowColor = tool.color;
+        ctx.shadowColor = btn.color;
         ctx.shadowBlur = 6;
-        ctx.strokeStyle = tool.color;
+        ctx.strokeStyle = btn.color;
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.restore();
-      } else {
+      } else if (btn.isCat) {
         ctx.fillStyle = 'rgba(255,255,255,0.07)';
         ctx.fill();
+        ctx.strokeStyle = btn.color;
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.fillStyle = btn.color;
+        ctx.fill();
+        ctx.globalAlpha = 0.15;
+        this._editorRoundRect(ctx, bx, btnY, btnW, btnH / 2, r);
+        ctx.fillStyle = '#FFF';
+        ctx.fill();
+        ctx.globalAlpha = 1;
       }
 
-      ctx.fillStyle = isActive ? '#FFF' : '#999';
-      ctx.font = `bold ${Math.min(11, Math.max(9, btnW / 5))}px monospace`;
+      ctx.fillStyle = isActiveCat ? '#FFF' : (btn.isCat ? btn.color : '#FFF');
+      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 6))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(tool.label, bx + btnW / 2, btnY + 18);
+      ctx.fillText(btn.label, bx + btnW / 2, btnY + 24);
 
-      this.buttons.push({ id: 'tool_' + tool.id, x: bx, y: btnY, w: btnW, h: btnH });
+      this.buttons.push({ id: btn.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
 
     // Action buttons from right
@@ -1553,47 +1529,61 @@ export class Editor {
   }
 
   _hasSidePanel() {
-    return SUBTYPES[this.selectedTool] !== undefined;
+    // Show side panel when a category is selected, or for color_trigger subtypes
+    return this.selectedCategory || SUBTYPES[this.selectedTool] !== undefined;
   }
 
   _drawSidePanel(ctx) {
-    const subtypes = SUBTYPES[this.selectedTool];
-    if (!subtypes) return;
+    // If color_trigger is selected, show its subtypes
+    const colorSubs = SUBTYPES[this.selectedTool];
+    // Get tools from active category
+    const activeCat = TOOL_CATEGORIES.find(c => c.id === this.selectedCategory);
+    const items = colorSubs || (activeCat ? activeCat.tools : null);
+    if (!items) return;
 
+    const isColorTrigger = !!colorSubs;
     const px = SCREEN_WIDTH - PANEL_W;
     const py = TOOLBAR_H + 10;
-    const panelH = subtypes.length * 40 + 34;
+    const panelH = items.length * 40 + 34;
     const r = 10;
 
     // Panel background with rounded corners (left side only)
     this._editorRoundRect(ctx, px - 4, py, PANEL_W + 4, panelH, r);
     ctx.fillStyle = 'rgba(5,5,20,0.9)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(0,200,255,0.15)';
+    ctx.strokeStyle = activeCat ? activeCat.color + '33' : 'rgba(0,200,255,0.15)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillStyle = activeCat ? activeCat.color : 'rgba(255,255,255,0.7)';
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('SUBTYPE', px + PANEL_W / 2, py + 16);
+    ctx.fillText(isColorTrigger ? 'SUBTYPE' : (activeCat ? activeCat.label : ''), px + PANEL_W / 2, py + 16);
 
-    for (let i = 0; i < subtypes.length; i++) {
-      const st = subtypes[i];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      // For color_trigger subtypes, item is a string; for category tools, item is an object
+      const st = isColorTrigger ? item : (item.toolType ? item.subType : item.id);
+      const label = isColorTrigger ? item : item.label;
       const by = py + 26 + i * 36;
-      const isActive = this.subType === st || (!this.subType && i === 0);
+      const isActive = isColorTrigger
+        ? (this.subType === st || (!this.subType && i === 0))
+        : (item.toolType
+          ? (this.selectedTool === item.toolType && this.subType === item.subType)
+          : (this.selectedTool === item.id));
       const bx = px + 10;
       const bw = PANEL_W - 20;
 
+      const itemColor = isColorTrigger ? SUBTYPE_COLORS[st] : (item.color || '#888');
       this._editorRoundRect(ctx, bx, by, bw, 30, 6);
-      ctx.fillStyle = isActive ? SUBTYPE_COLORS[st] : 'rgba(255,255,255,0.08)';
+      ctx.fillStyle = isActive ? itemColor : 'rgba(255,255,255,0.08)';
       ctx.fill();
 
       if (isActive) {
         ctx.save();
-        ctx.shadowColor = SUBTYPE_COLORS[st];
+        ctx.shadowColor = itemColor;
         ctx.shadowBlur = 6;
-        ctx.strokeStyle = SUBTYPE_COLORS[st];
+        ctx.strokeStyle = itemColor;
         ctx.lineWidth = 1.5;
         this._editorRoundRect(ctx, bx, by, bw, 30, 6);
         ctx.stroke();
@@ -1603,7 +1593,8 @@ export class Editor {
       ctx.fillStyle = isActive ? '#000' : '#BBB';
       ctx.font = '12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(st.replace('_', ' '), px + PANEL_W / 2, by + 19);
+      const displayLabel = typeof label === 'string' ? label.replace('_', ' ') : st;
+      ctx.fillText(displayLabel, px + PANEL_W / 2, by + 19);
 
       this.buttons.push({ id: 'sub_' + st, x: bx, y: by, w: bw, h: 30 });
     }
@@ -2673,20 +2664,22 @@ export class Editor {
   _handleButton(id) {
     if (id.startsWith('cat_')) {
       const catId = id.replace('cat_', '');
+      // Toggle: click same category again to close
+      if (this.selectedCategory === catId) {
+        this.selectedCategory = null;
+        return;
+      }
       this.selectedCategory = catId;
-      // Select first tool of category if current tool isn't in it
+      // Select first tool of category
       const cat = TOOL_CATEGORIES.find(c => c.id === catId);
       if (cat) {
-        const isInCat = cat.tools.some(t => t.toolType ? t.toolType === this.selectedTool : t.id === this.selectedTool);
-        if (!isInCat) {
-          const first = cat.tools[0];
-          if (first.toolType) {
-            this.selectedTool = first.toolType;
-            this.subType = first.subType;
-          } else {
-            this.selectedTool = first.id;
-            this.subType = null;
-          }
+        const first = cat.tools[0];
+        if (first.toolType) {
+          this.selectedTool = first.toolType;
+          this.subType = first.subType;
+        } else {
+          this.selectedTool = first.id;
+          this.subType = null;
         }
       }
     } else if (id.startsWith('tool_')) {
@@ -2705,7 +2698,30 @@ export class Editor {
       this.movingObj = null;
       this.movingObjIndex = -1;
     } else if (id.startsWith('sub_')) {
-      this.subType = id.replace('sub_', '');
+      const subId = id.replace('sub_', '');
+      // Check if this is a category tool item
+      if (this.selectedCategory) {
+        const cat = TOOL_CATEGORIES.find(c => c.id === this.selectedCategory);
+        if (cat) {
+          const tool = cat.tools.find(t => (t.toolType ? t.subType : t.id) === subId);
+          if (tool) {
+            if (tool.toolType) {
+              this.selectedTool = tool.toolType;
+              this.subType = tool.subType;
+            } else {
+              this.selectedTool = tool.id;
+              this.subType = null;
+            }
+            this.movingEndMode = false;
+            this.movingStart = null;
+            this.movingObj = null;
+            this.movingObjIndex = -1;
+            return;
+          }
+        }
+      }
+      // Default: color_trigger subtypes
+      this.subType = subId;
     } else if (id.startsWith('theme_')) {
       this.themeId = parseInt(id.replace('theme_', ''));
       this.theme = THEMES[this.themeId];
