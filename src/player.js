@@ -434,8 +434,8 @@ export class Player {
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
       // Draw thin dashes with equal gaps: - - - -
-      const dashLen = 12, gapLen = 10;
-      const h = 3;
+      const dashLen = 16, gapLen = 10;
+      const h = 6;
       let dx = 0;
       for (let i = this.trail.length - 1; i >= 0; i--) {
         const t = this.trail[i];
@@ -446,7 +446,7 @@ export class Player {
         if (pos >= dashLen) continue;
         const alpha = (i / this.trail.length) * 0.5;
         ctx.globalAlpha = alpha;
-        ctx.fillRect(tsx, t.y - h / 2, 2, h);
+        ctx.fillRect(tsx, t.y - h / 2, 3, h);
       }
     } else {
       for (let i = 0; i < this.trail.length; i++) {
