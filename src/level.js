@@ -67,29 +67,33 @@ export class Level {
   }
 
   _mergePlatforms() {
-    const platforms = this.obstacles.filter(o => o.type === 'platform');
-    if (platforms.length < 2) {
+    // Group touching platforms AND slopes into PlatformGroups
+    const solids = this.obstacles.filter(o => o.type === 'platform' || o.type === 'slope');
+    if (solids.length < 2) {
       this._computeAdjacentEdges();
       return;
     }
 
-    // Group touching platforms
-    const groupOf = new Array(platforms.length).fill(-1);
+    // Compute hidden edges first
+    this._computeAdjacentEdges();
+
+    // Group touching solids (platforms + slopes)
+    const groupOf = new Array(solids.length).fill(-1);
     let groupCount = 0;
-    for (let i = 0; i < platforms.length; i++) {
+    for (let i = 0; i < solids.length; i++) {
       if (groupOf[i] >= 0) continue;
       const gid = groupCount++;
       groupOf[i] = gid;
       let changed = true;
       while (changed) {
         changed = false;
-        for (let j = 0; j < platforms.length; j++) {
+        for (let j = 0; j < solids.length; j++) {
           if (groupOf[j] >= 0) continue;
-          const p = platforms[j];
+          const p = solids[j];
           const px2 = p.x + p.w, py2 = p.y + p.h;
-          for (let k = 0; k < platforms.length; k++) {
+          for (let k = 0; k < solids.length; k++) {
             if (groupOf[k] !== gid) continue;
-            const q = platforms[k];
+            const q = solids[k];
             if (p.x <= q.x + q.w && px2 >= q.x && p.y <= q.y + q.h && py2 >= q.y) {
               groupOf[j] = gid;
               changed = true;
@@ -100,15 +104,12 @@ export class Level {
       }
     }
 
-    // Compute hidden edges first (needed for PlatformGroup border drawing)
-    this._computeAdjacentEdges();
-
-    // Replace grouped platforms with PlatformGroup objects
+    // Replace groups (2+ pieces) with PlatformGroup objects
     const removed = new Set();
     for (let g = 0; g < groupCount; g++) {
       const group = [];
-      for (let i = 0; i < platforms.length; i++) {
-        if (groupOf[i] === g) group.push(platforms[i]);
+      for (let i = 0; i < solids.length; i++) {
+        if (groupOf[i] === g) group.push(solids[i]);
       }
       if (group.length <= 1) continue;
       for (const p of group) removed.add(p);

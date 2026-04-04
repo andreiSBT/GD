@@ -1453,20 +1453,21 @@ class Game {
           }
         }
       } else if (obs.type === 'platform_group') {
-        // Merged group: collision checks each sub-platform individually
         const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
+          // Use the exact sub-piece bounds, not the group bounding box
+          const piece = result._piece || obs;
           if (result.type === 'death') {
             const prevBottom = this.player.prevY + PLAYER_SIZE;
             const prevTop = this.player.prevY;
-            const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - obs.y) < 8;
-            const wasBelow = this.player.gravityMult > 0 && prevBottom > obs.y + obs.h - 4;
-            const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - (obs.y + obs.h)) < 8;
-            const wasAboveInv = this.player.gravityMult < 0 && prevTop < obs.y + 4;
+            const wasOnTop = this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < 8;
+            const wasBelow = this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
+            const wasOnBottom = this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < 8;
+            const wasAboveInv = this.player.gravityMult < 0 && prevTop < piece.y + 4;
             if (wasOnTop || wasBelow || wasOnBottom || wasAboveInv) {
               if (this.player.mode === MODE_SHIP || this.player.mode === MODE_WAVE) {
-                if (this.player.gravityMult > 0) { this.player.y = obs.y + obs.h + miniOffset; this.player.vy = 0; }
-                else { this.player.y = obs.y - PLAYER_SIZE + miniOffset; this.player.vy = 0; }
+                if (this.player.gravityMult > 0) { this.player.y = piece.y + piece.h + miniOffset; this.player.vy = 0; }
+                else { this.player.y = piece.y - PLAYER_SIZE + miniOffset; this.player.vy = 0; }
                 this.player.prevY = this.player.y;
               }
               continue;
@@ -1475,9 +1476,18 @@ class Game {
           } else if (result.type === 'land') {
             const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) || (this.player.gravityMult < 0 && this.player.vy > 2);
             if (jumpingOff) continue;
-            this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
-            this.player.prevY = this.player.y;
-            this.player.vy = 0;
+            // Handle slope landing with diagonal vy
+            if (result.slopeRatio != null) {
+              const slopeMiniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+              this.player.y = this.player.gravityMult === -1 ? result.y - slopeMiniOffset : result.y - PLAYER_SIZE + slopeMiniOffset;
+              this.player.prevY = this.player.y;
+              const speed = SCROLL_SPEED * this.player.speedMult;
+              this.player.vy = result.slopeRatio * speed;
+            } else {
+              this.player.y = this.player.gravityMult === -1 ? result.y - miniOffset : result.y - PLAYER_SIZE + miniOffset;
+              this.player.prevY = this.player.y;
+              this.player.vy = 0;
+            }
             this.player.grounded = true;
             this.player.onPlatform = true;
             this.player._snapRotation();

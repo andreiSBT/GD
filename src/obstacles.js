@@ -240,15 +240,15 @@ export class Platform {
 }
 
 // ============================================================
-// PLATFORM GROUP - merged touching platforms (single gradient, per-rect collision)
+// PLATFORM GROUP - merged touching platforms + slopes (seamless render, per-piece collision)
 // ============================================================
 export class PlatformGroup {
-  constructor(platforms) {
+  constructor(pieces) {
     this.type = 'platform_group';
-    this.platforms = platforms; // original Platform objects
+    this.pieces = pieces; // Platform and Slope objects
     // Bounding box for visibility culling
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of platforms) {
+    for (const p of pieces) {
       minX = Math.min(minX, p.x);
       minY = Math.min(minY, p.y);
       maxX = Math.max(maxX, p.x + p.w);
@@ -261,10 +261,13 @@ export class PlatformGroup {
   }
 
   checkCollision(playerRect, prevPlayerY, gravityMult) {
-    // Check each sub-platform individually
-    for (const p of this.platforms) {
+    for (const p of this.pieces) {
       const result = p.checkCollision(playerRect, prevPlayerY, gravityMult);
-      if (result) return result;
+      if (result) {
+        // Attach the sub-piece bounds so main.js can use exact dimensions
+        result._piece = p;
+        return result;
+      }
     }
     return null;
   }
@@ -273,30 +276,43 @@ export class PlatformGroup {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -this.w - 50 || sx > SCREEN_WIDTH + 50) return;
 
-    // Draw all sub-rects as one shape with a single gradient
     ctx.save();
 
-    // Clip to the union of all sub-platform shapes
+    // Build clip path from all pieces (rects for platforms, triangles for slopes)
     ctx.beginPath();
-    for (const p of this.platforms) {
+    for (const p of this.pieces) {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
-      ctx.rect(px, p.y, p.w, p.h);
+      if (p.type === 'slope') {
+        if (p.direction === 'up') {
+          ctx.moveTo(px, p.y + p.h);
+          ctx.lineTo(px + p.w, p.y + p.h);
+          ctx.lineTo(px + p.w, p.y);
+          ctx.closePath();
+        } else {
+          ctx.moveTo(px, p.y);
+          ctx.lineTo(px, p.y + p.h);
+          ctx.lineTo(px + p.w, p.y + p.h);
+          ctx.closePath();
+        }
+      } else {
+        ctx.rect(px, p.y, p.w, p.h);
+      }
     }
     ctx.clip();
 
-    // Single gradient over the whole group bounding box
+    // Single gradient over the whole group
     const grad = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
     grad.addColorStop(0, lighten(theme.platform, 20));
     grad.addColorStop(1, theme.platform);
     ctx.fillStyle = grad;
-    ctx.fillRect(sx, this.y, this.w, this.y + this.h);
+    ctx.fillRect(sx, this.y, this.w, this.h);
 
-    // Neon top edge — draw only on top-most surfaces
+    // Neon top edge on exposed platform tops
     drawNeonGlow(ctx, theme.accent, 8);
     ctx.fillStyle = theme.accent;
-    for (const p of this.platforms) {
-      // Check if there's another platform directly above this one
-      const hasAbove = this.platforms.some(q =>
+    for (const p of this.pieces) {
+      if (p.type === 'slope') continue; // slopes get diagonal glow below
+      const hasAbove = this.pieces.some(q =>
         q !== p && Math.abs(q.y + q.h - p.y) < 2 && q.x < p.x + p.w && q.x + q.w > p.x
       );
       if (!hasAbove) {
@@ -308,18 +324,44 @@ export class PlatformGroup {
 
     ctx.restore();
 
-    // Border — draw outer edges only
+    // Slope diagonal glow (drawn outside clip)
+    for (const p of this.pieces) {
+      if (p.type !== 'slope') continue;
+      const px = p.x - cameraX + PLAYER_X_OFFSET;
+      ctx.save();
+      drawNeonGlow(ctx, theme.accent, 8);
+      ctx.strokeStyle = theme.accent;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (p.direction === 'up') { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y); }
+      else { ctx.moveTo(px, p.y); ctx.lineTo(px + p.w, p.y + p.h); }
+      ctx.stroke();
+      clearGlow(ctx);
+      ctx.restore();
+    }
+
+    // Border — outer edges only
     ctx.save();
     ctx.strokeStyle = theme.accent;
     ctx.lineWidth = 1;
-    for (const p of this.platforms) {
+    for (const p of this.pieces) {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
       const he = p.hiddenEdges || new Set();
       ctx.beginPath();
-      if (!he.has('top')) { ctx.moveTo(px, p.y); ctx.lineTo(px + p.w, p.y); }
-      if (!he.has('right')) { ctx.moveTo(px + p.w, p.y); ctx.lineTo(px + p.w, p.y + p.h); }
-      if (!he.has('bottom')) { ctx.moveTo(px + p.w, p.y + p.h); ctx.lineTo(px, p.y + p.h); }
-      if (!he.has('left')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px, p.y); }
+      if (p.type === 'slope') {
+        if (p.direction === 'up') {
+          if (!he.has('bottom')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y + p.h); }
+          if (!he.has('right')) { ctx.moveTo(px + p.w, p.y + p.h); ctx.lineTo(px + p.w, p.y); }
+        } else {
+          if (!he.has('left')) { ctx.moveTo(px, p.y); ctx.lineTo(px, p.y + p.h); }
+          if (!he.has('bottom')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y + p.h); }
+        }
+      } else {
+        if (!he.has('top')) { ctx.moveTo(px, p.y); ctx.lineTo(px + p.w, p.y); }
+        if (!he.has('right')) { ctx.moveTo(px + p.w, p.y); ctx.lineTo(px + p.w, p.y + p.h); }
+        if (!he.has('bottom')) { ctx.moveTo(px + p.w, p.y + p.h); ctx.lineTo(px, p.y + p.h); }
+        if (!he.has('left')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px, p.y); }
+      }
       ctx.stroke();
     }
     ctx.restore();
