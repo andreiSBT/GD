@@ -63,6 +63,7 @@ function _buildAchievements() {
     { id: 'jumps_50k', title: 'ORBIT', desc: '50,000 total jumps', check: () => _totalJumps() >= 50000 },
     { id: 'jumps_100k', title: 'STRATOSPHERE', desc: '100,000 total jumps', check: () => _totalJumps() >= 100000 },
     { id: 'jumps_1m', title: 'TO THE MOON', desc: '1,000,000 total jumps', check: () => _totalJumps() >= 1000000 },
+    { id: 'jumps_10m', title: 'TO INFINITY AND BEYOND', desc: '10,000,000 total jumps', check: () => _totalJumps() >= 10000000 },
     // Progress
     { id: 'ninety', title: 'SO CLOSE', desc: 'Reach 90% without completing', check: (p) => Object.values(p).some(l => !l.completed && l.bestProgress >= 0.9) },
   );
