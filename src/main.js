@@ -2170,7 +2170,10 @@ class Game {
         ctx.translate(cpsx, cpsy);
         ctx.rotate(Math.PI / 4);
         ctx.globalAlpha = 0.6;
-        ctx.fillStyle = '#00FF64';
+        const cpGrad = ctx.createLinearGradient(-10, -10, 10, 10);
+        cpGrad.addColorStop(0, '#FFFFFF');
+        cpGrad.addColorStop(1, '#00FF64');
+        ctx.fillStyle = cpGrad;
         ctx.fillRect(-10, -10, 20, 20);
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
