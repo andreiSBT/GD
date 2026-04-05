@@ -45,6 +45,7 @@ class Particle {
 export class ParticleSystem {
   constructor() {
     this.particles = [];
+    this.fireball = null; // { x, y, age, duration }
   }
 
   emitDeath(x, y, color, count = 30) {
@@ -101,6 +102,8 @@ export class ParticleSystem {
       const speed = 1 + Math.random() * 3;
       this.particles.push(new Particle(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed - 2, '#555', 8 + Math.random() * 6, 0.8 + Math.random() * 0.6, 0.1));
     }
+    // Animated fireball
+    this.fireball = { x, y, age: 0, duration: 0.6 };
   }
 
   emitJump(x, y, color, count = 5) {
@@ -125,13 +128,75 @@ export class ParticleSystem {
     if (this.particles.length > MAX_PARTICLES) {
       this.particles = this.particles.slice(-MAX_PARTICLES);
     }
+    if (this.fireball) {
+      this.fireball.age += dt;
+      if (this.fireball.age >= this.fireball.duration) this.fireball = null;
+    }
   }
 
   draw(ctx, cameraX) {
+    // Draw fireball behind particles
+    if (this.fireball) {
+      const fb = this.fireball;
+      const p = fb.age / fb.duration;
+      const sx = fb.x - cameraX;
+      const sy = fb.y;
+
+      // Expanding shockwave ring
+      const ringR = 10 + p * 80;
+      ctx.save();
+      ctx.globalAlpha = (1 - p) * 0.4;
+      ctx.strokeStyle = '#FF6600';
+      ctx.lineWidth = 3 * (1 - p);
+      ctx.shadowColor = '#FF6600';
+      ctx.shadowBlur = 15;
+      ctx.beginPath();
+      ctx.arc(sx, sy, ringR, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      // Inner fireball — layered glowing circles
+      const maxR = 35 * (1 - p * p);
+      if (maxR > 1) {
+        ctx.save();
+        // Outer glow
+        ctx.globalAlpha = (1 - p) * 0.3;
+        ctx.shadowColor = '#FF4400';
+        ctx.shadowBlur = 30;
+        ctx.fillStyle = '#FF4400';
+        ctx.beginPath();
+        ctx.arc(sx, sy, maxR, 0, Math.PI * 2);
+        ctx.fill();
+        // Mid layer — orange
+        ctx.globalAlpha = (1 - p) * 0.5;
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = '#FF8800';
+        ctx.beginPath();
+        ctx.arc(sx, sy, maxR * 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        // Core — yellow/white
+        ctx.globalAlpha = (1 - p) * 0.8;
+        ctx.shadowColor = '#FFCC00';
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = '#FFDD44';
+        ctx.beginPath();
+        ctx.arc(sx, sy, maxR * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        // White hot center
+        ctx.globalAlpha = (1 - p * 2) > 0 ? (1 - p * 2) : 0;
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(sx, sy, maxR * 0.15, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
     for (const p of this.particles) p.draw(ctx, cameraX);
   }
 
   clear() {
     this.particles = [];
+    this.fireball = null;
   }
 }
