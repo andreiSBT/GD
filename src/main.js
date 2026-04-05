@@ -70,6 +70,7 @@ class Game {
     this.newBestTimer = 0;
     this.newBestTriggered = false;
     this.lastCheckpoint = null;
+    this._checkpointTrail = []; // visual-only trail of past checkpoints {x, y}
     this._autoCheckpointTimer = 0;
     this.shakeIntensity = 0;
     this._portalFlash = null;
@@ -1483,8 +1484,15 @@ class Game {
     return { totalCoins };
   }
 
+  _pushCheckpointToTrail() {
+    if (this.lastCheckpoint && !this.lastCheckpoint.editorCP) {
+      this._checkpointTrail.push({ x: this.lastCheckpoint.x, y: this.lastCheckpoint.y });
+    }
+  }
+
   _handlePracticeAction(action) {
     if (action === 'practice_checkpoint' && this.practiceMode && this.player.alive) {
+      this._pushCheckpointToTrail();
       this.lastCheckpoint = {
         x: this.player.x, y: this.player.y,
         gravityMult: this.player.gravityMult, speedMult: this.player.speedMult,
@@ -1952,6 +1960,7 @@ class Game {
       } else if (obs.type === 'checkpoint') {
         if (obs.checkCollision(playerRect) === 'checkpoint') {
           Sound.playCheckpoint();
+          this._pushCheckpointToTrail();
           this.lastCheckpoint = {
             x: this.player.x,
             y: this.player.y,
@@ -2030,6 +2039,7 @@ class Game {
           this._autoCheckpointTimer = 1.5;
         } else {
           this._autoCheckpointTimer = 0;
+          this._pushCheckpointToTrail();
           this.lastCheckpoint = {
             x: px, y: this.player.y,
             gravityMult: this.player.gravityMult, speedMult: this.player.speedMult,
@@ -2597,6 +2607,11 @@ class Game {
     localStorage.removeItem('gd_secret_coins');
     localStorage.removeItem('gd_redeemed_codes');
     localStorage.removeItem('gd_scroll_coin');
+    localStorage.removeItem('gd_rainbow_color');
+    localStorage.removeItem('gd_dotted_trail');
+    localStorage.removeItem('gd_wink_icon');
+    localStorage.removeItem('gd_boom_death');
+    localStorage.removeItem('gd_community_completions');
     // Clear replay ghosts
     for (let i = 1; i <= 9; i++) localStorage.removeItem('gd_replay_' + i);
     // Clear editor slots
