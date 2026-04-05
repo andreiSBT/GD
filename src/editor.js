@@ -1529,7 +1529,7 @@ export class Editor {
     const actions = [
       { id: 'action_save_test', label: '▶ TEST', color: '#00BB44' },
       { id: 'action_load', label: 'OPEN', color: '#7755CC' },
-      { id: 'action_menu', label: 'MENU', color: '#778899' },
+      { id: 'action_menu', label: '≡', color: '#778899' },
     ];
 
     const allButtons = [...catButtons, ...actions];
