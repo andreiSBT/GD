@@ -922,6 +922,16 @@ export class Editor {
     for (const obs of this.liveObstacles) {
       if (obs.type === 'color_trigger' && obs.drawEditor) {
         obs.drawEditor(ctx, editorCamX);
+      } else if (obs.editorRot) {
+        // Draw rotated obstacle
+        const cx = obs.x - editorCamX + PLAYER_X_OFFSET + obs.w / 2;
+        const cy = obs.y + (obs.h || GRID) / 2;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(obs.editorRot * Math.PI / 180);
+        ctx.translate(-cx, -cy);
+        obs.draw(ctx, editorCamX, this.theme);
+        ctx.restore();
       } else {
         obs.draw(ctx, editorCamX, this.theme);
       }
@@ -1850,34 +1860,8 @@ export class Editor {
     ctx.textAlign = 'left';
     ctx.fillText(`Obj: ${this.objects.length}  X: ${this.hoverGx}  Y: ${this.hoverGy}`, swipeX + swipeBtnW + 10, sby + 19);
 
-    // Right side: MENU | L1 L2 L3 | T1 T2 T3
+    // Right side: L1 L2 L3 | T1 T2 T3
     let rx = SCREEN_WIDTH - 10;
-
-    // Menu button (far right) - retro style
-    const menuBtnW = 50;
-    rx -= menuBtnW;
-    const menuGrad = ctx.createLinearGradient(rx, sby, rx, sby + scrollBtnH);
-    menuGrad.addColorStop(0, 'rgba(30,30,50,0.95)');
-    menuGrad.addColorStop(1, 'rgba(20,20,38,0.95)');
-    this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
-    ctx.fillStyle = menuGrad;
-    ctx.fill();
-    ctx.save();
-    ctx.shadowColor = '#778899';
-    ctx.shadowBlur = 4;
-    this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
-    ctx.strokeStyle = '#778899';
-    ctx.lineWidth = 0.8;
-    ctx.globalAlpha = 0.5;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.restore();
-    ctx.fillStyle = '#AABBCC';
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('\u2261', rx + menuBtnW / 2, sby + 19);
-    this.buttons.push({ id: 'action_menu', x: rx, y: sby, w: menuBtnW, h: scrollBtnH });
-    rx -= btnGap;
 
     // Theme buttons (rightmost)
     const themeCount = Object.keys(THEMES).length;
@@ -2390,25 +2374,20 @@ export class Editor {
   }
 
   _drawHelp(ctx) {
-    // Dark overlay with blur feel
     ctx.fillStyle = 'rgba(0,0,0,0.88)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Central panel
-    const panelW = Math.min(560, SCREEN_WIDTH - 80);
-    const panelH = 520;
+    const panelW = Math.min(700, SCREEN_WIDTH - 40);
+    const panelH = Math.min(600, SCREEN_HEIGHT - 40);
     const px = (SCREEN_WIDTH - panelW) / 2;
-    const py = (SCREEN_HEIGHT - panelH) / 2 - 10;
+    const py = (SCREEN_HEIGHT - panelH) / 2;
 
-    // Panel bg with border
     const panelGrad = ctx.createLinearGradient(px, py, px, py + panelH);
     panelGrad.addColorStop(0, 'rgba(15,15,30,0.97)');
     panelGrad.addColorStop(1, 'rgba(8,8,18,0.97)');
     ctx.fillStyle = panelGrad;
     this._editorRoundRect(ctx, px, py, panelW, panelH, 16);
     ctx.fill();
-
-    // Neon border glow
     ctx.shadowColor = '#00C8FF';
     ctx.shadowBlur = 15;
     ctx.strokeStyle = 'rgba(0,200,255,0.5)';
@@ -2417,71 +2396,94 @@ export class Editor {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Title with glow
     ctx.shadowColor = '#00C8FF';
     ctx.shadowBlur = 20;
     ctx.fillStyle = '#00C8FF';
-    ctx.font = 'bold 28px monospace';
+    ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('EDITOR HELP', SCREEN_WIDTH / 2, py + 45);
+    ctx.fillText('EDITOR HELP', SCREEN_WIDTH / 2, py + 38);
     ctx.shadowBlur = 0;
 
-    // Decorative line under title
-    const lineGrad = ctx.createLinearGradient(px + 40, 0, px + panelW - 40, 0);
-    lineGrad.addColorStop(0, 'transparent');
-    lineGrad.addColorStop(0.3, 'rgba(0,200,255,0.5)');
-    lineGrad.addColorStop(0.7, 'rgba(0,200,255,0.5)');
-    lineGrad.addColorStop(1, 'transparent');
-    ctx.strokeStyle = lineGrad;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(px + 40, py + 60);
-    ctx.lineTo(px + panelW - 40, py + 60);
-    ctx.stroke();
+    const leftX = px + 24;
+    const rightX = px + panelW / 2 + 6;
+    let ly = py + 62;
+    let ry = py + 62;
+    const lineH = 16;
+    const secGap = 14;
 
-    const sections = [
-      { title: 'TOOLS', lines: [
-        '1-8 : Select tool  |  X : Eraser  |  M : Move',
-        'Left Click : Place  |  Right Click : Delete',
-        'Platform : Click + drag for width',
-        'Moving : Click start, then click end',
-      ]},
-      { title: 'NAVIGATION', lines: [
-        'Mouse Wheel / Arrows : Scroll',
-        'Ctrl+Z : Undo  |  Ctrl+Y : Redo',
-        'Ctrl+S : Quick save',
-      ]},
-      { title: 'ACTIONS', lines: [
-        'TEST : Play your level',
-        'SAVE/LOAD : LocalStorage  |  EXPORT : Copy JSON',
-        'L1/L2/L3 : Load level  |  T1/T2/T3 : Theme',
-      ]},
-    ];
-
-    let sy = py + 80;
-    for (const sec of sections) {
-      // Section title
-      ctx.fillStyle = '#00C8FF';
-      ctx.font = 'bold 15px monospace';
+    const drawSection = (x, yRef, title, color, lines) => {
+      let y = yRef;
+      ctx.fillStyle = color;
+      ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'left';
-      ctx.fillText(sec.title, px + 30, sy);
-      sy += 6;
-
-      // Section lines
-      ctx.fillStyle = '#BBB';
-      ctx.font = '14px monospace';
-      for (const line of sec.lines) {
-        sy += 22;
-        ctx.fillText(line, px + 30, sy);
+      ctx.fillText(title, x, y);
+      y += 4;
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#AAB';
+      for (const line of lines) {
+        y += lineH;
+        ctx.fillText(line, x, y);
       }
-      sy += 24;
-    }
+      return y + secGap;
+    };
 
-    // Close hint at bottom
-    ctx.fillStyle = '#666';
-    ctx.font = '14px monospace';
+    // LEFT COLUMN
+    ly = drawSection(leftX, ly, 'HAZARDS', '#FF4444', [
+      'Spike  - Triangle, can rotate',
+      'Saw    - Spinning blade (S / M / L)',
+      'Click to place, Right-click to delete',
+    ]);
+    ly = drawSection(leftX, ly, 'BLOCKS', '#4488FF', [
+      'Platform  - Click + drag for size',
+      'Slope     - Ramp up or down',
+      'Moving    - Click start, then end',
+      'Transport - Locks player, moves to end',
+    ]);
+    ly = drawSection(leftX, ly, 'ORBS', '#FFD700', [
+      'Yellow - Normal bounce on click',
+      'Pink   - Higher bounce on click',
+      'Dash   - Launches forward on click',
+      'Blue   - Reverses gravity on click',
+    ]);
+    ly = drawSection(leftX, ly, 'PADS', '#FFAA00', [
+      'Yellow - Auto bounce on contact',
+      'Pink   - Higher auto bounce',
+      'Blue   - Reverses gravity on contact',
+    ]);
+
+    // RIGHT COLUMN
+    ry = drawSection(rightX, ry, 'PORTALS', '#FF00FF', [
+      'Gravity    - Flip gravity',
+      'Speed +/-  - Change scroll speed',
+      'Ship / Wave / Cube / Ball - Mode',
+      'Mini / Big - Change player size',
+    ]);
+    ry = drawSection(rightX, ry, 'SPECIAL', '#00FF88', [
+      'Coin       - Collectible (max 3)',
+      'Checkpoint - Respawn point (practice)',
+      'Start Pos  - Custom spawn point',
+      'End Gate   - Level finish (only 1)',
+      'Color Trig - Change theme mid-level',
+    ]);
+    ry = drawSection(rightX, ry, 'CONTROLS', '#00C8FF', [
+      'Left Click    - Place object',
+      'Right Click   - Delete object',
+      'Scroll / Drag - Navigate level',
+      'Ctrl+Z / Y    - Undo / Redo',
+      'Ctrl+S        - Quick save',
+    ]);
+    ry = drawSection(rightX, ry, 'TOOLBAR', '#AABBCC', [
+      'TEST  - Play your level',
+      'SAVE / LOAD - Manage levels',
+      'INFO  - Level stats',
+      'NAME  - Rename level',
+      'MENU  - Return to main menu',
+    ]);
+
+    ctx.fillStyle = '#556677';
+    ctx.font = '12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Press ESC or H to close', SCREEN_WIDTH / 2, py + panelH - 20);
+    ctx.fillText('Click anywhere or press ESC to close', SCREEN_WIDTH / 2, py + panelH - 14);
   }
 
   // === LEVEL BROWSER ===

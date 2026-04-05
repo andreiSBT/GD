@@ -1572,34 +1572,37 @@ export class Slope {
 // FACTORY
 // ============================================================
 export function createObstacle(obj) {
+  let obs;
   switch (obj.type) {
     case 'spike':
-      return new Spike(obj.x, obj.y || 0, obj.rot || 0);
+      obs = new Spike(obj.x, obj.y || 0, obj.rot || 0); break;
     case 'platform':
-      return new Platform(obj.x, obj.y, obj.w || 1, obj.h || 1);
+      obs = new Platform(obj.x, obj.y, obj.w || 1, obj.h || 1); break;
     case 'moving':
-      return new MovingPlatform(obj.x, obj.y, obj.w || 3, obj.h || 1, obj.endX ?? obj.x, obj.endY ?? obj.y + 3, obj.speed || 2);
+      obs = new MovingPlatform(obj.x, obj.y, obj.w || 3, obj.h || 1, obj.endX ?? obj.x, obj.endY ?? obj.y + 3, obj.speed || 2); break;
     case 'transport':
-      return new TransportPlatform(obj.x, obj.y, obj.w || 3, obj.h || 1, obj.endX ?? obj.x, obj.endY ?? obj.y + 3, obj.speed || 2);
+      obs = new TransportPlatform(obj.x, obj.y, obj.w || 3, obj.h || 1, obj.endX ?? obj.x, obj.endY ?? obj.y + 3, obj.speed || 2); break;
     case 'portal':
-      return new Portal(obj.x, obj.y || 0, obj.portalType || 'gravity');
+      obs = new Portal(obj.x, obj.y || 0, obj.portalType || 'gravity'); break;
     case 'checkpoint':
-      return new Checkpoint(obj.x, obj.y || 0);
+      obs = new Checkpoint(obj.x, obj.y || 0); break;
     case 'end':
-      return new EndMarker(obj.x);
+      obs = new EndMarker(obj.x); break;
     case 'orb':
-      return new JumpOrb(obj.x, obj.y || 1, obj.orbType || 'yellow_orb');
+      obs = new JumpOrb(obj.x, obj.y || 1, obj.orbType || 'yellow_orb'); break;
     case 'pad':
-      return new JumpPad(obj.x, obj.y || 0, obj.padType || 'yellow_pad');
+      obs = new JumpPad(obj.x, obj.y || 0, obj.padType || 'yellow_pad'); break;
     case 'coin':
-      return new Coin(obj.x, obj.y || 1);
+      obs = new Coin(obj.x, obj.y || 1); break;
     case 'color_trigger':
-      return new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue', obj.customTheme || null, obj.duration || 0.6);
+      obs = new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue', obj.customTheme || null, obj.duration || 0.6); break;
     case 'saw':
-      return new SawBlade(obj.x, obj.y || 0, obj.radius || 1);
+      obs = new SawBlade(obj.x, obj.y || 0, obj.radius || 1); break;
     case 'slope':
-      return new Slope(obj.x, obj.y || 0, obj.w || 2, obj.h || 2, obj.direction || 'up');
+      obs = new Slope(obj.x, obj.y || 0, obj.w || 2, obj.h || 2, obj.direction || 'up'); break;
     default:
       return null;
   }
+  if (obs && obj.rot && obj.type !== 'spike') obs.editorRot = obj.rot;
+  return obs;
 }
