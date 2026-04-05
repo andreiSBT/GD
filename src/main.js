@@ -2013,21 +2013,26 @@ class Game {
     this.camera.update(this.player.x);
 
     // Auto-checkpoint every 2 seconds in practice mode
-    if (this.practiceMode && this.player.alive && this.player.grounded) {
+    // Only on ground, only for cube/ball (not ship/wave which fly)
+    if (this.practiceMode && this.player.alive && this.player.grounded &&
+        (this.player.mode === MODE_CUBE || this.player.mode === MODE_BALL)) {
       this._autoCheckpointTimer += 1 / FPS;
       if (this._autoCheckpointTimer >= 2) {
         this._autoCheckpointTimer = 0;
-        this.lastCheckpoint = {
-          x: this.player.x,
-          y: this.player.y,
-          gravityMult: this.player.gravityMult,
-          speedMult: this.player.speedMult,
-          mode: this.player.mode,
-          mini: this.player.mini,
-          reversed: this.player.reversed,
-          theme: { ...this.theme },
-          musicTime: Sound.getCustomMusicTime(),
-        };
+        // Don't place if within 2 grids of an editor checkpoint
+        const px = this.player.x;
+        const tooClose = this.level && this.level.obstacles.some(o =>
+          o.type === 'checkpoint' && Math.abs(o.x - px) < GRID * 2
+        );
+        if (!tooClose) {
+          this.lastCheckpoint = {
+            x: px, y: this.player.y,
+            gravityMult: this.player.gravityMult, speedMult: this.player.speedMult,
+            mode: this.player.mode, mini: this.player.mini, reversed: this.player.reversed,
+            theme: { ...this.theme }, musicTime: Sound.getCustomMusicTime(),
+            auto: true,
+          };
+        }
       }
     }
 
