@@ -137,6 +137,8 @@ export class Editor {
     // Move tool state
     this.movingObj = null;       // object being moved
     this.movingObjIndex = -1;    // index in this.objects
+    this.movingOrigPos = null;   // original position before move
+    this.scrollVelocity = 0;     // momentum scroll velocity
 
     // Start position for testing (grid coords)
     this.startPos = null;
@@ -394,6 +396,7 @@ export class Editor {
       if (idx >= 0) {
         this._pushHistory();
         this.movingObj = { ...this.objects[idx] };
+        this.movingOrigPos = { x: this.objects[idx].x, y: this.objects[idx].y };
         this.movingObjIndex = idx;
       }
       return;
@@ -493,6 +496,7 @@ export class Editor {
       // Finalize move - object already at new position from handleMouseMove
       this.movingObj = null;
       this.movingObjIndex = -1;
+      this.movingOrigPos = null;
     }
     if (this.dragStart) {
       const minGx = Math.min(this.dragStart.gx, this.hoverGx);
@@ -612,6 +616,7 @@ export class Editor {
   // === TOUCH HANDLERS ===
 
   handleTouchStart(x, y, touchCount) {
+    this.scrollVelocity = 0; // stop momentum
     this.touchStartX = x;
     this.touchStartY = y;
     this.touchStartCamX = this.cameraX;
@@ -648,6 +653,7 @@ export class Editor {
       if (idx >= 0) {
         this._pushHistory();
         this.movingObj = { ...this.objects[idx] };
+        this.movingOrigPos = { x: this.objects[idx].x, y: this.objects[idx].y };
         this.movingObjIndex = idx;
         this.touchPaintPending = false;
         return;
@@ -762,7 +768,9 @@ export class Editor {
     if (!this.painting && dist > 15) {
       this.touchMoved = true;
       this.isTouchScrolling = true;
-      this.cameraX = Math.max(0, this.touchStartCamX - dx);
+      const newCamX = Math.max(0, this.touchStartCamX - dx);
+      this.scrollVelocity = newCamX - this.cameraX;
+      this.cameraX = newCamX;
     }
   }
 
@@ -785,6 +793,7 @@ export class Editor {
     if (this.movingObj) {
       this.movingObj = null;
       this.movingObjIndex = -1;
+      this.movingOrigPos = null;
       return;
     }
 
@@ -840,6 +849,12 @@ export class Editor {
   update(dt) {
     if (this.scrollSpeed !== 0) {
       this.cameraX = Math.max(0, this.cameraX + this.scrollSpeed);
+    }
+    // Momentum scrolling after touch release
+    if (!this.isTouchScrolling && Math.abs(this.scrollVelocity) > 0.5) {
+      this.cameraX = Math.max(0, this.cameraX + this.scrollVelocity);
+      this.scrollVelocity *= 0.92; // friction
+      if (Math.abs(this.scrollVelocity) < 0.5) this.scrollVelocity = 0;
     }
     if (this.toastTimer > 0) this.toastTimer -= dt;
   }
@@ -903,25 +918,63 @@ export class Editor {
       this._drawDragPreview(ctx);
     }
 
-    // Move preview - show object following cursor
+    // Move preview - show ghost at original pos + object following cursor
     if (this.movingObj && this.mouseY > TOOLBAR_H) {
-      const { sx, sy } = this._gridToScreen(this.hoverGx, this.hoverGy);
-      ctx.save();
-      ctx.globalAlpha = 0.6;
       const tool = TOOLS.find(t => t.id === this.movingObj.type || t.toolType === this.movingObj.type);
-      ctx.fillStyle = tool ? tool.color : '#FFF';
-      ctx.fillRect(sx, sy, GRID, GRID);
+      const objW = (this.movingObj.w || 1) * GRID;
+      const objH = (this.movingObj.h || 1) * GRID;
+      const color = tool ? tool.color : '#FFF';
+
+      // Ghost at original position (dashed outline)
+      if (this.movingOrigPos) {
+        const orig = this._gridToScreen(this.movingOrigPos.x, this.movingOrigPos.y);
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        ctx.fillStyle = color;
+        ctx.fillRect(orig.sx, orig.sy, objW, objH);
+        ctx.globalAlpha = 0.4;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(orig.sx, orig.sy, objW, objH);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Current position (solid with glow)
+      const { sx, sy } = this._gridToScreen(this.movingObj.x, this.movingObj.y);
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, sy, objW, objH);
+      ctx.globalAlpha = 1;
       ctx.strokeStyle = '#FFF';
       ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(sx, sy, GRID, GRID);
-      ctx.setLineDash([]);
+      ctx.strokeRect(sx, sy, objW, objH);
+      ctx.shadowBlur = 0;
       ctx.fillStyle = '#FFF';
-      ctx.font = '10px monospace';
+      ctx.font = 'bold 10px monospace';
       ctx.textAlign = 'center';
-      ctx.globalAlpha = 0.9;
-      ctx.fillText(this.movingObj.type, sx + GRID / 2, sy + GRID / 2 + 3);
+      ctx.fillText(this.movingObj.type, sx + objW / 2, sy + objH / 2 + 3);
       ctx.restore();
+
+      // Connection line from original to current
+      if (this.movingOrigPos && (this.movingOrigPos.x !== this.movingObj.x || this.movingOrigPos.y !== this.movingObj.y)) {
+        const orig = this._gridToScreen(this.movingOrigPos.x, this.movingOrigPos.y);
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(orig.sx + objW / 2, orig.sy + objH / 2);
+        ctx.lineTo(sx + objW / 2, sy + objH / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
     }
 
     // Hover preview
@@ -1444,16 +1497,16 @@ export class Editor {
     }));
 
     const actions = [
-      { id: 'action_rotate', label: 'ROT', color: '#888' },
-      { id: 'action_undo', label: '←', color: '#555' },
-      { id: 'action_redo', label: '→', color: '#555' },
-      { id: 'action_save_test', label: 'SAVE & TEST', color: '#00CC44' },
-      { id: 'action_load', label: 'LOAD', color: '#6644AA' },
+      { id: 'action_rotate', label: 'u21BB', color: '#6688AA' },
+      { id: 'action_undo', label: 'u21A9', color: '#5577AA' },
+      { id: 'action_redo', label: 'u21AA', color: '#5577AA' },
+      { id: 'action_save_test', label: '▶ TEST', color: '#00BB44' },
+      { id: 'action_load', label: 'OPEN', color: '#7755CC' },
       { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
       ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
-      { id: 'action_info', label: 'INFO', color: '#44AACC' },
+      { id: 'action_info', label: 'i', color: '#3399BB' },
       { id: 'action_help', label: '?', color: '#666' },
-      { id: 'action_back', label: 'EXIT', color: '#CC3333' },
+      { id: 'action_back', label: '✕', color: '#CC3344' },
     ];
 
     const allButtons = [...catButtons, ...actions];
