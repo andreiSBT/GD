@@ -394,6 +394,7 @@ export class Editor {
         this._pushHistory();
         const obj = this.objects[idx];
         obj.rot = ((obj.rot || 0) + 90) % 360;
+        this._rebuildLive();
         this._showToast('Rotated ' + (obj.type || 'object'));
       }
       return;
@@ -1528,8 +1529,7 @@ export class Editor {
 
     const actions = [
       { id: 'action_save_test', label: '▶ TEST', color: '#00BB44' },
-      { id: 'action_load', label: 'OPEN', color: '#7755CC' },
-      { id: 'action_menu', label: '≡', color: '#778899' },
+      { id: 'action_menu', label: '≡', color: '#778899', big: true },
     ];
 
     // Size buttons - categories on left, actions on right
@@ -1588,6 +1588,13 @@ export class Editor {
     let ax = SCREEN_WIDTH - margin - actTotalW;
     for (const act of actions) {
       _drawRetroBtn(ax, btnY, actBtnW, btnH, act.color, act.label, false);
+      // Draw big label for menu hamburger
+      if (act.big) {
+        ctx.fillStyle = act.color;
+        ctx.font = 'bold 22px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(act.label, ax + actBtnW / 2, btnY + btnH / 2 + 8);
+      }
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: actBtnW, h: btnH });
       ax += actBtnW + gap;
     }
@@ -2176,8 +2183,9 @@ export class Editor {
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     const menuItems = [
+      { id: 'action_load', label: 'OPEN LEVEL', color: '#7755CC' },
       { id: 'menu_info', label: 'LEVEL INFO', color: '#44AACC' },
-      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  ✓' : 'MUSIC', color: this._hasSlotMusic() ? '#FF66AA' : '#887799' },
+      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  \u2713' : 'MUSIC', color: this._hasSlotMusic() ? '#FF66AA' : '#887799' },
       { id: 'menu_help', label: 'HELP', color: '#556677' },
     ];
     if (isAdmin()) {
@@ -2917,6 +2925,7 @@ export class Editor {
         this.officialPicker = true;
       }
     } else if (id === 'action_load') {
+      this.showMenu = false;
       this.showBrowser();
     } else if (id === 'action_music') {
       this.showMenu = false;
