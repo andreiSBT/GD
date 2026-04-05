@@ -1783,8 +1783,10 @@ export class Editor {
     this._editorRoundRect(ctx, barX, barY, barW, NAV_BAR_H, 4);
     ctx.stroke();
 
-    // Draw object dots on the minimap
+    // Draw object dots on the minimap (skip hazards, orbs, pads)
+    const navHidden = new Set(['spike', 'saw', 'orb', 'pad']);
     for (const o of this.objects) {
+      if (navHidden.has(o.type)) continue;
       const ox = o.x * GRID;
       const frac = ox / totalWorldW;
       const dx = barX + frac * barW;
