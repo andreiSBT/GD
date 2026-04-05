@@ -848,14 +848,13 @@ export class Portal {
 
     clearGlow(ctx);
 
-    // Bright edge highlights on left and right bars
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    // Subtle inner edge shine (blended into frame)
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#FFF';
     ctx.beginPath();
-    ctx.roundRect(frameX + 1, frameY + 4, 3, frameH - 8, [2, 0, 0, 2]);
+    ctx.roundRect(frameX + 1, frameY + 6, 2, frameH - 12, 1);
     ctx.fill();
-    ctx.beginPath();
-    ctx.roundRect(frameX + frameW - 4, frameY + 4, 3, frameH - 8, [0, 2, 2, 0]);
-    ctx.fill();
+    ctx.globalAlpha = this.activated ? 0.15 : 1;
 
     // Animated energy particles inside
     for (let i = 0; i < 4; i++) {
