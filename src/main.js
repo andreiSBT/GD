@@ -55,6 +55,11 @@ class Game {
     this.progress = loadProgress();
 
     this.state = MENU;
+    this._fadeAlpha = 0; // 0 = no fade, >0 = fading (black overlay)
+    this._fadeTarget = null; // state to switch to after fade
+    this._fadeCallback = null; // callback after fade
+    this._confetti = []; // celebration particles
+    this._loadingText = null; // loading indicator text
     this.level = null;
     this.theme = THEMES[1];
     this.practiceMode = false;
@@ -643,7 +648,7 @@ class Game {
       this.shakeIntensity = 0;
       this.editorLevelData = null;
       this.editorStartCheckpoint = null;
-      this.state = MENU;
+      this._fadeToState(MENU);
     } else if (action === 'next_level') {
       const nextId = this.level.id + 1;
       if (nextId <= getLevelCount()) {
@@ -1449,6 +1454,31 @@ class Game {
     return { totalCoins };
   }
 
+  _fadeToState(state, callback) {
+    this._fadeAlpha = 0.01;
+    this._fadeTarget = state;
+    this._fadeCallback = callback || null;
+  }
+
+  _spawnConfetti() {
+    this._confetti = [];
+    const colors = ['#FFD700', '#FF3296', '#00FF64', '#00C8FF', '#FF6600', '#AA00FF', '#FF69B4', '#FFFFFF'];
+    for (let i = 0; i < 60; i++) {
+      this._confetti.push({
+        x: SCREEN_WIDTH / 2 + (Math.random() - 0.5) * 300,
+        y: SCREEN_HEIGHT / 2 + (Math.random() - 0.5) * 100,
+        vx: (Math.random() - 0.5) * 8,
+        vy: -(Math.random() * 6 + 2),
+        w: 4 + Math.random() * 6,
+        h: 3 + Math.random() * 4,
+        rot: Math.random() * 360,
+        rotV: (Math.random() - 0.5) * 15,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        life: 1,
+      });
+    }
+  }
+
   _checkAchievements() {
     const newAchs = evaluateAchievements(this.progress, this._getAchievementStats());
     for (const ach of newAchs) {
@@ -1890,6 +1920,7 @@ class Game {
           this.state = COMPLETE;
           Sound.stopMusic();
           Sound.playComplete();
+          this._spawnConfetti();
           if (!this.practiceMode) {
             this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, true, this.coinsCollected || 0);
           } else {
@@ -2147,6 +2178,69 @@ class Game {
       this.ctx.font = '13px monospace';
       this.ctx.fillText(toast.subtext, SCREEN_WIDTH / 2, slideY + 32);
       this.ctx.restore();
+    }
+
+    // Confetti particles (level complete)
+    if (this._confetti.length > 0) {
+      for (let i = this._confetti.length - 1; i >= 0; i--) {
+        const p = this._confetti[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15; // gravity
+        p.rot += p.rotV;
+        p.life -= 0.008;
+        if (p.life <= 0) { this._confetti.splice(i, 1); continue; }
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.globalAlpha = Math.min(1, p.life * 2);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
+    }
+
+    // Fade transition overlay
+    if (this._fadeAlpha > 0) {
+      this._fadeAlpha += 0.06;
+      ctx.fillStyle = '#000';
+      if (this._fadeAlpha < 1) {
+        ctx.globalAlpha = this._fadeAlpha;
+        ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        ctx.globalAlpha = 1;
+      } else if (this._fadeTarget) {
+        ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+        this.state = this._fadeTarget;
+        if (this._fadeCallback) this._fadeCallback();
+        this._fadeTarget = null;
+        this._fadeCallback = null;
+      } else {
+        // Fading back in
+        const fadeIn = 2 - this._fadeAlpha;
+        if (fadeIn > 0) {
+          ctx.globalAlpha = fadeIn;
+          ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+          ctx.globalAlpha = 1;
+        } else {
+          this._fadeAlpha = 0;
+        }
+      }
+    }
+
+    // Loading indicator
+    if (this._loadingText) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,20,0.7)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      ctx.fillStyle = '#00C8FF';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(this._loadingText, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
+      // Animated dots
+      const dots = '.'.repeat(Math.floor(Date.now() / 400) % 4);
+      ctx.fillText(dots, SCREEN_WIDTH / 2 + ctx.measureText(this._loadingText).width / 2 + 5, SCREEN_HEIGHT / 2);
+      ctx.restore();
     }
 
     // Portrait mode overlay — hint to rotate
@@ -2408,8 +2502,10 @@ class Game {
   }
 
   async _syncFromCloud() {
+    this._loadingText = 'SYNCING';
     this.progress = await initProgress();
     await this._initCloudCustomization();
+    this._loadingText = null;
   }
 
   async _syncCloudMusic() {
