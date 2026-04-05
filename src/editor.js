@@ -977,8 +977,9 @@ export class Editor {
     // Move preview - show ghost at original pos + object following cursor
     if (this.movingObj && this.mouseY > TOOLBAR_H) {
       const tool = TOOLS.find(t => t.id === this.movingObj.type || t.toolType === this.movingObj.type);
-      const objW = (this.movingObj.w || 1) * GRID;
-      const objH = (this.movingObj.h || 1) * GRID;
+      const sz = this._getObjSize(this.movingObj);
+      const objW = sz.w * GRID;
+      const objH = sz.h * GRID;
       const color = tool ? tool.color : '#FFF';
 
       // Ghost at original position (dashed outline)
@@ -1188,6 +1189,12 @@ export class Editor {
     this._rebuildLive();
   }
 
+  _getObjSize(o) {
+    const w = Math.max(1, o.w || 1);
+    const h = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
+    return { w, h };
+  }
+
   _findObjectAt(gx, gy) {
     return this.objects.findIndex(o => {
       // Color triggers span full Y — match on X column only
@@ -1201,8 +1208,7 @@ export class Editor {
         const cy = o.y + 0.5;
         return gx >= cx - r - 0.5 && gx < cx + r + 0.5 && gy >= cy - r - 0.5 && gy < cy + r + 0.5;
       }
-      const ow = Math.max(1, o.w || 1);
-      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
+      const { w: ow, h: oh } = this._getObjSize(o);
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
@@ -1234,8 +1240,7 @@ export class Editor {
         const cy = o.y + 0.5;
         return gx >= cx - r - 0.5 && gx < cx + r + 0.5 && gy >= cy - r - 0.5 && gy < cy + r + 0.5;
       }
-      const ow = Math.max(1, o.w || 1);
-      const oh = Math.max(1, o.type === 'portal' ? 3 : (o.h || 1));
+      const { w: ow, h: oh } = this._getObjSize(o);
       let ox = o.x, oy = o.y;
       if (o.type === 'spike' && o.rot === 180) {
         oy = Math.floor(GROUND_Y / GRID) - o.y - 1;
