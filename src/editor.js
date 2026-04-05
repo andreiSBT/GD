@@ -1559,23 +1559,36 @@ export class Editor {
       this.buttons.push({ id: btn.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
 
-    // Action buttons from right
+    // Separator between categories and actions
     let ax = SCREEN_WIDTH - margin - actions.length * (btnW + gap) + gap;
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(ax - 6, btnY + 4, 1, btnH - 8);
+
     for (const act of actions) {
+      ctx.save();
+      ctx.shadowColor = act.color;
+      ctx.shadowBlur = 4;
       this._editorRoundRect(ctx, ax, btnY, btnW, btnH, r);
       ctx.fillStyle = act.color;
       ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
       // Top highlight
-      ctx.globalAlpha = 0.15;
+      ctx.globalAlpha = 0.2;
       this._editorRoundRect(ctx, ax, btnY, btnW, btnH / 2, r);
       ctx.fillStyle = '#FFF';
       ctx.fill();
       ctx.globalAlpha = 1;
+      // Subtle border
+      this._editorRoundRect(ctx, ax, btnY, btnW, btnH, r);
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
 
       ctx.fillStyle = '#FFF';
-      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 5))}px monospace`;
+      ctx.font = `bold ${Math.min(12, Math.max(9, btnW / 4.5))}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(act.label, ax + btnW / 2, btnY + 18);
+      ctx.fillText(act.label, ax + btnW / 2, btnY + btnH / 2 + 4);
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
       ax += btnW + gap;
     }
