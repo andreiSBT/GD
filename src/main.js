@@ -1754,11 +1754,12 @@ class Game {
             }
             // If player was below platform piece and rising, die (hitting underside)
             if (!result.slopeRatio && landPiece.type !== 'slope') {
-              const prevBot = this.player.prevY + PLAYER_SIZE;
-              if (this.player.gravityMult > 0 && prevBot > landPiece.y + 8 && this.player.vy < 0) {
+              const prevBot = this.player.prevY + PLAYER_SIZE - miniOffset;
+              if (this.player.gravityMult > 0 && prevBot > landPiece.y + landPiece.h - 4 && this.player.vy < 0) {
                 this._die(); return;
               }
-              if (this.player.gravityMult < 0 && this.player.prevY < landPiece.y + landPiece.h - 8 && this.player.vy > 0) {
+              const prevTop = this.player.prevY + miniOffset;
+              if (this.player.gravityMult < 0 && prevTop < landPiece.y + 4 && this.player.vy > 0) {
                 this._die(); return;
               }
             }
@@ -1818,12 +1819,14 @@ class Game {
             if (prevRight <= obs.x + 4) {
               this._die(); return;
             }
-            // If player was below platform and rising, die (hitting underside)
-            const prevBot = this.player.prevY + PLAYER_SIZE;
-            if (this.player.gravityMult > 0 && prevBot > obs.y + 8 && this.player.vy < 0) {
+            // If player was approaching from below and rising, die (hitting underside)
+            // Use actual player bottom (accounting for mini offset)
+            const prevBot = this.player.prevY + PLAYER_SIZE - miniOffset;
+            if (this.player.gravityMult > 0 && prevBot > obs.y + obs.h - 4 && this.player.vy < 0) {
               this._die(); return;
             }
-            if (this.player.gravityMult < 0 && this.player.prevY < obs.y + obs.h - 8 && this.player.vy > 0) {
+            const prevTop = this.player.prevY + miniOffset;
+            if (this.player.gravityMult < 0 && prevTop < obs.y + 4 && this.player.vy > 0) {
               this._die(); return;
             }
             // Don't land if player just jumped (vy strongly away from surface)
