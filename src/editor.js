@@ -2004,12 +2004,19 @@ export class Editor {
         ball: ['#FF8800', '#CC4400'], mini: ['#FF44FF', '#AA00AA'],
         big: ['#44AAFF', '#2266CC'],
       };
-      const [c1, c2] = portalColors[this.subType || 'gravity'] || ['#FFD700', '#FF8800'];
+      const portalIcons = {
+        gravity: '↕', speed_up: '▶▶', speed_down: '▶',
+        ship: '✈', wave: '∿', cube: '■', ball: '●',
+        mini: '▼', big: '▲',
+      };
+      const pType = this.subType || 'gravity';
+      const [c1, c2] = portalColors[pType] || ['#FFD700', '#FF8800'];
       const ph = GRID * 3;
       const ptop = sy - ph + GRID;
-      const cx = sx + GRID / 2;
+      const pcx = sx + GRID / 2;
+      const pcy = ptop + ph / 2;
       const barW = 8, barGap = 14, barH = ph - 8, bt = ptop + 4;
-      const lx = cx - barGap / 2 - barW, rx = cx + barGap / 2;
+      const lx = pcx - barGap / 2 - barW, rx = pcx + barGap / 2;
       // Left bar
       const g1 = ctx.createLinearGradient(0, bt, 0, bt + barH);
       g1.addColorStop(0, c1); g1.addColorStop(1, c2);
@@ -2020,11 +2027,24 @@ export class Editor {
       g2.addColorStop(0, c2); g2.addColorStop(1, c1);
       ctx.fillStyle = g2;
       ctx.beginPath(); ctx.roundRect(rx, bt, barW, barH, barW / 2); ctx.fill();
-      // Outline
-      ctx.globalAlpha = 0.2;
-      ctx.strokeStyle = '#FFF';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(sx, ptop, GRID, ph);
+      // Top cap
+      ctx.fillStyle = c1;
+      ctx.beginPath(); ctx.roundRect(lx - 2, bt - 3, barW * 2 + barGap + 4, 5, 3); ctx.fill();
+      // Bottom cap
+      ctx.fillStyle = c2;
+      ctx.beginPath(); ctx.roundRect(lx - 2, bt + barH - 2, barW * 2 + barGap + 4, 5, 3); ctx.fill();
+      // Icon badge in center
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath(); ctx.arc(pcx, pcy, 9, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = c1; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(portalIcons[pType] || '?', pcx, pcy);
+      ctx.textBaseline = 'alphabetic';
     } else if (this.selectedTool === 'coin') {
       ctx.fillStyle = '#FFD700';
       ctx.beginPath();
