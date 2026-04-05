@@ -370,11 +370,11 @@ export class Editor {
     // Wheel interaction
     const getWheelHS = (e) => {
       const rect = wheelCanvas.getBoundingClientRect();
-      const x = (e.clientX || e.touches[0].clientX) - rect.left - 40;
-      const y = (e.clientY || e.touches[0].clientY) - rect.top - 40;
+      const x = (e.clientX || e.touches[0].clientX) - rect.left - 60;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top - 60;
       const dist = Math.sqrt(x * x + y * y);
       const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-      return { h: angle, s: Math.min(100, (dist / 40) * 100) };
+      return { h: angle, s: Math.min(100, (dist / 60) * 100) };
     };
 
     const wheelDown = (e) => { e.stopPropagation(); this._cpkDraggingWheel = true; const hs = getWheelHS(e); this._cpkHue = hs.h; this._cpkSat = hs.s; this._updatePickerFromHSL(); };
@@ -432,12 +432,12 @@ export class Editor {
     const canvas = document.getElementById('cpk-wheel');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const cx = 40, cy = 40, r = 40;
+    const cx = 60, cy = 60, r = 60;
 
     // Draw HSL wheel
-    const img = ctx.createImageData(80, 80);
-    for (let y = 0; y < 80; y++) {
-      for (let x = 0; x < 80; x++) {
+    const img = ctx.createImageData(120, 120);
+    for (let y = 0; y < 120; y++) {
+      for (let x = 0; x < 120; x++) {
         const dx = x - cx, dy = y - cy;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist > r) continue;
@@ -447,7 +447,7 @@ export class Editor {
         const ri = parseInt(hex.slice(1, 3), 16);
         const gi = parseInt(hex.slice(3, 5), 16);
         const bi = parseInt(hex.slice(5, 7), 16);
-        const i = (y * 80 + x) * 4;
+        const i = (y * 120 + x) * 4;
         img.data[i] = ri; img.data[i + 1] = gi; img.data[i + 2] = bi; img.data[i + 3] = 255;
       }
     }
@@ -474,7 +474,7 @@ export class Editor {
     const canvas = document.getElementById('cpk-lightness');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const w = 16, h = 80;
+    const w = 18, h = 120;
 
     // Gradient from white (top) to black (bottom) through current hue
     const grad = ctx.createLinearGradient(0, 0, 0, h);
