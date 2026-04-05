@@ -309,6 +309,9 @@ export async function resetProgressInCloud() {
   if (!userId) return;
   try {
     await client.from('progress').delete().eq('user_id', userId);
+    await client.from('customizations').delete().eq('user_id', userId);
+    await client.from('editor_levels').delete().eq('user_id', userId);
+    await client.from('leaderboard').delete().eq('user_id', userId);
   } catch (e) {
     console.warn('Supabase reset failed:', e.message);
   }
