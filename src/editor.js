@@ -2463,7 +2463,7 @@ export class Editor {
 
     // LEFT COLUMN
     ly = drawSection(leftX, ly, 'HAZARDS', '#FF4444', [
-      'Spike  - Triangle, can rotate',
+      'Spike  - Triangle obstacle',
       'Saw    - Spinning blade (S / M / L)',
       'Click to place, Right-click to delete',
     ]);
@@ -2475,13 +2475,13 @@ export class Editor {
     ]);
     ly = drawSection(leftX, ly, 'ORBS', '#FFD700', [
       'Yellow - Normal bounce on click',
-      'Pink   - Higher bounce on click',
+      'Pink   - Lower bounce on click',
       'Dash   - Launches forward on click',
       'Blue   - Reverses gravity on click',
     ]);
     ly = drawSection(leftX, ly, 'PADS', '#FFAA00', [
       'Yellow - Auto bounce on contact',
-      'Pink   - Higher auto bounce',
+      'Pink   - Lower auto bounce',
       'Blue   - Reverses gravity on contact',
     ]);
 
@@ -2493,11 +2493,11 @@ export class Editor {
       'Mini / Big - Change player size',
     ]);
     ry = drawSection(rightX, ry, 'SPECIAL', '#00FF88', [
-      'Coin       - Collectible (max 3)',
-      'Checkpoint - Respawn point (practice)',
-      'Start Pos  - Custom spawn point',
-      'End Gate   - Level finish (only 1)',
-      'Color Trig - Change theme mid-level',
+      'Coin            - Collectible (max 3)',
+      'Checkpoint      - Respawn point (practice)',
+      'Start Pos       - Custom spawn point',
+      'End Gate        - Level finish (only 1)',
+      'Color Trigger   - Change theme mid-level',
     ]);
     ry = drawSection(rightX, ry, 'CONTROLS', '#00C8FF', [
       'Left Click    - Place object',
@@ -2506,12 +2506,12 @@ export class Editor {
       'Ctrl+Z / Y    - Undo / Redo',
       'Ctrl+S        - Quick save',
     ]);
-    ry = drawSection(rightX, ry, 'TOOLBAR', '#AABBCC', [
-      'TEST  - Play your level',
-      'SAVE / LOAD - Manage levels',
-      'INFO  - Level stats',
-      'NAME  - Rename level',
-      'MENU  - Return to main menu',
+    ry = drawSection(rightX, ry, 'MENU  ≡', '#AABBCC', [
+      'Open Level    - Browse saved levels',
+      'Level Info    - Duration & stats',
+      'Music         - Add custom music',
+      'Help          - This screen',
+      'Exit to Menu  - Return to main menu',
     ]);
 
     ctx.fillStyle = '#556677';
