@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud } from './supabase.js';
+import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 import { customConfirm } from './dialogs.js';
@@ -88,7 +88,7 @@ class Game {
     this._levelStartTime = 0;
     this._leaderboardData = { entries: [], loading: false, levelId: null };
     // Community
-    this.communityData = { levels: [], sort: 'newest', page: 0, loading: false };
+    this.communityData = { levels: [], sort: 'newest', page: 0, loading: false, userLikes: new Set() };
     this.levelPage = 0; // level select pagination
     // Secret codes
     this.secretsData = { inputActive: false, inputText: '', message: null, messageTimer: 0 };
@@ -557,8 +557,7 @@ class Game {
       localStorage.setItem('gd_scroll_coin', '1');
       this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
     } else if (action === 'levels') {
-      this.state = LEVEL_SELECT;
-      this.levelPage = 0;
+      this._fadeToState(LEVEL_SELECT, () => { this.levelPage = 0; });
     } else if (action === 'levels_prev') {
       if (this.levelPage > 0) { this.levelPage--; this._onLevelScroll(); }
     } else if (action === 'levels_next') {
@@ -581,12 +580,12 @@ class Game {
       this.ui.resetScroll();
       this.state = STATS;
     } else if (action === 'back_stats') {
-      this.state = MENU;
+      this._fadeToState(MENU);
     } else if (action === 'customize') {
-      this.state = CUSTOMIZE;
+      this._fadeToState(CUSTOMIZE);
     } else if (action === 'back_customize') {
       this._saveCustomization();
-      this.state = MENU;
+      this._fadeToState(MENU);
     } else if (action.startsWith('color_')) {
       this.customization.colorIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
@@ -673,9 +672,10 @@ class Game {
       this._loadFriendsData();
     } else if (action === 'community') {
       this.ui.resetScroll();
-      this.state = COMMUNITY;
+      this._fadeToState(COMMUNITY);
       this.communityData.loading = true;
       this.communityData.levels = [];
+      getUserLikes().then(likes => { this.communityData.userLikes = likes; });
       getPublishedLevels('newest', 0).then(levels => {
         this.communityData.levels = levels;
         this.communityData.loading = false;
@@ -688,7 +688,7 @@ class Game {
     } else if (action === 'secrets_submit') {
       this._submitSecretCode();
     } else if (action === 'back_community') {
-      this.state = MENU;
+      this._fadeToState(MENU);
     } else if (action.startsWith('community_sort_')) {
       const sort = action.replace('community_sort_', '');
       this.communityData.sort = sort;
@@ -733,6 +733,20 @@ class Game {
       }
     } else if (action === 'community_confirm_no') {
       this.communityData.confirmDelete = null;
+    } else if (action.startsWith('community_like_')) {
+      const idx = parseInt(action.replace('community_like_', ''));
+      const level = this.communityData.levels[idx];
+      if (level && getAuthUser()) {
+        toggleLike(level.id).then(({ liked }) => {
+          if (liked) {
+            level.likes = (level.likes || 0) + 1;
+            this.communityData.userLikes.add(level.id);
+          } else {
+            level.likes = Math.max(0, (level.likes || 1) - 1);
+            this.communityData.userLikes.delete(level.id);
+          }
+        });
+      }
     } else if (action === 'leaderboard') {
       if (this.level) {
         this._leaderboardData = { entries: [], loading: true, levelId: this.level.id };

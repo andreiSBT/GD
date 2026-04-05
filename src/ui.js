@@ -1918,8 +1918,19 @@ export class UI {
         ctx.font = '11px monospace';
         ctx.textAlign = 'center';
         ctx.fillText(`▶ ${lv.plays}`, margin + cardW / 2, cy + 26);
-        ctx.fillText(`♥ ${lv.likes}`, margin + cardW / 2 + 80, cy + 26);
         ctx.fillText(`◆ ${lv.objectCount || '?'} obj`, margin + cardW / 2, cy + 48);
+
+        // Like button
+        const liked = data.userLikes && data.userLikes.has(lv.id);
+        const lkX = margin + cardW / 2 + 70, lkY = cy + 14, lkW = 54, lkH = 22;
+        this._roundRect(ctx, lkX, lkY, lkW, lkH, 4);
+        ctx.fillStyle = liked ? 'rgba(255,50,100,0.25)' : 'rgba(255,255,255,0.06)';
+        ctx.fill();
+        ctx.fillStyle = liked ? '#FF3264' : '#667788';
+        ctx.font = 'bold 12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(`♥ ${lv.likes || 0}`, lkX + lkW / 2, lkY + 15);
+        this.buttons.push({ id: 'community_like_' + i, x: lkX, y: lkY, w: lkW, h: lkH });
 
         // Delete button (owner or admin only)
         const canDelete = data.isAdmin || (data.currentUserId && lv.userId === data.currentUserId);

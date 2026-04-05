@@ -48,12 +48,27 @@ export class ParticleSystem {
   }
 
   emitDeath(x, y, color, count = 30) {
+    // Main burst — colored fragments
     for (let i = 0; i < count; i++) {
-      const vx = (Math.random() - 0.5) * 16;
-      const vy = (Math.random() - 0.8) * 12;
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 3 + Math.random() * 10;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed - 2;
       const size = 3 + Math.random() * 5;
-      const lifetime = 0.3 + Math.random() * 0.5;
-      this.particles.push(new Particle(x, y, vx, vy, color, size, lifetime, 0.3));
+      const lifetime = 0.4 + Math.random() * 0.6;
+      this.particles.push(new Particle(x, y, vx, vy, color, size, lifetime, 0.25));
+    }
+    // White flash sparks — fast, tiny
+    for (let i = 0; i < 15; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 6 + Math.random() * 12;
+      this.particles.push(new Particle(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, '#FFF', 2 + Math.random() * 2, 0.15 + Math.random() * 0.2, 0.1));
+    }
+    // Larger slow chunks
+    for (let i = 0; i < 8; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 5;
+      this.particles.push(new Particle(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed - 1, color, 6 + Math.random() * 4, 0.6 + Math.random() * 0.5, 0.35));
     }
   }
 

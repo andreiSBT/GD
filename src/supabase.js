@@ -639,6 +639,52 @@ export async function incrementPlays(levelId) {
   } catch {}
 }
 
+export async function toggleLike(levelId) {
+  const client = getClient();
+  if (!client) return { liked: false };
+  const userId = getUserId();
+  if (!userId) return { liked: false };
+  try {
+    // Check if already liked
+    const { data: existing } = await client.from('level_likes')
+      .select('id').eq('level_id', levelId).eq('user_id', userId).single();
+    if (existing) {
+      // Unlike
+      await client.from('level_likes').delete().eq('id', existing.id);
+      await client.rpc('decrement_likes', { lid: levelId }).catch(() => {
+        // Fallback: manual decrement
+        client.from('published_levels').select('likes').eq('id', levelId).single().then(({ data }) => {
+          if (data) client.from('published_levels').update({ likes: Math.max(0, (data.likes || 1) - 1) }).eq('id', levelId);
+        });
+      });
+      return { liked: false };
+    } else {
+      // Like
+      await client.from('level_likes').insert({ level_id: levelId, user_id: userId });
+      await client.rpc('increment_likes', { lid: levelId }).catch(() => {
+        client.from('published_levels').select('likes').eq('id', levelId).single().then(({ data }) => {
+          if (data) client.from('published_levels').update({ likes: (data.likes || 0) + 1 }).eq('id', levelId);
+        });
+      });
+      return { liked: true };
+    }
+  } catch (e) {
+    console.warn('toggleLike failed:', e.message);
+    return { liked: false };
+  }
+}
+
+export async function getUserLikes() {
+  const client = getClient();
+  if (!client) return new Set();
+  const userId = getUserId();
+  if (!userId) return new Set();
+  try {
+    const { data } = await client.from('level_likes').select('level_id').eq('user_id', userId);
+    return new Set((data || []).map(r => r.level_id));
+  } catch { return new Set(); }
+}
+
 export function isConfigured() {
   return !!(supabaseUrl && supabaseKey);
 }
