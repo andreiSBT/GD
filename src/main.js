@@ -1962,6 +1962,7 @@ class Game {
             reversed: this.player.reversed,
             theme: { ...this.theme },
             musicTime: Sound.getCustomMusicTime(),
+            editorCP: true,
           };
           this._autoCheckpointTimer = 0; // reset auto timer after editor checkpoint
         }
@@ -2161,8 +2162,8 @@ class Game {
         }
       }
 
-      // Draw practice checkpoint marker in world
-      if (this.practiceMode && this.lastCheckpoint) {
+      // Draw practice checkpoint marker in world (only for auto/manual, not editor CPs)
+      if (this.practiceMode && this.lastCheckpoint && !this.lastCheckpoint.editorCP) {
         const cpsx = this.lastCheckpoint.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
         const cpsy = this.lastCheckpoint.y + PLAYER_SIZE / 2;
         ctx.save();
