@@ -339,7 +339,12 @@ export class Editor {
       this._handleOfficialPickerClick(x, y);
       return;
     }
-    // Dismiss help/info overlay on any click
+    // Dismiss overlays on click
+    if (this.showMenu) {
+      // Let menu buttons handle themselves, dismiss on background click
+      const clicked = this.buttons.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      if (!clicked) { this.showMenu = false; return; }
+    }
     if (this.showHelp) {
       this.showHelp = false;
       return;
@@ -536,6 +541,10 @@ export class Editor {
       if (this.movingEndMode) {
         this.movingEndMode = false;
         this.movingStart = null;
+        return true;
+      }
+      if (this.showMenu) {
+        this.showMenu = false;
         return true;
       }
       if (this.showHelp) {
@@ -2888,6 +2897,7 @@ export class Editor {
       this.saveToSlot(this.currentSlot);
       if (this.onTest) this.onTest(this.getLevelData());
     } else if (id === 'action_save_official') {
+      this.showMenu = false;
       if (isAdmin()) {
         // Save current level first
         if (this.currentSlot && this.objects.length > 0) {
@@ -2898,6 +2908,7 @@ export class Editor {
     } else if (id === 'action_load') {
       this.showBrowser();
     } else if (id === 'action_music') {
+      this.showMenu = false;
       this._handleMusicButton();
     } else if (id === 'action_publish') {
       if (!getAuthUser()) { this._showToast('Login required!'); return; }
@@ -2990,10 +3001,8 @@ export class Editor {
       ctx.fill();
 
       ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 18px monospace';
-      ctx.fillText('L' + (i + 1), bx + btnW / 2, by + 24);
-      ctx.font = '10px monospace';
-      ctx.fillText(theme.name || '', bx + btnW / 2, by + 42);
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText(theme.name || 'Level ' + (i + 1), bx + btnW / 2, by + btnH / 2 + 6);
 
       this.buttons.push({ id: 'official_pick_' + (i + 1), x: bx, y: by, w: btnW, h: btnH });
     }
