@@ -2565,33 +2565,17 @@ class Game {
     document.getElementById('acc-reset').addEventListener('click', async () => {
       const confirmed = await customConfirm('RESET PROGRESS', 'Reset ALL progress, coins, attempts, jumps, achievements, secret codes, and secret coins? This cannot be undone.', 'YES, RESET', 'CANCEL');
       if (!confirmed) return;
-      // Clear from Supabase
+      // Clear everything from cloud
       await resetProgressInCloud();
-      // Clear everything except editor levels, friends, customization
-      localStorage.removeItem('gd_progress');
-      localStorage.removeItem('gd_total_jumps');
-      localStorage.removeItem('gd_achievements');
-      localStorage.removeItem('gd_secret_coins');
-      localStorage.removeItem('gd_redeemed_codes');
-      localStorage.removeItem('gd_scroll_coin');
-      localStorage.removeItem('gd_rainbow_color');
-      localStorage.removeItem('gd_dotted_trail');
-      localStorage.removeItem('gd_wink_icon');
-      localStorage.removeItem('gd_boom_death');
+      // Clear all localStorage data
+      this._clearLocalData();
       const user = getAuthUser();
       if (user) localStorage.removeItem('gd_total_jumps_' + user.id);
       // Reset in-memory state
-      this.progress = loadProgress();
       this._redeemedCodes = new Set();
       this._achievementToasts = [];
       this._showScrollCoin = false;
       this._levelScrollCount = 0;
-      // Reset secret customizations if currently using them
-      if (this.customization.colorIndex === PLAYER_COLORS.indexOf('rainbow')) this.customization.colorIndex = 0;
-      if (this.customization.trailStyleIndex === 1) this.customization.trailStyleIndex = 0;
-      if (CUBE_ICONS[this.customization.iconIndex] === 'wink') this.customization.iconIndex = 0;
-      this._applyCustomization();
-      this._saveCustomization();
       overlay.style.display = 'none';
       this.state = MENU;
     });
