@@ -1627,13 +1627,37 @@ export class Editor {
     // Action buttons anchored to right
     let ax = SCREEN_WIDTH - margin - actTotalW;
     for (const act of actions) {
-      _drawRetroBtn(ax, btnY, actBtnW, btnH, act.color, act.label, false);
-      // Draw big label for menu hamburger
       if (act.big) {
-        ctx.fillStyle = act.color;
-        ctx.font = 'bold 22px monospace';
-        ctx.textAlign = 'center';
-        ctx.fillText(act.label, ax + actBtnW / 2, btnY + btnH / 2 + 8);
+        // Custom hamburger menu button
+        const bx = ax, by = btnY, bw = actBtnW, bh = btnH;
+        const menuOpen = this.showMenu;
+        const mGrad = ctx.createLinearGradient(bx, by, bx, by + bh);
+        mGrad.addColorStop(0, menuOpen ? 'rgba(80,90,110,0.95)' : 'rgba(30,30,50,0.95)');
+        mGrad.addColorStop(1, menuOpen ? 'rgba(60,70,90,0.95)' : 'rgba(20,20,38,0.95)');
+        this._editorRoundRect(ctx, bx, by, bw, bh, r);
+        ctx.fillStyle = mGrad;
+        ctx.fill();
+        ctx.save();
+        ctx.shadowColor = menuOpen ? '#AABBDD' : act.color;
+        ctx.shadowBlur = menuOpen ? 10 : 4;
+        this._editorRoundRect(ctx, bx, by, bw, bh, r);
+        ctx.strokeStyle = menuOpen ? '#AABBDD' : act.color;
+        ctx.lineWidth = menuOpen ? 1.5 : 0.8;
+        ctx.globalAlpha = menuOpen ? 0.7 : 0.4;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.restore();
+        // 3 hamburger lines
+        const lineW = 18, lineH = 2.5, lineGap = 5;
+        const lx = bx + (bw - lineW) / 2;
+        const ly = by + (bh - lineH * 3 - lineGap * 2) / 2;
+        ctx.fillStyle = menuOpen ? '#FFF' : act.color;
+        for (let l = 0; l < 3; l++) {
+          const lineY = ly + l * (lineH + lineGap);
+          ctx.fillRect(lx, lineY, lineW, lineH);
+        }
+      } else {
+        _drawRetroBtn(ax, btnY, actBtnW, btnH, act.color, act.label, false);
       }
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: actBtnW, h: btnH });
       ax += actBtnW + gap;
