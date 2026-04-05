@@ -2605,7 +2605,7 @@ export class Editor {
       ctx.fillStyle = '#CCCC66';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('NAME', startX + 10 + smallW / 2, smallY + smallH / 2 + 4);
+      ctx.fillText('RENAME', startX + 10 + smallW / 2, smallY + smallH / 2 + 4);
       this.buttons.push({ id: 'browse_name_' + slot.id, x: startX + 10, y: smallY, w: smallW, h: smallH });
 
       // PUBLISH
@@ -3105,10 +3105,25 @@ export class Editor {
   }
 
   _handlePanelClick(x, y) {
-    // Check panel buttons (already in this.buttons from last draw)
     for (const btn of this.buttons) {
       if (btn.id.startsWith('sub_') && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-        this.subType = btn.id.replace('sub_', '');
+        const st = btn.id.replace('sub_', '');
+        // Find matching tool in active category
+        const activeCat = TOOL_CATEGORIES.find(c => c.id === this.selectedCategory);
+        if (activeCat) {
+          const tool = activeCat.tools.find(t => t.id === st || t.subType === st);
+          if (tool) {
+            if (tool.toolType) {
+              this.selectedTool = tool.toolType;
+              this.subType = tool.subType;
+            } else {
+              this.selectedTool = tool.id;
+              this.subType = null;
+            }
+          }
+        } else {
+          this.subType = st;
+        }
         return;
       }
     }
