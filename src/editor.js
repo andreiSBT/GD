@@ -2260,16 +2260,20 @@ export class Editor {
 
   _drawInfo(ctx) {
     const info = this._calculateLevelInfo();
+    const c = info.counts;
 
     // Dark overlay
     ctx.fillStyle = 'rgba(0,0,0,0.88)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    const panelW = 500;
-    const panelH = 450;
+    const panelW = 420;
+    const panelH = 400;
     const px = (SCREEN_WIDTH - panelW) / 2;
     const py = (SCREEN_HEIGHT - panelH) / 2;
     const r = 14;
+    const lx = px + 28;
+    const vx = px + panelW - 28;
+    const rowH = 26;
 
     // Panel background
     this._editorRoundRect(ctx, px, py, panelW, panelH, r);
@@ -2285,50 +2289,37 @@ export class Editor {
     ctx.shadowColor = '#44AACC';
     ctx.shadowBlur = 15;
     ctx.fillStyle = '#44AACC';
-    ctx.font = 'bold 28px monospace';
+    ctx.font = 'bold 24px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('LEVEL INFO', SCREEN_WIDTH / 2, py + 45);
+    ctx.fillText('LEVEL INFO', SCREEN_WIDTH / 2, py + 38);
     ctx.shadowBlur = 0;
     ctx.restore();
 
-    let sy = py + 85;
-    const lx = px + 35;
-    const vx = px + panelW - 35;
+    let sy = py + 65;
 
-    const drawRow = (label, value, color = '#EEE') => {
-      ctx.fillStyle = '#778899';
-      ctx.font = '15px monospace';
+    const drawRow = (label, value, color = '#DDE') => {
+      ctx.fillStyle = '#667788';
+      ctx.font = '13px monospace';
       ctx.textAlign = 'left';
       ctx.fillText(label, lx, sy);
       ctx.fillStyle = color;
-      ctx.font = 'bold 15px monospace';
+      ctx.font = 'bold 13px monospace';
       ctx.textAlign = 'right';
       ctx.fillText(value, vx, sy);
-      sy += 30;
+      sy += rowH;
     };
 
-    // Duration - highlight
-    ctx.save();
-    ctx.shadowColor = '#44AACC';
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = '#44AACC';
-    ctx.font = 'bold 20px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(info.hasEnd ? info.durationStr : '-- no end marker --', SCREEN_WIDTH / 2, sy);
-    ctx.shadowBlur = 0;
-    ctx.restore();
-    ctx.fillStyle = '#667788';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('ESTIMATED DURATION', SCREEN_WIDTH / 2, sy + 18);
-    sy += 48;
+    const drawSep = () => {
+      ctx.strokeStyle = 'rgba(0,170,200,0.12)';
+      ctx.beginPath();
+      ctx.moveTo(lx, sy - 8);
+      ctx.lineTo(vx, sy - 8);
+      ctx.stroke();
+      sy += 4;
+    };
 
-    // Separator
-    ctx.strokeStyle = 'rgba(0,170,200,0.15)';
-    ctx.beginPath();
-    ctx.moveTo(px + 30, sy - 10);
-    ctx.lineTo(px + panelW - 30, sy - 10);
-    ctx.stroke();
+    // Level duration
+    drawRow('Level Duration', info.hasEnd ? info.durationStr : 'No end marker', info.hasEnd ? '#44AACC' : '#556677');
 
     // Song duration
     const musicKey = this._getMusicKey();
@@ -2341,27 +2332,33 @@ export class Editor {
       drawRow('Song Duration', 'No custom music', '#556677');
     }
 
-    drawRow('Level Length', info.endX.toFixed(0) + ' grid units');
-    drawRow('Total Objects', String(info.objectCount));
+    drawSep();
 
-    // Object breakdown
-    const typeLabels = {
-      spike: 'Spikes', platform: 'Platforms', moving: 'Moving Plats',
-      transport: 'Transports', portal: 'Portals', orb: 'Orbs',
-      pad: 'Pads', coin: 'Coins', checkpoint: 'Checkpoints',
-      color_trigger: 'Color Triggers', end: 'End Markers',
-    };
-    for (const [type, label] of Object.entries(typeLabels)) {
-      if (info.counts[type]) {
-        drawRow('  ' + label, String(info.counts[type]), '#AABBCC');
-      }
-    }
+    // Total objects
+    drawRow('Total Objects', String(info.objectCount), '#FFF');
+
+    drawSep();
+
+    // Categories
+    const hazards = (c.spike || 0) + (c.saw || 0);
+    const blocks = (c.platform || 0) + (c.slope || 0) + (c.moving || 0) + (c.transport || 0);
+    const orbs = (c.orb || 0);
+    const pads = (c.pad || 0);
+    const coins = (c.coin || 0);
+    const checkpoints = (c.checkpoint || 0);
+
+    drawRow('Hazards', String(hazards), '#FF5555');
+    drawRow('Blocks', String(blocks), '#4488FF');
+    drawRow('Orbs', String(orbs), '#FFD700');
+    drawRow('Pads', String(pads), '#FFAA00');
+    drawRow('Coins', String(coins), '#FFD700');
+    drawRow('Checkpoints', String(checkpoints), '#00FF44');
 
     // Close hint
-    ctx.fillStyle = '#556677';
-    ctx.font = '13px monospace';
+    ctx.fillStyle = '#445566';
+    ctx.font = '12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Click anywhere or press ESC to close', SCREEN_WIDTH / 2, py + panelH - 18);
+    ctx.fillText('Click anywhere or press ESC to close', SCREEN_WIDTH / 2, py + panelH - 16);
   }
 
   _drawHelp(ctx) {
