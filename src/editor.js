@@ -393,7 +393,20 @@ export class Editor {
       if (idx >= 0) {
         this._pushHistory();
         const obj = this.objects[idx];
-        obj.rot = ((obj.rot || 0) + 90) % 360;
+        const oldRot = obj.rot || 0;
+        obj.rot = (oldRot + 90) % 360;
+        // For spikes: compensate Y shift when going to/from rot=180
+        if (obj.type === 'spike') {
+          const wasFlipped = oldRot === 180;
+          const isFlipped = obj.rot === 180;
+          if (!wasFlipped && isFlipped) {
+            // Going to ceiling — convert gy
+            obj.y = Math.floor(GROUND_Y / GRID) - obj.y - 1;
+          } else if (wasFlipped && !isFlipped) {
+            // Coming back from ceiling
+            obj.y = Math.floor(GROUND_Y / GRID) - obj.y - 1;
+          }
+        }
         this._rebuildLive();
         this._showToast('Rotated');
       }
@@ -1833,18 +1846,27 @@ export class Editor {
     // Right side: MENU | L1 L2 L3 | T1 T2 T3
     let rx = SCREEN_WIDTH - 10;
 
-    // Menu button (far right)
+    // Menu button (far right) - retro style
     const menuBtnW = 50;
     rx -= menuBtnW;
+    const menuGrad = ctx.createLinearGradient(rx, sby, rx, sby + scrollBtnH);
+    menuGrad.addColorStop(0, 'rgba(30,30,50,0.95)');
+    menuGrad.addColorStop(1, 'rgba(20,20,38,0.95)');
     this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
-    ctx.fillStyle = 'rgba(200,50,50,0.3)';
+    ctx.fillStyle = menuGrad;
     ctx.fill();
-    ctx.strokeStyle = 'rgba(255,80,80,0.4)';
-    ctx.lineWidth = 1;
+    ctx.save();
+    ctx.shadowColor = '#778899';
+    ctx.shadowBlur = 4;
     this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
+    ctx.strokeStyle = '#778899';
+    ctx.lineWidth = 0.8;
+    ctx.globalAlpha = 0.5;
     ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
     ctx.fillStyle = '#AABBCC';
-    ctx.font = 'bold 14px monospace';
+    ctx.font = 'bold 20px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('\u2261', rx + menuBtnW / 2, sby + 19);
     this.buttons.push({ id: 'action_menu', x: rx, y: sby, w: menuBtnW, h: scrollBtnH });
