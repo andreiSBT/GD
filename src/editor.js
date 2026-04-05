@@ -1515,80 +1515,60 @@ export class Editor {
     const availW = SCREEN_WIDTH - margin * 2 - totalGaps;
     const btnW = Math.min(64, Math.floor(availW / totalItems));
 
-    for (let i = 0; i < allButtons.length; i++) {
-      const btn = allButtons[i];
-      const bx = margin + i * (btnW + gap);
-      const isActiveCat = btn.isCat && this.selectedCategory === btn.catId;
-
-      this._editorRoundRect(ctx, bx, btnY, btnW, btnH, r);
-      if (isActiveCat) {
-        ctx.fillStyle = btn.color;
-        ctx.globalAlpha = 0.4;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-        ctx.save();
-        ctx.shadowColor = btn.color;
-        ctx.shadowBlur = 6;
-        ctx.strokeStyle = btn.color;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.restore();
-      } else if (btn.isCat) {
-        ctx.fillStyle = 'rgba(255,255,255,0.07)';
-        ctx.fill();
-        ctx.strokeStyle = btn.color;
-        ctx.globalAlpha = 0.3;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.globalAlpha = 1;
+    // Unified retro button renderer
+    const _drawRetroBtn = (x, y, w, h, color, label, active) => {
+      const grad = ctx.createLinearGradient(x, y, x, y + h);
+      if (active) {
+        grad.addColorStop(0, color);
+        grad.addColorStop(1, color + '88');
       } else {
-        ctx.fillStyle = btn.color;
-        ctx.fill();
-        ctx.globalAlpha = 0.15;
-        this._editorRoundRect(ctx, bx, btnY, btnW, btnH / 2, r);
-        ctx.fillStyle = '#FFF';
-        ctx.fill();
-        ctx.globalAlpha = 1;
+        grad.addColorStop(0, 'rgba(30,30,50,0.95)');
+        grad.addColorStop(1, 'rgba(20,20,38,0.95)');
       }
-
-      ctx.fillStyle = isActiveCat ? '#FFF' : (btn.isCat ? btn.color : '#FFF');
-      ctx.font = `bold ${Math.min(11, Math.max(8, btnW / 6))}px monospace`;
+      this._editorRoundRect(ctx, x, y, w, h, r);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      // Neon border glow
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = active ? 8 : 3;
+      this._editorRoundRect(ctx, x, y, w, h, r);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = active ? 1.5 : 0.8;
+      ctx.globalAlpha = active ? 0.8 : 0.4;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      // Top edge highlight
+      ctx.globalAlpha = active ? 0.15 : 0.06;
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(x + r, y + 1, w - r * 2, 1);
+      ctx.globalAlpha = 1;
+      // Label
+      ctx.fillStyle = active ? '#FFF' : color;
+      const fs = Math.min(11, Math.max(8, w / 5.5));
+      ctx.font = `bold ${fs}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(btn.label, bx + btnW / 2, btnY + 24);
+      ctx.fillText(label, x + w / 2, y + h / 2 + fs / 3);
+    };
 
+    // Draw category buttons
+    for (let i = 0; i < catButtons.length; i++) {
+      const btn = catButtons[i];
+      const bx = margin + i * (btnW + gap);
+      const active = this.selectedCategory === btn.catId;
+      _drawRetroBtn(bx, btnY, btnW, btnH, btn.color, btn.label, active);
       this.buttons.push({ id: btn.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
 
-    // Separator between categories and actions
+    // Separator
     let ax = SCREEN_WIDTH - margin - actions.length * (btnW + gap) + gap;
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fillRect(ax - 6, btnY + 4, 1, btnH - 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(ax - 7, btnY + 6, 1, btnH - 12);
 
+    // Draw action buttons
     for (const act of actions) {
-      ctx.save();
-      ctx.shadowColor = act.color;
-      ctx.shadowBlur = 4;
-      this._editorRoundRect(ctx, ax, btnY, btnW, btnH, r);
-      ctx.fillStyle = act.color;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.restore();
-      // Top highlight
-      ctx.globalAlpha = 0.2;
-      this._editorRoundRect(ctx, ax, btnY, btnW, btnH / 2, r);
-      ctx.fillStyle = '#FFF';
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      // Subtle border
-      this._editorRoundRect(ctx, ax, btnY, btnW, btnH, r);
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-
-      ctx.fillStyle = '#FFF';
-      ctx.font = `bold ${Math.min(12, Math.max(9, btnW / 4.5))}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.fillText(act.label, ax + btnW / 2, btnY + btnH / 2 + 4);
+      _drawRetroBtn(ax, btnY, btnW, btnH, act.color, act.label, false);
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
       ax += btnW + gap;
     }
