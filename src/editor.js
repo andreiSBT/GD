@@ -1497,9 +1497,9 @@ export class Editor {
     }));
 
     const actions = [
-      { id: 'action_rotate', label: 'u21BB', color: '#6688AA' },
-      { id: 'action_undo', label: 'u21A9', color: '#5577AA' },
-      { id: 'action_redo', label: 'u21AA', color: '#5577AA' },
+      { id: 'action_rotate', label: 'ROT', color: '#6688AA' },
+      { id: 'action_undo', label: 'UNDO', color: '#5577AA' },
+      { id: 'action_redo', label: 'REDO', color: '#5577AA' },
       { id: 'action_save_test', label: '▶ TEST', color: '#00BB44' },
       { id: 'action_load', label: 'OPEN', color: '#7755CC' },
       { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
