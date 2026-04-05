@@ -1532,11 +1532,11 @@ export class Editor {
       { id: 'action_menu', label: '≡', color: '#778899' },
     ];
 
-    const allButtons = [...catButtons, ...actions];
-    const totalItems = allButtons.length;
-    const totalGaps = (totalItems - 1) * gap;
-    const availW = SCREEN_WIDTH - margin * 2 - totalGaps;
-    const btnW = Math.min(64, Math.floor(availW / totalItems));
+    // Size buttons - categories on left, actions on right
+    const actBtnW = 52;
+    const actTotalW = actions.length * (actBtnW + gap) - gap;
+    const catAvailW = SCREEN_WIDTH - margin * 2 - actTotalW - 20 - (catButtons.length - 1) * gap;
+    const btnW = Math.min(64, Math.floor(catAvailW / catButtons.length));
 
     // Unified retro button renderer
     const _drawRetroBtn = (x, y, w, h, color, label, active) => {
@@ -1584,18 +1584,12 @@ export class Editor {
       this.buttons.push({ id: btn.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
 
-    // Separator between categories and actions
-    const sepGap = 12;
-    const catEndX = margin + catButtons.length * (btnW + gap);
-    ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    ctx.fillRect(catEndX + sepGap / 2 - 1, btnY + 6, 1, btnH - 12);
-    let ax = catEndX + sepGap;
-
-    // Draw action buttons
+    // Action buttons anchored to right
+    let ax = SCREEN_WIDTH - margin - actTotalW;
     for (const act of actions) {
-      _drawRetroBtn(ax, btnY, btnW, btnH, act.color, act.label, false);
-      this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
-      ax += btnW + gap;
+      _drawRetroBtn(ax, btnY, actBtnW, btnH, act.color, act.label, false);
+      this.buttons.push({ id: act.id, x: ax, y: btnY, w: actBtnW, h: btnH });
+      ax += actBtnW + gap;
     }
 
     // Undo/Redo buttons below toolbar, left side
