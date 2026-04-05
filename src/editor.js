@@ -388,9 +388,20 @@ export class Editor {
       return;
     }
 
+    if (this.selectedTool === 'action_rotate') {
+      const idx = this._findObjectAt(half.gx, half.gy);
+      if (idx >= 0) {
+        this._pushHistory();
+        const obj = this.objects[idx];
+        obj.rot = ((obj.rot || 0) + 90) % 360;
+        this._showToast('Rotated ' + (obj.type || 'object'));
+      }
+      return;
+    }
+
     if (this.selectedTool === 'erase') {
       this._removeObjectAt(half.gx, half.gy);
-      this.painting = true;
+      this.painting = this.swipeMode === 'paint';
       this.paintErase = true;
       this.lastPaintGx = gx;
       this.lastPaintGy = gy;
@@ -429,8 +440,8 @@ export class Editor {
     }
 
     this._placeObject(gx, gy);
-    // Start paint mode for tools that support it
-    if (['spike', 'saw', 'orb', 'pad', 'coin', 'checkpoint', 'end', 'color_trigger'].includes(this.selectedTool)) {
+    // Start paint mode for tools that support it (only in paint swipe mode)
+    if (this.swipeMode === 'paint' && ['spike', 'saw', 'orb', 'pad', 'coin', 'checkpoint', 'end', 'color_trigger'].includes(this.selectedTool)) {
       this.painting = true;
       this.paintErase = false;
       this.lastPaintGx = gx;
