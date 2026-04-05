@@ -1963,6 +1963,7 @@ class Game {
             theme: { ...this.theme },
             musicTime: Sound.getCustomMusicTime(),
           };
+          this._autoCheckpointTimer = 0; // reset auto timer after editor checkpoint
         }
       } else if (obs.type === 'end') {
         if (obs.checkCollision(playerRect) === 'complete') {
@@ -2018,13 +2019,16 @@ class Game {
         (this.player.mode === MODE_CUBE || this.player.mode === MODE_BALL)) {
       this._autoCheckpointTimer += 1 / FPS;
       if (this._autoCheckpointTimer >= 2) {
-        this._autoCheckpointTimer = 0;
         // Don't place if within 2 grids of an editor checkpoint
         const px = this.player.x;
         const tooClose = this.level && this.level.obstacles.some(o =>
           o.type === 'checkpoint' && Math.abs(o.x - px) < GRID * 2
         );
-        if (!tooClose) {
+        if (tooClose) {
+          // Skip but keep trying each frame until we move away
+          this._autoCheckpointTimer = 1.5;
+        } else {
+          this._autoCheckpointTimer = 0;
           this.lastCheckpoint = {
             x: px, y: this.player.y,
             gravityMult: this.player.gravityMult, speedMult: this.player.speedMult,
