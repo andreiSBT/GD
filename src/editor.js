@@ -155,6 +155,7 @@ export class Editor {
     this.confirmDelete = null; // null or { slotId, slotName }
     this.officialPicker = false; // show official level picker dialog
     this.showInfo = false; // level info overlay
+    this.showMenu = false; // editor menu overlay
 
     // Hidden file input for music
     this._musicInput = document.createElement('input');
@@ -582,6 +583,7 @@ export class Editor {
       this.selectedCategory = km.cat;
       this.selectedTool = km.tool;
       this.subType = km.sub || null;
+      if (km.tool === 'move' || km.tool === 'erase') this.swipeMode = 'scroll';
       return true;
     }
 
@@ -1006,6 +1008,11 @@ export class Editor {
     // Help overlay
     if (this.showHelp) {
       this._drawHelp(ctx);
+    }
+
+    // Menu overlay
+    if (this.showMenu) {
+      this._drawMenu(ctx);
     }
 
     // Info overlay
@@ -1509,11 +1516,7 @@ export class Editor {
       { id: 'action_redo', label: 'REDO', color: '#5577AA' },
       { id: 'action_save_test', label: '▶ TEST', color: '#00BB44' },
       { id: 'action_load', label: 'OPEN', color: '#7755CC' },
-      { id: 'action_music', label: this._hasSlotMusic() ? '♫ ✓' : '♫', color: this._hasSlotMusic() ? '#FF66AA' : '#886699' },
-      ...(isAdmin() ? [{ id: 'action_save_official', label: 'OFFICIAL', color: '#FF4400' }] : []),
-      { id: 'action_info', label: 'i', color: '#3399BB' },
-      { id: 'action_help', label: '?', color: '#666' },
-      { id: 'action_back', label: '✕', color: '#CC3344' },
+      { id: 'action_menu', label: 'MENU', color: '#778899' },
     ];
 
     const allButtons = [...catButtons, ...actions];
@@ -2148,6 +2151,85 @@ export class Editor {
     };
   }
 
+  _drawMenu(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,0.85)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    const menuItems = [
+      { id: 'menu_info', label: 'LEVEL INFO', color: '#44AACC' },
+      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  ✓' : 'MUSIC', color: this._hasSlotMusic() ? '#FF66AA' : '#887799' },
+      { id: 'menu_help', label: 'HELP', color: '#556677' },
+    ];
+    if (isAdmin()) {
+      menuItems.push({ id: 'action_save_official', label: 'SAVE AS OFFICIAL', color: '#FF4400' });
+    }
+    menuItems.push({ id: 'menu_exit', label: 'EXIT TO MENU', color: '#CC3344' });
+
+    const btnW = 280;
+    const btnH = 48;
+    const btnGap = 12;
+    const totalH = menuItems.length * (btnH + btnGap) - btnGap;
+    const startY = (SCREEN_HEIGHT - totalH) / 2;
+    const bx = (SCREEN_WIDTH - btnW) / 2;
+    const r = 10;
+
+    // Title
+    ctx.save();
+    ctx.shadowColor = '#778899';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#AABBCC';
+    ctx.font = 'bold 28px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('MENU', SCREEN_WIDTH / 2, startY - 30);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    for (let i = 0; i < menuItems.length; i++) {
+      const item = menuItems[i];
+      const by = startY + i * (btnH + btnGap);
+
+      // Button background gradient
+      const grad = ctx.createLinearGradient(bx, by, bx, by + btnH);
+      grad.addColorStop(0, 'rgba(25,25,45,0.95)');
+      grad.addColorStop(1, 'rgba(15,15,30,0.95)');
+      this._editorRoundRect(ctx, bx, by, btnW, btnH, r);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Neon border
+      ctx.save();
+      ctx.shadowColor = item.color;
+      ctx.shadowBlur = 6;
+      this._editorRoundRect(ctx, bx, by, btnW, btnH, r);
+      ctx.strokeStyle = item.color;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // Top highlight
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(bx + r, by + 1, btnW - r * 2, 1);
+      ctx.globalAlpha = 1;
+
+      // Label
+      ctx.fillStyle = item.color;
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.label, SCREEN_WIDTH / 2, by + btnH / 2 + 6);
+
+      this.buttons.push({ id: item.id, x: bx, y: by, w: btnW, h: btnH });
+    }
+
+    // Close hint
+    ctx.fillStyle = '#445566';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, startY + totalH + 30);
+  }
+
   _drawInfo(ctx) {
     const info = this._calculateLevelInfo();
 
@@ -2752,6 +2834,9 @@ export class Editor {
       this.movingStart = null;
       this.movingObj = null;
       this.movingObjIndex = -1;
+      if (this.selectedTool === 'move' || this.selectedTool === 'erase') {
+        this.swipeMode = 'scroll';
+      }
     } else if (id.startsWith('sub_')) {
       const subId = id.replace('sub_', '');
       // Check if this is a category tool item
@@ -2771,6 +2856,9 @@ export class Editor {
             this.movingStart = null;
             this.movingObj = null;
             this.movingObjIndex = -1;
+            if (this.selectedTool === 'move' || this.selectedTool === 'erase') {
+              this.swipeMode = 'scroll';
+            }
             return;
           }
         }
@@ -2831,12 +2919,16 @@ export class Editor {
         this.levelName = name.trim();
         this._showToast('Renamed to "' + this.levelName + '"');
       }
-    } else if (id === 'action_info') {
+    } else if (id === 'action_menu') {
+      this.showMenu = !this.showMenu;
+    } else if (id === 'menu_info' || id === 'action_info') {
+      this.showMenu = false;
       this.showInfo = !this.showInfo;
-    } else if (id === 'action_help') {
+    } else if (id === 'menu_help' || id === 'action_help') {
+      this.showMenu = false;
       this.showHelp = !this.showHelp;
-    } else if (id === 'action_back') {
-      // Auto-save before leaving
+    } else if (id === 'menu_exit' || id === 'action_back') {
+      this.showMenu = false;
       if (this.currentSlot && this.objects.length > 0) {
         this.saveToSlot(this.currentSlot);
       }
