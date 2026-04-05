@@ -57,6 +57,7 @@ const TOOL_CATEGORIES = [
   { id: 'edit', label: 'EDIT', color: '#FFAA00', tools: [
     { id: 'move', label: 'Move', color: '#FFAA00' },
     { id: 'erase', label: 'Erase', color: '#FF0000' },
+    { id: 'action_rotate', label: 'Rotate', color: '#6688AA' },
   ]},
 ];
 
@@ -1523,9 +1524,6 @@ export class Editor {
     }));
 
     const actions = [
-      { id: 'action_rotate', label: 'ROT', color: '#6688AA' },
-      { id: 'action_undo', label: 'UNDO', color: '#5577AA' },
-      { id: 'action_redo', label: 'REDO', color: '#5577AA' },
       { id: 'action_save_test', label: '▶ TEST', color: '#00BB44' },
       { id: 'action_load', label: 'OPEN', color: '#7755CC' },
       { id: 'action_menu', label: 'MENU', color: '#778899' },
@@ -1596,6 +1594,19 @@ export class Editor {
       this.buttons.push({ id: act.id, x: ax, y: btnY, w: btnW, h: btnH });
       ax += btnW + gap;
     }
+
+    // Undo/Redo buttons below toolbar, left side
+    const urY = TOOLBAR_H + 10;
+    const urW = 40;
+    const urH = 32;
+    const urGap = 4;
+    const urX = 10;
+    // Undo arrow
+    _drawRetroBtn(urX, urY, urW, urH, '#5577AA', '<', false);
+    this.buttons.push({ id: 'action_undo', x: urX, y: urY, w: urW, h: urH });
+    // Redo arrow
+    _drawRetroBtn(urX + urW + urGap, urY, urW, urH, '#5577AA', '>', false);
+    this.buttons.push({ id: 'action_redo', x: urX + urW + urGap, y: urY, w: urW, h: urH });
   }
 
   _hasSidePanel() {
