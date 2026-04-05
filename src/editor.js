@@ -436,7 +436,6 @@ export class Editor {
           }
         }
         this._rebuildLive();
-        this._showToast('Rotated');
       }
       return;
     }
@@ -1161,10 +1160,8 @@ export class Editor {
     if (this.selectedTool === 'start') {
       if (this.startPos && this.startPos.gx === gx && this.startPos.gy === gy) {
         this.startPos = null;
-        this._showToast('Start pos removed');
       } else {
         this.startPos = { gx, gy };
-        this._showToast('Start pos set at ' + gx);
       }
       return;
     }
@@ -1265,7 +1262,6 @@ export class Editor {
       const dy = Math.abs(gy - this.startPos.gy);
       if (dx < 1 && dy < 1) {
         this.startPos = null;
-        this._showToast('Start pos removed');
         return;
       }
     }
@@ -3309,8 +3305,6 @@ export class Editor {
 
   _cycleRotation() {
     this.rotation = (this.rotation + 90) % 360;
-    const labels = { 0: 'Up', 90: 'Right', 180: 'Down', 270: 'Left' };
-    this._showToast(`Rotation: ${labels[this.rotation]}`);
   }
 
   _showToast(text) {
