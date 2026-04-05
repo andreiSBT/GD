@@ -1332,6 +1332,7 @@ class Game {
     Sound.stopMusic();
     this.attempts++;
     this.coinsCollected = 0;
+    this._autoCheckpointTimer = 0;
     this.newBestTriggered = false;
     this.newBestTimer = 0;
     this.peakProgress = 0;
