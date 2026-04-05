@@ -158,6 +158,7 @@ export class Editor {
     this.officialPicker = false; // show official level picker dialog
     this.showInfo = false; // level info overlay
     this.showMenu = false; // editor menu overlay
+    this.showColorPicker = false; // theme color picker overlay
 
     // Hidden file input for music
     this._musicInput = document.createElement('input');
@@ -342,8 +343,11 @@ export class Editor {
       return;
     }
     // Dismiss overlays on click
+    if (this.showColorPicker) {
+      const clicked = this.buttons.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      if (!clicked) { this.showColorPicker = false; return; }
+    }
     if (this.showMenu) {
-      // Let menu buttons handle themselves, dismiss on background click
       const clicked = this.buttons.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
       if (!clicked) { this.showMenu = false; return; }
     }
@@ -571,6 +575,10 @@ export class Editor {
       if (this.movingEndMode) {
         this.movingEndMode = false;
         this.movingStart = null;
+        return true;
+      }
+      if (this.showColorPicker) {
+        this.showColorPicker = false;
         return true;
       }
       if (this.showMenu) {
@@ -1066,6 +1074,11 @@ export class Editor {
     // Menu overlay
     if (this.showMenu) {
       this._drawMenu(ctx);
+    }
+
+    // Color picker overlay
+    if (this.showColorPicker) {
+      this._drawColorPicker(ctx);
     }
 
     // Info overlay
@@ -1912,36 +1925,13 @@ export class Editor {
     // === RIGHT SECTION: Theme dots + Level load ===
     let rx = SCREEN_WIDTH - m;
 
-    // Theme selector — colored dots
-    const dotR = 8;
-    const dotGap = 4;
-    const themeCount = Object.keys(THEMES).length;
-    for (let t = themeCount; t >= 1; t--) {
-      rx -= dotR * 2;
-      const isActive = this.themeId === t;
-      const tc = THEMES[t].accent;
-
-      ctx.beginPath();
-      ctx.arc(rx + dotR, sby + btnH / 2, dotR, 0, Math.PI * 2);
-      if (isActive) {
-        ctx.fillStyle = tc;
-        ctx.fill();
-        ctx.save();
-        ctx.shadowColor = tc;
-        ctx.shadowBlur = 8;
-        ctx.strokeStyle = '#FFF';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-      } else {
-        ctx.fillStyle = tc;
-        ctx.globalAlpha = 0.3;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      }
-      this.buttons.push({ id: 'theme_' + t, x: rx, y: sby, w: dotR * 2, h: btnH });
-      rx -= dotGap;
-    }
+    // Current theme indicator (small dot)
+    const tc = THEMES[this.themeId]?.accent || '#FFF';
+    rx -= 16;
+    ctx.beginPath();
+    ctx.arc(rx + 8, sby + btnH / 2, 6, 0, Math.PI * 2);
+    ctx.fillStyle = tc;
+    ctx.fill();
 
     rx -= 10;
 
@@ -2291,7 +2281,8 @@ export class Editor {
     const menuItems = [
       { id: 'action_load', label: 'OPEN LEVEL', color: '#AA88FF' },
       { id: 'menu_info', label: 'LEVEL INFO', color: '#44BBFF' },
-      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  \u2713' : 'MUSIC', color: this._hasSlotMusic() ? '#00DD66' : '#FFD700' },
+      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  \u2713' : 'MUSIC', color: this._hasSlotMusic() ? '#FF66AA' : '#FF77BB' },
+      { id: 'menu_color', label: 'COLOR', color: THEMES[this.themeId]?.accent || '#FFD700' },
       { id: 'menu_help', label: 'HELP', color: '#00CC88' },
     ];
     if (isAdmin()) {
@@ -2362,6 +2353,88 @@ export class Editor {
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
     ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, startY + totalH + 30);
+  }
+
+
+  _drawColorPicker(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,0.88)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    const themeKeys = Object.keys(THEMES);
+    const cols = 3;
+    const dotSize = 50;
+    const dotGap = 14;
+    const rows = Math.ceil(themeKeys.length / cols);
+    const gridW = cols * dotSize + (cols - 1) * dotGap;
+    const gridH = rows * dotSize + (rows - 1) * dotGap;
+    const startX = (SCREEN_WIDTH - gridW) / 2;
+    const startY = (SCREEN_HEIGHT - gridH - 80) / 2 + 50;
+
+    // Title
+    ctx.save();
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 24px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('LEVEL COLOR', SCREEN_WIDTH / 2, startY - 30);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    for (let i = 0; i < themeKeys.length; i++) {
+      const t = parseInt(themeKeys[i]);
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const bx = startX + col * (dotSize + dotGap);
+      const by = startY + row * (dotSize + dotGap);
+      const theme = THEMES[t];
+      const isActive = this.themeId === t;
+
+      // Button bg gradient
+      const grad = ctx.createLinearGradient(bx, by, bx, by + dotSize);
+      grad.addColorStop(0, theme.bgTop);
+      grad.addColorStop(1, theme.bgBot);
+      this._editorRoundRect(ctx, bx, by, dotSize, dotSize, 10);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Accent color circle
+      ctx.beginPath();
+      ctx.arc(bx + dotSize / 2, by + dotSize / 2, 12, 0, Math.PI * 2);
+      ctx.fillStyle = theme.accent;
+      ctx.fill();
+
+      // Active border
+      if (isActive) {
+        ctx.save();
+        ctx.shadowColor = theme.accent;
+        ctx.shadowBlur = 10;
+        this._editorRoundRect(ctx, bx, by, dotSize, dotSize, 10);
+        ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        this._editorRoundRect(ctx, bx, by, dotSize, dotSize, 10);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Label
+      ctx.fillStyle = isActive ? '#FFF' : 'rgba(255,255,255,0.5)';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(theme.name || ('L' + t), bx + dotSize / 2, by + dotSize + 12);
+
+      this.buttons.push({ id: 'colpick_' + t, x: bx, y: by, w: dotSize, h: dotSize });
+    }
+
+    // Close hint
+    ctx.fillStyle = '#445566';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, startY + gridH + 40);
   }
 
   _drawInfo(ctx) {
@@ -3070,6 +3143,15 @@ export class Editor {
         this.levelName = name.trim();
         this._showToast('Renamed to "' + this.levelName + '"');
       }
+    } else if (id === 'menu_color') {
+      this.showMenu = false;
+      this.showColorPicker = !this.showColorPicker;
+    } else if (id.startsWith('colpick_')) {
+      const t = parseInt(id.replace('colpick_', ''));
+      this.themeId = t;
+      this.theme = THEMES[t];
+      this.showColorPicker = false;
+      this._showToast('Theme: ' + (THEMES[t].name || 'Level ' + t));
     } else if (id === 'action_menu') {
       this.showMenu = !this.showMenu;
     } else if (id === 'menu_info' || id === 'action_info') {
