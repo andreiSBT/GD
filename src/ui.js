@@ -697,7 +697,7 @@ export class UI {
       ctx.fillText(`★ ${coins.collected}/${coins.total}`, 16, 46);
     }
 
-    // Practice mode indicator
+    // Practice mode indicator + checkpoint buttons
     if (practiceMode) {
       ctx.save();
       ctx.shadowColor = '#FFD700';
@@ -707,6 +707,41 @@ export class UI {
       ctx.textAlign = 'right';
       ctx.fillText('PRACTICE', SCREEN_WIDTH - 65, 28);
       ctx.restore();
+
+      // Checkpoint button (place manual checkpoint)
+      const cpBtnS = 36;
+      const cpX = 16, cpY = 52;
+      this._roundRect(ctx, cpX, cpY, cpBtnS, cpBtnS, 6);
+      ctx.fillStyle = 'rgba(0,200,100,0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,255,100,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // Diamond icon
+      ctx.save();
+      ctx.translate(cpX + cpBtnS / 2, cpY + cpBtnS / 2);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#00FF64';
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-7, -7, 14, 14);
+      ctx.restore();
+      this.buttons.push({ id: 'practice_checkpoint', x: cpX, y: cpY, w: cpBtnS, h: cpBtnS });
+
+      // Delete checkpoint button
+      const delX = cpX + cpBtnS + 6;
+      this._roundRect(ctx, delX, cpY, cpBtnS, cpBtnS, 6);
+      ctx.fillStyle = 'rgba(200,50,50,0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,50,50,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#FF4444';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('✕', delX + cpBtnS / 2, cpY + cpBtnS / 2 + 6);
+      this.buttons.push({ id: 'practice_delete_cp', x: delX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
     // Pause button (top right) — rounded

@@ -335,6 +335,7 @@ class Game {
           this.state = PAUSED;
           return;
         }
+        if (this._handlePracticeAction(action)) return;
         doPress();
       } else if (this.state === DEAD) {
         // Allow pause button anytime during death
@@ -447,6 +448,7 @@ class Game {
           this.state = PAUSED;
           return;
         }
+        if (this._handlePracticeAction(action)) return;
         doPress();
       } else if (this.state === DEAD) {
         const action = this.ui.handleClick(x, y);
@@ -1481,6 +1483,24 @@ class Game {
     return { totalCoins };
   }
 
+  _handlePracticeAction(action) {
+    if (action === 'practice_checkpoint' && this.practiceMode && this.player.alive) {
+      this.lastCheckpoint = {
+        x: this.player.x, y: this.player.y,
+        gravityMult: this.player.gravityMult, speedMult: this.player.speedMult,
+        mode: this.player.mode, mini: this.player.mini, reversed: this.player.reversed,
+        theme: { ...this.theme }, musicTime: Sound.getCustomMusicTime(),
+      };
+      this._autoCheckpointTimer = 0;
+      return true;
+    }
+    if (action === 'practice_delete_cp' && this.practiceMode) {
+      this.lastCheckpoint = null;
+      return true;
+    }
+    return false;
+  }
+
   _fadeToState(state, callback) {
     this._fadeAlpha = 0.01;
     this._fadeTarget = state;
@@ -2130,6 +2150,26 @@ class Game {
           ctx.strokeRect(-sz / 2, -sz / 2, sz, sz);
           ctx.restore();
         }
+      }
+
+      // Draw practice checkpoint marker in world
+      if (this.practiceMode && this.lastCheckpoint) {
+        const cpsx = this.lastCheckpoint.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
+        const cpsy = this.lastCheckpoint.y + PLAYER_SIZE / 2;
+        ctx.save();
+        ctx.translate(cpsx, cpsy);
+        ctx.rotate(Math.PI / 4);
+        ctx.globalAlpha = 0.6;
+        ctx.fillStyle = '#00FF64';
+        ctx.fillRect(-10, -10, 20, 20);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-10, -10, 20, 20);
+        ctx.globalAlpha = 0.3;
+        ctx.shadowColor = '#00FF64';
+        ctx.shadowBlur = 12;
+        ctx.fillRect(-10, -10, 20, 20);
+        ctx.restore();
       }
 
       if (this.player.alive) {
