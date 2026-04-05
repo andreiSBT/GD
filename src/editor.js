@@ -682,6 +682,9 @@ export class Editor {
       return;
     }
 
+    // Move tool always scrolls, never paints
+    if (this.selectedTool === 'move') { this.touchPaintPending = false; return; }
+
     // In paint swipe mode, swiping places/erases objects instead of scrolling
     const paintableTools = ['spike', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
