@@ -1784,7 +1784,7 @@ export class Editor {
     ctx.stroke();
 
     // Draw object dots on the minimap (skip hazards, orbs, pads)
-    const navHidden = new Set(['spike', 'saw', 'orb', 'pad']);
+    const navHidden = new Set(['spike', 'saw', 'orb', 'pad', 'platform', 'slope', 'moving', 'transport']);
     for (const o of this.objects) {
       if (navHidden.has(o.type)) continue;
       const ox = o.x * GRID;
