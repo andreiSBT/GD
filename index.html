@@ -256,6 +256,23 @@
         <button id="ce-cancel" class="acc-btn acc-btn-back">CANCEL</button>
       </div>
     </div>
+    <!-- Inline color picker popup (replaces native color wheel) -->
+    <div id="color-picker-popup" style="display:none; position:fixed; z-index:200; background:linear-gradient(180deg,#0a0e1a 0%,#111828 100%); border:1px solid rgba(0,200,255,0.2); border-radius:14px; padding:14px; box-shadow:0 8px 32px rgba(0,0,0,0.7), 0 0 20px rgba(0,100,200,0.1); font-family:monospace; min-width:220px;">
+      <div id="cpk-swatches" style="display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-bottom:10px;"></div>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="color:#99AABB; font-size:11px;">#</span>
+        <input id="cpk-hex" type="text" maxlength="7" placeholder="FF00AA" style="flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:#EEE; font-size:14px; font-family:monospace; padding:8px; border-radius:6px; outline:none; letter-spacing:1px;">
+        <div id="cpk-preview" style="width:32px; height:32px; border-radius:6px; border:2px solid rgba(255,255,255,0.2);"></div>
+      </div>
+    </div>
+    <style>
+      .cpk-swatch {
+        width:100%; aspect-ratio:1; border-radius:4px; cursor:pointer; border:2px solid transparent; transition: border-color 0.15s, transform 0.1s;
+      }
+      .cpk-swatch:hover { border-color: rgba(255,255,255,0.5); transform: scale(1.15); }
+      .cpk-swatch.active { border-color: #FFF; box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+      #cpk-hex:focus { border-color: rgba(0,200,255,0.4); box-shadow: 0 0 8px rgba(0,200,255,0.15); }
+    </style>
     <!-- Custom prompt overlay (replaces browser prompt()) -->
     <div id="custom-prompt-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,20,0.92); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:100; justify-content:center; align-items:center;">
       <div class="acc-panel" style="max-width:380px;">

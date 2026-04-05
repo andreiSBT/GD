@@ -187,26 +187,31 @@ export class Editor {
     const fields = document.getElementById('ce-fields');
     if (!overlay || !fields) return;
 
+    // Setup inline color picker
+    this._setupColorPicker();
+
     const labels = {
       accent: 'Accent', bgTop: 'BG Top', bgBot: 'BG Bottom',
       ground: 'Ground', groundLine: 'Ground Line', spike: 'Spike',
       platform: 'Platform', player: 'Player',
     };
-    // Build color fields
+    // Build color fields with custom swatch buttons instead of native color inputs
     for (const [key, label] of Object.entries(labels)) {
       const wrap = document.createElement('div');
       wrap.style.cssText = 'display:flex; align-items:center; gap:8px;';
       const lbl = document.createElement('span');
       lbl.textContent = label;
       lbl.style.cssText = 'color:#99AABB; font-size:12px; font-family:monospace; flex:1; text-align:left;';
-      const inp = document.createElement('input');
-      inp.type = 'color';
-      inp.id = 'ce-' + key;
-      inp.value = this._customColorData[key];
-      inp.style.cssText = 'width:44px; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; background:rgba(0,0,0,0.4); cursor:pointer; padding:1px;';
-      inp.addEventListener('input', () => { this._customColorData[key] = inp.value; });
+      const btn = document.createElement('div');
+      btn.id = 'ce-' + key;
+      btn.style.cssText = 'width:44px; height:32px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; cursor:pointer; background:' + this._customColorData[key] + ';';
+      btn.dataset.colorKey = key;
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._openColorPicker(btn, key);
+      });
       wrap.appendChild(lbl);
-      wrap.appendChild(inp);
+      wrap.appendChild(btn);
       fields.appendChild(wrap);
     }
 
@@ -219,6 +224,7 @@ export class Editor {
       const id = e.target.id;
       if (id === 'ce-ok') {
         overlay.style.display = 'none';
+        document.getElementById('color-picker-popup').style.display = 'none';
         if (this._customThemeMode) {
           // Apply as level theme
           this.theme = { ...this.theme, ...this._customColorData };
@@ -231,6 +237,7 @@ export class Editor {
         }
       } else if (id === 'ce-cancel') {
         overlay.style.display = 'none';
+        document.getElementById('color-picker-popup').style.display = 'none';
         this._customColorPending = null;
         this._customThemeMode = false;
       } else if (id === 'ce-duration') {
@@ -261,8 +268,8 @@ export class Editor {
       if (cur[k]) this._customColorData[k] = cur[k];
     }
     for (const k of Object.keys(this._customColorData)) {
-      const inp = document.getElementById('ce-' + k);
-      if (inp) inp.value = this._customColorData[k];
+      const el = document.getElementById('ce-' + k);
+      if (el) el.style.background = this._customColorData[k];
     }
     // Store that we're editing theme, not a color trigger
     this._customThemeMode = true;
@@ -282,8 +289,8 @@ export class Editor {
     }
     // Sync inputs
     for (const k of Object.keys(this._customColorData)) {
-      const inp = document.getElementById('ce-' + k);
-      if (inp) inp.value = this._customColorData[k];
+      const el = document.getElementById('ce-' + k);
+      if (el) el.style.background = this._customColorData[k];
     }
     const durInput = document.getElementById('ce-duration');
     const durVal = document.getElementById('ce-duration-val');
@@ -316,6 +323,99 @@ export class Editor {
     };
     this.objects.push(obj);
     this._rebuildLive();
+  }
+
+  _setupColorPicker() {
+    const popup = document.getElementById('color-picker-popup');
+    const swatchGrid = document.getElementById('cpk-swatches');
+    const hexInput = document.getElementById('cpk-hex');
+    const preview = document.getElementById('cpk-preview');
+    if (!popup || !swatchGrid) return;
+
+    // Color palette
+    const colors = [
+      '#FF0000','#FF4444','#FF6600','#FF8800','#FFAA00','#FFCC00','#FFD700','#FFFF00',
+      '#AAFF00','#66FF00','#00FF00','#00FF44','#00FF88','#00FFAA','#00FFCC','#00FFFF',
+      '#00CCFF','#00AAFF','#0088FF','#0066FF','#0044FF','#0000FF','#4400FF','#6600FF',
+      '#8800FF','#AA00FF','#CC00FF','#FF00FF','#FF00CC','#FF0088','#FF0044','#FF0066',
+      '#FFFFFF','#DDDDDD','#BBBBBB','#999999','#777777','#555555','#333333','#000000',
+      '#001444','#003C78','#0A2800','#2A1400','#0A0028','#1A0000','#001A1A','#1A1400',
+    ];
+
+    swatchGrid.innerHTML = '';
+    for (const c of colors) {
+      const sw = document.createElement('div');
+      sw.className = 'cpk-swatch';
+      sw.style.background = c;
+      sw.dataset.color = c;
+      sw.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this._pickColor(c);
+      });
+      swatchGrid.appendChild(sw);
+    }
+
+    hexInput.addEventListener('input', (e) => {
+      e.stopPropagation();
+      let v = hexInput.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+      if (v.length === 6) {
+        this._pickColor('#' + v.toUpperCase());
+      }
+    });
+    hexInput.addEventListener('keydown', (e) => e.stopPropagation());
+    popup.addEventListener('pointerdown', (e) => e.stopPropagation());
+    popup.addEventListener('mousedown', (e) => e.stopPropagation());
+    popup.addEventListener('touchstart', (e) => e.stopPropagation());
+
+    // Close picker when clicking outside
+    this._colorPickerCloseHandler = (e) => {
+      if (!popup.contains(e.target) && popup.style.display !== 'none') {
+        popup.style.display = 'none';
+      }
+    };
+    document.addEventListener('pointerdown', this._colorPickerCloseHandler);
+  }
+
+  _openColorPicker(targetEl, key) {
+    const popup = document.getElementById('color-picker-popup');
+    const hexInput = document.getElementById('cpk-hex');
+    const preview = document.getElementById('cpk-preview');
+    if (!popup) return;
+
+    this._colorPickerTarget = targetEl;
+    this._colorPickerKey = key;
+
+    // Position near the target element
+    const rect = targetEl.getBoundingClientRect();
+    popup.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
+    popup.style.top = Math.max(0, rect.bottom + 4) + 'px';
+    popup.style.display = 'block';
+
+    const current = this._customColorData[key] || '#FFFFFF';
+    hexInput.value = current.replace('#', '');
+    preview.style.background = current;
+
+    // Highlight active swatch
+    popup.querySelectorAll('.cpk-swatch').forEach(sw => {
+      sw.classList.toggle('active', sw.dataset.color === current.toUpperCase());
+    });
+  }
+
+  _pickColor(color) {
+    const popup = document.getElementById('color-picker-popup');
+    const hexInput = document.getElementById('cpk-hex');
+    const preview = document.getElementById('cpk-preview');
+
+    this._customColorData[this._colorPickerKey] = color;
+    if (this._colorPickerTarget) {
+      this._colorPickerTarget.style.background = color;
+    }
+    hexInput.value = color.replace('#', '');
+    preview.style.background = color;
+
+    popup.querySelectorAll('.cpk-swatch').forEach(sw => {
+      sw.classList.toggle('active', sw.dataset.color === color.toUpperCase());
+    });
   }
 
   _getMusicKey() {
