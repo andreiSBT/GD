@@ -2519,10 +2519,8 @@ class Game {
   }
 
   async _syncFromCloud() {
-    this._loadingText = 'SYNCING';
     this.progress = await initProgress();
     await this._initCloudCustomization();
-    this._loadingText = null;
   }
 
   async _syncCloudMusic() {
