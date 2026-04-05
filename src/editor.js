@@ -1847,113 +1847,98 @@ export class Editor {
   _drawBottomBar(ctx) {
     const barH = 42;
     const y = SCREEN_HEIGHT - barH;
+    const btnH = 32;
+    const sby = y + 5;
+    const gap = 3;
+    const r = 6;
+    const m = 8;
 
-    // Background
+    // Background — same as top toolbar
     const bbGrad = ctx.createLinearGradient(0, y, 0, SCREEN_HEIGHT);
-    bbGrad.addColorStop(0, 'rgba(8,8,18,0.92)');
-    bbGrad.addColorStop(1, 'rgba(4,4,12,0.95)');
+    bbGrad.addColorStop(0, 'rgba(10,10,20,0.95)');
+    bbGrad.addColorStop(1, 'rgba(5,5,15,0.9)');
     ctx.fillStyle = bbGrad;
     ctx.fillRect(0, y, SCREEN_WIDTH, barH);
-    // Top accent line
-    ctx.fillStyle = 'rgba(0,200,255,0.12)';
+    ctx.fillStyle = 'rgba(0,200,255,0.15)';
     ctx.fillRect(0, y, SCREEN_WIDTH, 1);
 
-    const btnH = 30;
-    const sby = y + 6;
-    const gap = 4;
-    const r = 6;
-    const m = 8; // margin
+    // Retro button helper — same style as top toolbar
+    const _btn = (x, w, color, label, active) => {
+      const g = ctx.createLinearGradient(x, sby, x, sby + btnH);
+      if (active) { g.addColorStop(0, color); g.addColorStop(1, color + '88'); }
+      else { g.addColorStop(0, 'rgba(30,30,50,0.95)'); g.addColorStop(1, 'rgba(20,20,38,0.95)'); }
+      this._editorRoundRect(ctx, x, sby, w, btnH, r);
+      ctx.fillStyle = g; ctx.fill();
+      ctx.save();
+      ctx.shadowColor = color;
+      ctx.shadowBlur = active ? 8 : 3;
+      this._editorRoundRect(ctx, x, sby, w, btnH, r);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = active ? 1.5 : 0.8;
+      ctx.globalAlpha = active ? 0.8 : 0.4;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      ctx.globalAlpha = active ? 0.15 : 0.06;
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(x + r, sby + 1, w - r * 2, 1);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = active ? '#FFF' : color;
+      const fs = Math.min(11, Math.max(8, w / 5.5));
+      ctx.font = `bold ${fs}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x + w / 2, sby + btnH / 2 + fs / 3);
+    };
 
-    // === LEFT SECTION: Scroll + Swipe mode + Info ===
+    // === LEFT: ◀ ▶ + PAINT/MOVE + info ===
     let lx = m;
+    const arrowW = 34;
 
-    // Scroll left
-    const arrowW = 36;
-    this._editorRoundRect(ctx, lx, sby, arrowW, btnH, r);
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fill();
-    ctx.fillStyle = '#999';
-    ctx.font = 'bold 14px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('◀', lx + arrowW / 2, sby + 20);
+    _btn(lx, arrowW, '#6688AA', '◀', false);
     this.buttons.push({ id: 'scroll_left', x: lx, y: sby, w: arrowW, h: btnH });
     lx += arrowW + gap;
 
-    // Scroll right
-    this._editorRoundRect(ctx, lx, sby, arrowW, btnH, r);
-    ctx.fillStyle = 'rgba(255,255,255,0.08)';
-    ctx.fill();
-    ctx.fillStyle = '#999';
-    ctx.fillText('▶', lx + arrowW / 2, sby + 20);
+    _btn(lx, arrowW, '#6688AA', '▶', false);
     this.buttons.push({ id: 'scroll_right', x: lx, y: sby, w: arrowW, h: btnH });
-    lx += arrowW + gap + 4;
+    lx += arrowW + gap;
 
-    // Swipe mode toggle — pill shape
-    const swipeW = 56;
     const isPaint = this.swipeMode === 'paint';
-    const swipeColor = isPaint ? '#FF6600' : '#334455';
-    this._editorRoundRect(ctx, lx, sby, swipeW, btnH, r);
-    ctx.fillStyle = swipeColor;
-    ctx.globalAlpha = isPaint ? 0.9 : 0.4;
-    ctx.fill();
-    ctx.globalAlpha = 1;
-    if (isPaint) {
-      ctx.save();
-      ctx.shadowColor = '#FF6600';
-      ctx.shadowBlur = 8;
-      ctx.strokeStyle = '#FF8833';
-      ctx.lineWidth = 1;
-      this._editorRoundRect(ctx, lx, sby, swipeW, btnH, r);
-      ctx.stroke();
-      ctx.restore();
-    }
-    ctx.fillStyle = isPaint ? '#FFF' : '#99AABB';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText(isPaint ? 'PAINT' : 'MOVE', lx + swipeW / 2, sby + 20);
+    const swipeW = 52;
+    _btn(lx, swipeW, isPaint ? '#FF6600' : '#6688AA', isPaint ? 'PAINT' : 'MOVE', isPaint);
     this.buttons.push({ id: 'action_swipe', x: lx, y: sby, w: swipeW, h: btnH });
     lx += swipeW + 10;
 
-    // Info text
+    // Info
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(`${this.objects.length} obj`, lx, sby + 14);
+    ctx.fillText(`${this.objects.length} obj`, lx, sby + 13);
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.font = '10px monospace';
     ctx.fillText(`X:${this.hoverGx} Y:${this.hoverGy}`, lx, sby + 26);
 
-    // === RIGHT SECTION: Theme dots + Level load ===
+    // === RIGHT: Themes + Levels ===
     let rx = SCREEN_WIDTH - m;
+    const smallW = 30;
 
-    // Current theme indicator (small dot)
-    const tc = THEMES[this.themeId]?.accent || '#FFF';
-    rx -= 16;
-    ctx.beginPath();
-    ctx.arc(rx + 8, sby + btnH / 2, 6, 0, Math.PI * 2);
-    ctx.fillStyle = tc;
-    ctx.fill();
+    // Theme buttons
+    const themeCount = Object.keys(THEMES).length;
+    for (let t = themeCount; t >= 1; t--) {
+      rx -= smallW;
+      _btn(rx, smallW, THEMES[t].accent, `T${t}`, this.themeId === t);
+      this.buttons.push({ id: 'theme_' + t, x: rx, y: sby, w: smallW, h: btnH });
+      rx -= gap;
+    }
 
-    rx -= 10;
+    rx -= 6;
 
-    // Separator line
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.fillRect(rx, sby + 4, 1, btnH - 8);
-    rx -= 10;
-
-    // Load level buttons — compact
-    const lvlBtnW = 26;
+    // Load level buttons
     const lvlCount = Object.keys(LEVEL_DATA).length;
     for (let l = lvlCount; l >= 1; l--) {
-      rx -= lvlBtnW;
-      this._editorRoundRect(ctx, rx, sby + 2, lvlBtnW, btnH - 4, 4);
-      ctx.fillStyle = 'rgba(255,255,255,0.06)';
-      ctx.fill();
-      ctx.fillStyle = '#667788';
-      ctx.font = 'bold 10px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`L${l}`, rx + lvlBtnW / 2, sby + btnH / 2 + 4);
-      this.buttons.push({ id: 'loadlevel_' + l, x: rx, y: sby, w: lvlBtnW, h: btnH });
-      rx -= 3;
+      rx -= smallW;
+      _btn(rx, smallW, '#557799', `L${l}`, false);
+      this.buttons.push({ id: 'loadlevel_' + l, x: rx, y: sby, w: smallW, h: btnH });
+      rx -= gap;
     }
   }
 
