@@ -717,11 +717,14 @@ export class UI {
       ctx.strokeStyle = 'rgba(0,255,100,0.5)';
       ctx.lineWidth = 1;
       ctx.stroke();
-      // Diamond icon
+      // Diamond icon with gradient
       ctx.save();
       ctx.translate(cpX + cpBtnS / 2, cpY + cpBtnS / 2);
       ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = '#00FF64';
+      const cpGrad = ctx.createLinearGradient(-7, -7, 7, 7);
+      cpGrad.addColorStop(0, '#FFFFFF');
+      cpGrad.addColorStop(1, '#00FF64');
+      ctx.fillStyle = cpGrad;
       ctx.fillRect(-7, -7, 14, 14);
       ctx.strokeStyle = '#000';
       ctx.lineWidth = 1.5;

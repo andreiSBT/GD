@@ -1207,6 +1207,7 @@ class Game {
   async _startLevel(levelId) {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
+    this._checkpointTrail = [];
     this.level = new Level(levelId);
     this.theme = THEMES[levelId] || THEMES[1];
     this._baseTheme = this.theme;
@@ -2172,27 +2173,50 @@ class Game {
         }
       }
 
-      // Draw practice checkpoint marker in world (only for auto/manual, not editor CPs)
-      if (this.practiceMode && this.lastCheckpoint && !this.lastCheckpoint.editorCP) {
-        const cpsx = this.lastCheckpoint.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
-        const cpsy = this.lastCheckpoint.y + PLAYER_SIZE / 2;
-        ctx.save();
-        ctx.translate(cpsx, cpsy);
-        ctx.rotate(Math.PI / 4);
-        ctx.globalAlpha = 0.6;
-        const cpGrad = ctx.createLinearGradient(-10, -10, 10, 10);
-        cpGrad.addColorStop(0, '#FFFFFF');
-        cpGrad.addColorStop(1, '#00FF64');
-        ctx.fillStyle = cpGrad;
-        ctx.fillRect(-10, -10, 20, 20);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(-10, -10, 20, 20);
-        ctx.globalAlpha = 0.3;
-        ctx.shadowColor = '#00FF64';
-        ctx.shadowBlur = 12;
-        ctx.fillRect(-10, -10, 20, 20);
-        ctx.restore();
+      // Draw practice checkpoint trail + current marker
+      if (this.practiceMode) {
+        // Old checkpoints — faded smaller trail
+        for (let i = this._checkpointTrail.length - 1; i >= 0; i--) {
+          const cp = this._checkpointTrail[i];
+          const tsx = cp.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
+          if (tsx < -30) { this._checkpointTrail.splice(i, 1); continue; }
+          if (tsx > SCREEN_WIDTH + 30) continue;
+          const tsy = cp.y + PLAYER_SIZE / 2;
+          ctx.save();
+          ctx.translate(tsx, tsy);
+          ctx.rotate(Math.PI / 4);
+          ctx.globalAlpha = 0.25;
+          const tg = ctx.createLinearGradient(-7, -7, 7, 7);
+          tg.addColorStop(0, '#FFFFFF'); tg.addColorStop(1, '#00FF64');
+          ctx.fillStyle = tg;
+          ctx.fillRect(-7, -7, 14, 14);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(-7, -7, 14, 14);
+          ctx.restore();
+        }
+        // Current checkpoint — bright
+        if (this.lastCheckpoint && !this.lastCheckpoint.editorCP) {
+          const cpsx = this.lastCheckpoint.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
+          const cpsy = this.lastCheckpoint.y + PLAYER_SIZE / 2;
+          ctx.save();
+          ctx.translate(cpsx, cpsy);
+          ctx.rotate(Math.PI / 4);
+          ctx.globalAlpha = 0.6;
+          const cpGrad = ctx.createLinearGradient(-10, -10, 10, 10);
+          cpGrad.addColorStop(0, '#FFFFFF');
+          cpGrad.addColorStop(1, '#00FF64');
+          ctx.fillStyle = cpGrad;
+          ctx.fillRect(-10, -10, 20, 20);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-10, -10, 20, 20);
+          ctx.globalAlpha = 0.3;
+          ctx.shadowColor = '#00FF64';
+          ctx.shadowBlur = 12;
+          ctx.fillRect(-10, -10, 20, 20);
+          ctx.restore();
+        }
       }
 
       if (this.player.alive) {
