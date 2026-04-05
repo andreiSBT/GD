@@ -218,13 +218,20 @@ export class Editor {
       const id = e.target.id;
       if (id === 'ce-ok') {
         overlay.style.display = 'none';
-        if (this._customColorPending) {
+        if (this._customThemeMode) {
+          // Apply as level theme
+          this.theme = { ...this.theme, ...this._customColorData };
+          this.themeId = 0; // custom
+          this._customThemeMode = false;
+          this._showToast('Custom theme applied!');
+        } else if (this._customColorPending) {
           this._placeCustomColorTrigger(this._customColorPending.gx, this._customColorPending.gy);
           this._customColorPending = null;
         }
       } else if (id === 'ce-cancel') {
         overlay.style.display = 'none';
         this._customColorPending = null;
+        this._customThemeMode = false;
       } else if (id === 'ce-duration') {
         const durInput = document.getElementById('ce-duration');
         const durVal = document.getElementById('ce-duration-val');
@@ -241,6 +248,25 @@ export class Editor {
         durVal.textContent = durInput.value + 's';
       });
     }
+  }
+
+
+  _showCustomThemeOverlay() {
+    const overlay = document.getElementById('color-editor-overlay');
+    if (!overlay) return;
+    // Pre-fill from current theme
+    const cur = this.theme;
+    for (const k of Object.keys(this._customColorData)) {
+      if (cur[k]) this._customColorData[k] = cur[k];
+    }
+    for (const k of Object.keys(this._customColorData)) {
+      const inp = document.getElementById('ce-' + k);
+      if (inp) inp.value = this._customColorData[k];
+    }
+    // Store that we're editing theme, not a color trigger
+    this._customThemeMode = true;
+    this._customColorPending = null;
+    overlay.style.display = 'flex';
   }
 
   _showCustomColorOverlay(gx, gy, existingObj) {
@@ -1917,29 +1943,6 @@ export class Editor {
     ctx.font = '10px monospace';
     ctx.fillText(`X:${this.hoverGx} Y:${this.hoverGy}`, lx, sby + 26);
 
-    // === RIGHT: Themes + Levels ===
-    let rx = SCREEN_WIDTH - m;
-    const smallW = 30;
-
-    // Theme buttons
-    const themeCount = Object.keys(THEMES).length;
-    for (let t = themeCount; t >= 1; t--) {
-      rx -= smallW;
-      _btn(rx, smallW, THEMES[t].accent, `T${t}`, this.themeId === t);
-      this.buttons.push({ id: 'theme_' + t, x: rx, y: sby, w: smallW, h: btnH });
-      rx -= gap;
-    }
-
-    rx -= 6;
-
-    // Load level buttons
-    const lvlCount = Object.keys(LEVEL_DATA).length;
-    for (let l = lvlCount; l >= 1; l--) {
-      rx -= smallW;
-      _btn(rx, smallW, '#557799', `L${l}`, false);
-      this.buttons.push({ id: 'loadlevel_' + l, x: rx, y: sby, w: smallW, h: btnH });
-      rx -= gap;
-    }
   }
 
   _drawHoverPreview(ctx) {
@@ -2406,20 +2409,39 @@ export class Editor {
         ctx.stroke();
       }
 
-      // Label
-      ctx.fillStyle = isActive ? '#FFF' : 'rgba(255,255,255,0.5)';
-      ctx.font = '9px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(theme.name || ('L' + t), bx + dotSize / 2, by + dotSize + 12);
-
       this.buttons.push({ id: 'colpick_' + t, x: bx, y: by, w: dotSize, h: dotSize });
     }
+
+    // CUSTOM button spanning full grid width
+    const customY = startY + gridH + 16;
+    const customH = 44;
+    const customGrad = ctx.createLinearGradient(startX, customY, startX, customY + customH);
+    customGrad.addColorStop(0, 'rgba(40,30,60,0.95)');
+    customGrad.addColorStop(1, 'rgba(25,20,45,0.95)');
+    this._editorRoundRect(ctx, startX, customY, gridW, customH, 10);
+    ctx.fillStyle = customGrad;
+    ctx.fill();
+    ctx.save();
+    ctx.shadowColor = '#FF66AA';
+    ctx.shadowBlur = 6;
+    this._editorRoundRect(ctx, startX, customY, gridW, customH, 10);
+    ctx.strokeStyle = '#FF66AA';
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.fillStyle = '#FF66AA';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('CUSTOM', SCREEN_WIDTH / 2, customY + customH / 2 + 6);
+    this.buttons.push({ id: 'colpick_custom', x: startX, y: customY, w: gridW, h: customH });
 
     // Close hint
     ctx.fillStyle = '#445566';
     ctx.font = '12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, startY + gridH + 40);
+    ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, customY + customH + 25);
   }
 
   _drawInfo(ctx) {
@@ -3131,6 +3153,9 @@ export class Editor {
     } else if (id === 'menu_color') {
       this.showMenu = false;
       this.showColorPicker = !this.showColorPicker;
+    } else if (id === 'colpick_custom') {
+      this.showColorPicker = false;
+      this._showCustomThemeOverlay();
     } else if (id.startsWith('colpick_')) {
       const t = parseInt(id.replace('colpick_', ''));
       this.themeId = t;
