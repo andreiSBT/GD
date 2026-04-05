@@ -1568,10 +1568,12 @@ export class Editor {
       this.buttons.push({ id: btn.id, x: bx, y: btnY, w: btnW, h: btnH });
     }
 
-    // Separator
-    let ax = SCREEN_WIDTH - margin - actions.length * (btnW + gap) + gap;
+    // Separator between categories and actions
+    const sepGap = 12;
+    const catEndX = margin + catButtons.length * (btnW + gap);
     ctx.fillStyle = 'rgba(255,255,255,0.06)';
-    ctx.fillRect(ax - 7, btnY + 6, 1, btnH - 12);
+    ctx.fillRect(catEndX + sepGap / 2 - 1, btnY + 6, 1, btnH - 12);
+    let ax = catEndX + sepGap;
 
     // Draw action buttons
     for (const act of actions) {
