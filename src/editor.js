@@ -395,7 +395,7 @@ export class Editor {
         const obj = this.objects[idx];
         obj.rot = ((obj.rot || 0) + 90) % 360;
         this._rebuildLive();
-        this._showToast('Rotated ' + (obj.type || 'object'));
+        this._showToast('Rotated');
       }
       return;
     }
@@ -1843,11 +1843,11 @@ export class Editor {
     ctx.lineWidth = 1;
     this._editorRoundRect(ctx, rx, sby, menuBtnW, scrollBtnH, r);
     ctx.stroke();
-    ctx.fillStyle = '#FF8888';
-    ctx.font = 'bold 10px monospace';
+    ctx.fillStyle = '#AABBCC';
+    ctx.font = 'bold 14px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('MENU', rx + menuBtnW / 2, sby + 19);
-    this.buttons.push({ id: 'action_back', x: rx, y: sby, w: menuBtnW, h: scrollBtnH });
+    ctx.fillText('\u2261', rx + menuBtnW / 2, sby + 19);
+    this.buttons.push({ id: 'action_menu', x: rx, y: sby, w: menuBtnW, h: scrollBtnH });
     rx -= btnGap;
 
     // Theme buttons (rightmost)
