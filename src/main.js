@@ -413,7 +413,7 @@ class Game {
       }
 
       // Start scroll tracking for scrollable screens
-      const isScrollable = [FRIENDS, COMMUNITY, LEADERBOARD, STATS, SECRETS].includes(this.state);
+      const isScrollable = [FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state);
       if (isScrollable) {
         this.ui.handleScrollTouchStart(y);
         this._scrollTouchX = x;
