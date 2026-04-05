@@ -2247,7 +2247,7 @@ export class Editor {
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     const panelW = 500;
-    const panelH = 380;
+    const panelH = 450;
     const px = (SCREEN_WIDTH - panelW) / 2;
     const py = (SCREEN_HEIGHT - panelH) / 2;
     const r = 14;
