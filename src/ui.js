@@ -1603,24 +1603,36 @@ export class UI {
         ctx.stroke();
         break;
       case 'wink':
-        // Open eye (left)
+        // Big open eye (left)
         ctx.fillStyle = '#FFF';
         ctx.beginPath();
-        ctx.arc(-3, -3, 3, 0, Math.PI * 2);
+        ctx.arc(-4, -2, 5, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = '#000';
         ctx.beginPath();
-        ctx.arc(-2, -3, 1.5, 0, Math.PI * 2);
+        ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
         ctx.fill();
-        // Winking eye (right)
+        // Shine
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.arc(-5, -4, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Winking eye (right) — thick curved line
         ctx.strokeStyle = '#FFF';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(8, -1, 4, 0.4, Math.PI - 0.4);
+        ctx.stroke();
+        // Eyebrow over wink
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(8, -3, 3, 0.3, Math.PI - 0.3);
+        ctx.moveTo(4, -7);
+        ctx.lineTo(13, -5);
         ctx.stroke();
-        // Smile
+        // Smirk (asymmetric smile)
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(2, 2, 7, 0.2, Math.PI - 0.2);
+        ctx.arc(4, 4, 6, 0.1, Math.PI * 0.6);
         ctx.stroke();
         break;
     }
