@@ -2337,8 +2337,6 @@ export class Editor {
     // Total objects
     drawRow('Total Objects', String(info.objectCount), '#FFF');
 
-    drawSep();
-
     // Categories
     const hazards = (c.spike || 0) + (c.saw || 0);
     const blocks = (c.platform || 0) + (c.slope || 0) + (c.moving || 0) + (c.transport || 0);
