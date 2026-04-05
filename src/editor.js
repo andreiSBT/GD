@@ -139,6 +139,7 @@ export class Editor {
     this.movingObj = null;       // object being moved
     this.movingObjIndex = -1;    // index in this.objects
     this.movingOrigPos = null;   // original position before move
+    this.movingGrabOffset = null; // offset from grab point to object origin
     this.scrollVelocity = 0;     // momentum scroll velocity
 
     // Start position for testing (grid coords)
@@ -429,6 +430,7 @@ export class Editor {
         this._pushHistory();
         this.movingObj = { ...this.objects[idx] };
         this.movingOrigPos = { x: this.objects[idx].x, y: this.objects[idx].y };
+        this.movingGrabOffset = { dx: this.objects[idx].x - half.gx, dy: this.objects[idx].y - half.gy };
         this.movingObjIndex = idx;
       }
       return;
@@ -477,11 +479,12 @@ export class Editor {
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
 
-    // Move tool: update object position live while dragging (half-grid snap)
+    // Move tool: update object position live while dragging (half-grid snap + grab offset)
     if (this.movingObj) {
       const half = this._screenToHalfGrid(x, y);
-      this.movingObj.x = half.gx;
-      this.movingObj.y = half.gy;
+      const off = this.movingGrabOffset || { dx: 0, dy: 0 };
+      this.movingObj.x = half.gx + off.dx;
+      this.movingObj.y = half.gy + off.dy;
       this.objects[this.movingObjIndex] = { ...this.movingObj };
       this._rebuildLive();
     }
@@ -529,6 +532,7 @@ export class Editor {
       this.movingObj = null;
       this.movingObjIndex = -1;
       this.movingOrigPos = null;
+      this.movingGrabOffset = null;
     }
     if (this.dragStart) {
       const minGx = Math.min(this.dragStart.gx, this.hoverGx);
@@ -691,6 +695,7 @@ export class Editor {
         this._pushHistory();
         this.movingObj = { ...this.objects[idx] };
         this.movingOrigPos = { x: this.objects[idx].x, y: this.objects[idx].y };
+        this.movingGrabOffset = { dx: this.objects[idx].x - halfTouch.gx, dy: this.objects[idx].y - halfTouch.gy };
         this.movingObjIndex = idx;
         this.touchPaintPending = false;
         return;
@@ -748,11 +753,12 @@ export class Editor {
     this.hoverGx = grid.gx;
     this.hoverGy = grid.gy;
 
-    // Move tool: drag object with finger
+    // Move tool: drag object with finger (half-grid snap + grab offset)
     if (this.movingObj) {
       const half = this._screenToHalfGrid(x, y);
-      this.movingObj.x = half.gx;
-      this.movingObj.y = half.gy;
+      const off = this.movingGrabOffset || { dx: 0, dy: 0 };
+      this.movingObj.x = half.gx + off.dx;
+      this.movingObj.y = half.gy + off.dy;
       this.objects[this.movingObjIndex] = { ...this.movingObj };
       this._rebuildLive();
       this.touchMoved = true;
@@ -834,6 +840,7 @@ export class Editor {
       this.movingObj = null;
       this.movingObjIndex = -1;
       this.movingOrigPos = null;
+      this.movingGrabOffset = null;
       return;
     }
 
