@@ -980,26 +980,30 @@ export class Editor {
       const sz = this._getObjSize(this.movingObj);
       const objW = sz.w * GRID;
       const objH = sz.h * GRID;
+      // _gridToScreen gives top-left of a 1x1 cell; adjust for taller objects
+      const heightOffset = (sz.h - 1) * GRID;
       const color = tool ? tool.color : '#FFF';
 
       // Ghost at original position (dashed outline)
       if (this.movingOrigPos) {
         const orig = this._gridToScreen(this.movingOrigPos.x, this.movingOrigPos.y);
+        const osx = orig.sx, osy = orig.sy - heightOffset;
         ctx.save();
         ctx.globalAlpha = 0.2;
         ctx.fillStyle = color;
-        ctx.fillRect(orig.sx, orig.sy, objW, objH);
+        ctx.fillRect(osx, osy, objW, objH);
         ctx.globalAlpha = 0.4;
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
-        ctx.strokeRect(orig.sx, orig.sy, objW, objH);
+        ctx.strokeRect(osx, osy, objW, objH);
         ctx.setLineDash([]);
         ctx.restore();
       }
 
       // Current position (solid with glow)
-      const { sx, sy } = this._gridToScreen(this.movingObj.x, this.movingObj.y);
+      const { sx, sy: rawSy } = this._gridToScreen(this.movingObj.x, this.movingObj.y);
+      const sy = rawSy - heightOffset;
       ctx.save();
       ctx.shadowColor = color;
       ctx.shadowBlur = 10;
@@ -1020,13 +1024,14 @@ export class Editor {
       // Connection line from original to current
       if (this.movingOrigPos && (this.movingOrigPos.x !== this.movingObj.x || this.movingOrigPos.y !== this.movingObj.y)) {
         const orig = this._gridToScreen(this.movingOrigPos.x, this.movingOrigPos.y);
+        const osy = orig.sy - heightOffset;
         ctx.save();
         ctx.globalAlpha = 0.3;
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
-        ctx.moveTo(orig.sx + objW / 2, orig.sy + objH / 2);
+        ctx.moveTo(orig.sx + objW / 2, osy + objH / 2);
         ctx.lineTo(sx + objW / 2, sy + objH / 2);
         ctx.stroke();
         ctx.setLineDash([]);
