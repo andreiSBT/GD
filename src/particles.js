@@ -72,6 +72,37 @@ export class ParticleSystem {
     }
   }
 
+  emitDeathBoom(x, y, color, count = 50) {
+    // Massive ring burst
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2;
+      const speed = 8 + Math.random() * 6;
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+      const size = 4 + Math.random() * 6;
+      this.particles.push(new Particle(x, y, vx, vy, color, size, 0.6 + Math.random() * 0.4, 0.15));
+    }
+    // Fire core — orange/yellow inner burst
+    for (let i = 0; i < 25; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 8;
+      const fireColor = Math.random() > 0.5 ? '#FF6600' : '#FFAA00';
+      this.particles.push(new Particle(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, fireColor, 5 + Math.random() * 7, 0.5 + Math.random() * 0.5, 0.2));
+    }
+    // White flash — fast expanding
+    for (let i = 0; i < 20; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 10 + Math.random() * 15;
+      this.particles.push(new Particle(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed, '#FFF', 2 + Math.random() * 3, 0.1 + Math.random() * 0.15, 0));
+    }
+    // Smoke — slow dark chunks
+    for (let i = 0; i < 12; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 3;
+      this.particles.push(new Particle(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed - 2, '#555', 8 + Math.random() * 6, 0.8 + Math.random() * 0.6, 0.1));
+    }
+  }
+
   emitJump(x, y, color, count = 5) {
     for (let i = 0; i < count; i++) {
       const vx = (Math.random() - 0.5) * 2;

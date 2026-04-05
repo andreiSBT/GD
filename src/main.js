@@ -70,6 +70,7 @@ class Game {
     this.newBestTimer = 0;
     this.newBestTriggered = false;
     this.lastCheckpoint = null;
+    this._autoCheckpointTimer = 0;
     this.shakeIntensity = 0;
     this._portalFlash = null;
     this.deathTimer = 0;
@@ -1134,6 +1135,7 @@ class Game {
       'GD GO!': { reward: 'rainbow', desc: 'Rainbow color unlocked!' },
       '...': { reward: 'dotted_trail', desc: 'Dotted trail unlocked!' },
       ';)': { reward: 'wink_icon', desc: 'Wink face unlocked!' },
+      'BOOM!': { reward: 'boom_death', desc: 'BOOM explosion unlocked!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1159,6 +1161,8 @@ class Game {
       localStorage.setItem('gd_dotted_trail', '1');
     } else if (entry.reward === 'wink_icon') {
       localStorage.setItem('gd_wink_icon', '1');
+    } else if (entry.reward === 'boom_death') {
+      localStorage.setItem('gd_boom_death', '1');
     }
 
     this._redeemedCodes.add(code);
@@ -1431,14 +1435,22 @@ class Game {
     if (this.state === DEAD) return;
     this.player.alive = false;
     this._portalFlash = null;
-    this.shakeIntensity = 10;
+    this.shakeIntensity = localStorage.getItem('gd_boom_death') ? 15 : 10;
     Sound.playDeath();
     Sound.pauseMusic();
-    this.particles.emitDeath(
-      this.player.x,
-      this.player.y + PLAYER_SIZE / 2,
-      this.theme.accent
-    );
+    if (localStorage.getItem('gd_boom_death')) {
+      this.particles.emitDeathBoom(
+        this.player.x,
+        this.player.y + PLAYER_SIZE / 2,
+        this.theme.accent
+      );
+    } else {
+      this.particles.emitDeath(
+        this.player.x,
+        this.player.y + PLAYER_SIZE / 2,
+        this.theme.accent
+      );
+    }
 
     const progress = this.level.getProgress(this.player.x);
     this.currentProgress = progress;
@@ -1979,6 +1991,25 @@ class Game {
     this.player.update();
     this.camera.update(this.player.x);
 
+    // Auto-checkpoint every 2 seconds in practice mode
+    if (this.practiceMode && this.player.alive && this.player.grounded) {
+      this._autoCheckpointTimer += 1 / FPS;
+      if (this._autoCheckpointTimer >= 2) {
+        this._autoCheckpointTimer = 0;
+        this.lastCheckpoint = {
+          x: this.player.x,
+          y: this.player.y,
+          gravityMult: this.player.gravityMult,
+          speedMult: this.player.speedMult,
+          mode: this.player.mode,
+          mini: this.player.mini,
+          reversed: this.player.reversed,
+          theme: { ...this.theme },
+          musicTime: Sound.getCustomMusicTime(),
+        };
+      }
+    }
+
     // Record replay frame
     if (this._replayRecorder && this.player.alive) {
       this._replayRecorder.record(this.player);
@@ -2442,6 +2473,7 @@ class Game {
       localStorage.removeItem('gd_rainbow_color');
       localStorage.removeItem('gd_dotted_trail');
       localStorage.removeItem('gd_wink_icon');
+      localStorage.removeItem('gd_boom_death');
       const user = getAuthUser();
       if (user) localStorage.removeItem('gd_total_jumps_' + user.id);
       // Reset in-memory state
