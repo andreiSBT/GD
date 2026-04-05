@@ -811,56 +811,58 @@ export class Portal {
     const [color1, color2] = portalColors[this.portalType] || ['#FFD700', '#FF8800'];
 
     const cx = sx + this.w / 2;
-    const barW = 10;
-    const barGap = 18;
-    const barH = this.h - 10;
-    const barTop = sy + 5;
-    const leftX = cx - barGap / 2 - barW;
-    const rightX = cx + barGap / 2;
+    const cy = sy + this.h / 2;
+    const frameW = 38;
+    const frameH = this.h - 6;
+    const frameX = cx - frameW / 2;
+    const frameY = sy + 3;
+    const frameR = frameW / 2; // pill shape
+    const barW = 8;
+    const barInset = 6;
 
     ctx.save();
     ctx.globalAlpha = this.activated ? 0.15 : 1;
 
-    // Glow behind bars
-    drawNeonGlow(ctx, color1, 20);
+    // Outer glow
+    drawNeonGlow(ctx, color1, 18);
 
-    const r = barW / 2; // fully rounded ends
-
-    // Left bar — gradient top to bottom
-    const grad1 = ctx.createLinearGradient(0, barTop, 0, barTop + barH);
-    grad1.addColorStop(0, color1);
-    grad1.addColorStop(1, color2);
-    ctx.fillStyle = grad1;
+    // Outer frame — pill-shaped outline
+    const frameGrad = ctx.createLinearGradient(0, frameY, 0, frameY + frameH);
+    frameGrad.addColorStop(0, color1);
+    frameGrad.addColorStop(0.5, color2);
+    frameGrad.addColorStop(1, color1);
+    ctx.fillStyle = frameGrad;
     ctx.beginPath();
-    ctx.roundRect(leftX, barTop, barW, barH, r);
+    ctx.roundRect(frameX, frameY, frameW, frameH, frameR);
     ctx.fill();
 
-    // Right bar — gradient bottom to top (mirrored)
-    const grad2 = ctx.createLinearGradient(0, barTop, 0, barTop + barH);
-    grad2.addColorStop(0, color2);
-    grad2.addColorStop(1, color1);
-    ctx.fillStyle = grad2;
+    // Inner cutout (dark center)
+    const innerW = frameW - barW * 2 - 2;
+    const innerH = frameH - barInset * 2;
+    const innerX = cx - innerW / 2;
+    const innerY = frameY + barInset;
+    ctx.fillStyle = 'rgba(0,0,10,0.7)';
     ctx.beginPath();
-    ctx.roundRect(rightX, barTop, barW, barH, r);
+    ctx.roundRect(innerX, innerY, innerW, innerH, innerW / 2);
     ctx.fill();
 
     clearGlow(ctx);
 
-    // Bright edge highlights on bars
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    // Bright edge highlights on left and right bars
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath();
-    ctx.roundRect(leftX, barTop, 3, barH, [r, 0, 0, r]);
+    ctx.roundRect(frameX + 1, frameY + 4, 3, frameH - 8, [2, 0, 0, 2]);
     ctx.fill();
     ctx.beginPath();
-    ctx.roundRect(rightX + barW - 3, barTop, 3, barH, [0, r, r, 0]);
+    ctx.roundRect(frameX + frameW - 4, frameY + 4, 3, frameH - 8, [0, 2, 2, 0]);
     ctx.fill();
 
-    // Animated energy particles between bars
+    // Animated energy particles inside
     for (let i = 0; i < 4; i++) {
       const t = (this.animTimer * 1.5 + i * 0.25) % 1;
-      const py = barTop + t * barH;
-      const px = cx + Math.sin(this.animTimer * 3 + i * 1.5) * (barGap / 2 - 2);
-      const alpha = (this.activated ? 0.1 : 0.5) * (1 - Math.abs(t - 0.5) * 2);
+      const py = innerY + t * innerH;
+      const px = cx + Math.sin(this.animTimer * 3 + i * 1.5) * (innerW / 2 - 3);
+      const alpha = (this.activated ? 0.1 : 0.6) * (1 - Math.abs(t - 0.5) * 2);
       ctx.globalAlpha = alpha;
       ctx.fillStyle = color1;
       ctx.beginPath();
@@ -868,17 +870,6 @@ export class Portal {
       ctx.fill();
     }
     ctx.globalAlpha = this.activated ? 0.15 : 1;
-
-    // Top and bottom caps (rounded)
-    const capR = 4;
-    ctx.fillStyle = color1;
-    ctx.beginPath();
-    ctx.roundRect(leftX - 2, barTop - 4, barW * 2 + barGap + 4, 6, capR);
-    ctx.fill();
-    ctx.fillStyle = color2;
-    ctx.beginPath();
-    ctx.roundRect(leftX - 2, barTop + barH - 2, barW * 2 + barGap + 4, 6, capR);
-    ctx.fill();
 
     // Icon in center
     clearGlow(ctx);
@@ -888,13 +879,11 @@ export class Portal {
       mini: '\u25BC', big: '\u25B2', reverse: '\u21D0', forward: '\u21D2',
     };
     const icon = icons[this.portalType] || '?';
-    const cy = sy + this.h / 2;
     // Icon background circle
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.beginPath();
-    ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
     ctx.fill();
-    // Icon border
     ctx.strokeStyle = color1;
     ctx.lineWidth = 1.5;
     ctx.stroke();

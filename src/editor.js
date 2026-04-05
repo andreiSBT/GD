@@ -2017,27 +2017,20 @@ export class Editor {
       const ptop = sy - ph + GRID;
       const pcx = sx + GRID / 2;
       const pcy = ptop + ph / 2;
-      const barW = 8, barGap = 14, barH = ph - 8, bt = ptop + 4;
-      const lx = pcx - barGap / 2 - barW, rx = pcx + barGap / 2;
-      // Left bar
-      const g1 = ctx.createLinearGradient(0, bt, 0, bt + barH);
-      g1.addColorStop(0, c1); g1.addColorStop(1, c2);
-      ctx.fillStyle = g1;
-      ctx.beginPath(); ctx.roundRect(lx, bt, barW, barH, barW / 2); ctx.fill();
-      // Right bar
-      const g2 = ctx.createLinearGradient(0, bt, 0, bt + barH);
-      g2.addColorStop(0, c2); g2.addColorStop(1, c1);
-      ctx.fillStyle = g2;
-      ctx.beginPath(); ctx.roundRect(rx, bt, barW, barH, barW / 2); ctx.fill();
-      // Top cap
-      ctx.fillStyle = c1;
-      ctx.beginPath(); ctx.roundRect(lx - 2, bt - 3, barW * 2 + barGap + 4, 5, 3); ctx.fill();
-      // Bottom cap
-      ctx.fillStyle = c2;
-      ctx.beginPath(); ctx.roundRect(lx - 2, bt + barH - 2, barW * 2 + barGap + 4, 5, 3); ctx.fill();
-      // Icon badge in center
+      const fw = 32, fh = ph - 6, fy = ptop + 3, fr = fw / 2;
+      const fx = pcx - fw / 2;
+      // Outer pill frame
+      const fg = ctx.createLinearGradient(0, fy, 0, fy + fh);
+      fg.addColorStop(0, c1); fg.addColorStop(0.5, c2); fg.addColorStop(1, c1);
+      ctx.fillStyle = fg;
+      ctx.beginPath(); ctx.roundRect(fx, fy, fw, fh, fr); ctx.fill();
+      // Inner dark cutout
+      const iw = fw - 14, ih = fh - 10;
+      ctx.fillStyle = 'rgba(0,0,10,0.7)';
+      ctx.beginPath(); ctx.roundRect(pcx - iw / 2, fy + 5, iw, ih, iw / 2); ctx.fill();
+      // Icon badge
       ctx.globalAlpha = 0.7;
-      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.beginPath(); ctx.arc(pcx, pcy, 9, 0, Math.PI * 2); ctx.fill();
       ctx.strokeStyle = c1; ctx.lineWidth = 1.5; ctx.stroke();
       ctx.globalAlpha = 0.9;
