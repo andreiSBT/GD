@@ -1997,11 +1997,34 @@ export class Editor {
       ctx.closePath();
       ctx.fill();
     } else if (this.selectedTool === 'portal') {
-      ctx.strokeStyle = SUBTYPE_COLORS[this.subType || 'gravity'];
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.ellipse(sx + GRID / 2, sy - GRID / 2, GRID / 2, GRID * 1.5, 0, 0, Math.PI * 2);
-      ctx.stroke();
+      const portalColors = {
+        gravity: ['#FFD700', '#FF8800'], speed_up: ['#FF6600', '#FF2200'],
+        speed_down: ['#00AAFF', '#0055FF'], ship: ['#FF00FF', '#8800AA'],
+        wave: ['#00FFAA', '#008866'], cube: ['#00C8FF', '#0066CC'],
+        ball: ['#FF8800', '#CC4400'], mini: ['#FF44FF', '#AA00AA'],
+        big: ['#44AAFF', '#2266CC'],
+      };
+      const [c1, c2] = portalColors[this.subType || 'gravity'] || ['#FFD700', '#FF8800'];
+      const ph = GRID * 3;
+      const ptop = sy - ph + GRID;
+      const cx = sx + GRID / 2;
+      const barW = 8, barGap = 14, barH = ph - 8, bt = ptop + 4;
+      const lx = cx - barGap / 2 - barW, rx = cx + barGap / 2;
+      // Left bar
+      const g1 = ctx.createLinearGradient(0, bt, 0, bt + barH);
+      g1.addColorStop(0, c1); g1.addColorStop(1, c2);
+      ctx.fillStyle = g1;
+      ctx.beginPath(); ctx.roundRect(lx, bt, barW, barH, barW / 2); ctx.fill();
+      // Right bar
+      const g2 = ctx.createLinearGradient(0, bt, 0, bt + barH);
+      g2.addColorStop(0, c2); g2.addColorStop(1, c1);
+      ctx.fillStyle = g2;
+      ctx.beginPath(); ctx.roundRect(rx, bt, barW, barH, barW / 2); ctx.fill();
+      // Outline
+      ctx.globalAlpha = 0.2;
+      ctx.strokeStyle = '#FFF';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(sx, ptop, GRID, ph);
     } else if (this.selectedTool === 'coin') {
       ctx.fillStyle = '#FFD700';
       ctx.beginPath();
