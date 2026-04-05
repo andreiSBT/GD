@@ -15,7 +15,7 @@ export const GRID = 50; // pixels per grid unit
 export const PLAYER_SIZE = 44;
 export const SCROLL_SPEED = 8.4;
 export const GRAVITY = 0.93;
-export const JUMP_VEL = -14;
+export const JUMP_VEL = -14.7;
 export const PLAYER_X_OFFSET = 300; // fixed screen x
 
 // Ground
