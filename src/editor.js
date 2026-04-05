@@ -804,8 +804,15 @@ export class Editor {
     }
 
     if (this.isTouchScrolling) {
-      // Was scrolling, don't place anything
       this.isTouchScrolling = false;
+      // In scroll mode, still place one object at the original tap position
+      if (this.swipeMode === 'scroll' && this.touchStartY > TOOLBAR_H &&
+          this.selectedTool !== 'move' && this.selectedTool !== 'erase' &&
+          this.selectedTool !== 'platform' && this.selectedTool !== 'slope' &&
+          this.selectedTool !== 'moving' && this.selectedTool !== 'transport') {
+        const grid = this._screenToGrid(this.touchStartX, this.touchStartY);
+        this._placeObject(grid.gx, grid.gy);
+      }
       return;
     }
 
