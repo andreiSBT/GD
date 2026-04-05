@@ -64,8 +64,11 @@ export function showMusicPicker(hasMusic, onChoose, onRemove) {
   const removeBtn = document.getElementById('mp-remove');
   const closeBtn = document.getElementById('mp-close');
   const filenameEl = document.getElementById('mp-filename');
+  const fileinfoEl = document.getElementById('mp-fileinfo');
 
-  filenameEl.textContent = hasMusic ? 'Current music loaded' : '';
+  filenameEl.textContent = hasMusic ? '♫ Music loaded' : 'No music loaded';
+  filenameEl.style.color = hasMusic ? '#FF66AA' : '#667788';
+  if (fileinfoEl) fileinfoEl.textContent = '';
   removeBtn.style.display = hasMusic ? 'block' : 'none';
   overlay.style.display = 'flex';
 
@@ -83,7 +86,10 @@ export function showMusicPicker(hasMusic, onChoose, onRemove) {
     input.onchange = () => {
       const file = input.files[0];
       if (file) {
-        filenameEl.textContent = file.name;
+        filenameEl.textContent = '♫ ' + file.name;
+        filenameEl.style.color = '#FF66AA';
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+        if (fileinfoEl) fileinfoEl.textContent = `${sizeMB} MB · ${file.type || 'audio'}`;
         onChoose(file);
         cleanup();
       }

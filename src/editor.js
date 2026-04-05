@@ -325,41 +325,94 @@ export class Editor {
     this._rebuildLive();
   }
 
+  // --- HSL helpers ---
+  _hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); };
+    const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return '#' + toHex(f(0)) + toHex(f(8)) + toHex(f(4));
+  }
+
+  _hexToHsl(hex) {
+    let r = parseInt(hex.slice(1, 3), 16) / 255;
+    let g = parseInt(hex.slice(3, 5), 16) / 255;
+    let b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+      else if (max === g) h = ((b - r) / d + 2) * 60;
+      else h = ((r - g) / d + 4) * 60;
+    }
+    return { h, s: s * 100, l: l * 100 };
+  }
+
   _setupColorPicker() {
     const popup = document.getElementById('color-picker-popup');
-    const swatchGrid = document.getElementById('cpk-swatches');
+    const wheelCanvas = document.getElementById('cpk-wheel');
+    const lightCanvas = document.getElementById('cpk-lightness');
     const hexInput = document.getElementById('cpk-hex');
-    const preview = document.getElementById('cpk-preview');
-    if (!popup || !swatchGrid) return;
+    if (!popup || !wheelCanvas) return;
 
-    // Color palette
-    const colors = [
-      '#FF0000','#FF4444','#FF6600','#FF8800','#FFAA00','#FFCC00','#FFD700','#FFFF00',
-      '#AAFF00','#66FF00','#00FF00','#00FF44','#00FF88','#00FFAA','#00FFCC','#00FFFF',
-      '#00CCFF','#00AAFF','#0088FF','#0066FF','#0044FF','#0000FF','#4400FF','#6600FF',
-      '#8800FF','#AA00FF','#CC00FF','#FF00FF','#FF00CC','#FF0088','#FF0044','#FF0066',
-      '#FFFFFF','#DDDDDD','#BBBBBB','#999999','#777777','#555555','#333333','#000000',
-      '#001444','#003C78','#0A2800','#2A1400','#0A0028','#1A0000','#001A1A','#1A1400',
-    ];
+    this._cpkHue = 0;
+    this._cpkSat = 100;
+    this._cpkLight = 50;
+    this._cpkDraggingWheel = false;
+    this._cpkDraggingLight = false;
 
-    swatchGrid.innerHTML = '';
-    for (const c of colors) {
-      const sw = document.createElement('div');
-      sw.className = 'cpk-swatch';
-      sw.style.background = c;
-      sw.dataset.color = c;
-      sw.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this._pickColor(c);
-      });
-      swatchGrid.appendChild(sw);
-    }
+    // Draw the wheel
+    this._drawColorWheel();
+    this._drawLightnessBar();
+
+    // Wheel interaction
+    const getWheelHS = (e) => {
+      const rect = wheelCanvas.getBoundingClientRect();
+      const x = (e.clientX || e.touches[0].clientX) - rect.left - 80;
+      const y = (e.clientY || e.touches[0].clientY) - rect.top - 80;
+      const dist = Math.sqrt(x * x + y * y);
+      const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+      return { h: angle, s: Math.min(100, (dist / 80) * 100) };
+    };
+
+    const wheelDown = (e) => { e.stopPropagation(); this._cpkDraggingWheel = true; const hs = getWheelHS(e); this._cpkHue = hs.h; this._cpkSat = hs.s; this._updatePickerFromHSL(); };
+    const wheelMove = (e) => { if (!this._cpkDraggingWheel) return; e.preventDefault(); const hs = getWheelHS(e); this._cpkHue = hs.h; this._cpkSat = hs.s; this._updatePickerFromHSL(); };
+    const wheelUp = () => { this._cpkDraggingWheel = false; };
+    wheelCanvas.addEventListener('mousedown', wheelDown);
+    wheelCanvas.addEventListener('touchstart', wheelDown, { passive: false });
+    document.addEventListener('mousemove', wheelMove);
+    document.addEventListener('touchmove', wheelMove, { passive: false });
+    document.addEventListener('mouseup', wheelUp);
+    document.addEventListener('touchend', wheelUp);
+
+    // Lightness bar interaction
+    const getLightness = (e) => {
+      const rect = lightCanvas.getBoundingClientRect();
+      const y = (e.clientY || e.touches[0].clientY) - rect.top;
+      return Math.max(0, Math.min(100, (y / rect.height) * 100));
+    };
+    const lightDown = (e) => { e.stopPropagation(); this._cpkDraggingLight = true; this._cpkLight = getLightness(e); this._drawLightnessBar(); this._updatePickerFromHSL(); };
+    const lightMove = (e) => { if (!this._cpkDraggingLight) return; e.preventDefault(); this._cpkLight = getLightness(e); this._drawLightnessBar(); this._updatePickerFromHSL(); };
+    const lightUp = () => { this._cpkDraggingLight = false; };
+    lightCanvas.addEventListener('mousedown', lightDown);
+    lightCanvas.addEventListener('touchstart', lightDown, { passive: false });
+    document.addEventListener('mousemove', lightMove);
+    document.addEventListener('touchmove', lightMove, { passive: false });
+    document.addEventListener('mouseup', lightUp);
+    document.addEventListener('touchend', lightUp);
 
     hexInput.addEventListener('input', (e) => {
       e.stopPropagation();
       let v = hexInput.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
       if (v.length === 6) {
-        this._pickColor('#' + v.toUpperCase());
+        const hex = '#' + v.toUpperCase();
+        const hsl = this._hexToHsl(hex);
+        this._cpkHue = hsl.h; this._cpkSat = hsl.s; this._cpkLight = hsl.l;
+        this._drawColorWheel();
+        this._drawLightnessBar();
+        this._pickColor(hex);
       }
     });
     hexInput.addEventListener('keydown', (e) => e.stopPropagation());
@@ -367,13 +420,84 @@ export class Editor {
     popup.addEventListener('mousedown', (e) => e.stopPropagation());
     popup.addEventListener('touchstart', (e) => e.stopPropagation());
 
-    // Close picker when clicking outside
     this._colorPickerCloseHandler = (e) => {
       if (!popup.contains(e.target) && popup.style.display !== 'none') {
         popup.style.display = 'none';
       }
     };
     document.addEventListener('pointerdown', this._colorPickerCloseHandler);
+  }
+
+  _drawColorWheel() {
+    const canvas = document.getElementById('cpk-wheel');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx = 80, cy = 80, r = 80;
+
+    // Draw HSL wheel
+    const img = ctx.createImageData(160, 160);
+    for (let y = 0; y < 160; y++) {
+      for (let x = 0; x < 160; x++) {
+        const dx = x - cx, dy = y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > r) continue;
+        const angle = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+        const sat = (dist / r) * 100;
+        const hex = this._hslToHex(angle, sat, this._cpkLight);
+        const ri = parseInt(hex.slice(1, 3), 16);
+        const gi = parseInt(hex.slice(3, 5), 16);
+        const bi = parseInt(hex.slice(5, 7), 16);
+        const i = (y * 160 + x) * 4;
+        img.data[i] = ri; img.data[i + 1] = gi; img.data[i + 2] = bi; img.data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+
+    // Draw selector dot
+    const selAngle = this._cpkHue * Math.PI / 180;
+    const selDist = (this._cpkSat / 100) * r;
+    const sx = cx + Math.cos(selAngle) * selDist;
+    const sy = cy + Math.sin(selAngle) * selDist;
+    ctx.beginPath();
+    ctx.arc(sx, sy, 6, 0, Math.PI * 2);
+    ctx.strokeStyle = '#FFF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  _drawLightnessBar() {
+    const canvas = document.getElementById('cpk-lightness');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const w = 24, h = 160;
+
+    // Gradient from white (top) to black (bottom) through current hue
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, this._hslToHex(this._cpkHue, this._cpkSat, 100));
+    grad.addColorStop(0.5, this._hslToHex(this._cpkHue, this._cpkSat, 50));
+    grad.addColorStop(1, this._hslToHex(this._cpkHue, this._cpkSat, 0));
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Selector line
+    const sy = (this._cpkLight / 100) * h;
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(0, sy - 2, w, 4);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0, sy - 2, w, 4);
+  }
+
+  _updatePickerFromHSL() {
+    const color = this._hslToHex(this._cpkHue, this._cpkSat, this._cpkLight);
+    this._drawColorWheel();
+    this._drawLightnessBar();
+    this._pickColor(color);
   }
 
   _openColorPicker(targetEl, key) {
@@ -385,24 +509,21 @@ export class Editor {
     this._colorPickerTarget = targetEl;
     this._colorPickerKey = key;
 
-    // Position near the target element
     const rect = targetEl.getBoundingClientRect();
-    popup.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
+    popup.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
     popup.style.top = Math.max(0, rect.bottom + 4) + 'px';
     popup.style.display = 'block';
 
     const current = this._customColorData[key] || '#FFFFFF';
+    const hsl = this._hexToHsl(current);
+    this._cpkHue = hsl.h; this._cpkSat = hsl.s; this._cpkLight = hsl.l;
     hexInput.value = current.replace('#', '');
     preview.style.background = current;
-
-    // Highlight active swatch
-    popup.querySelectorAll('.cpk-swatch').forEach(sw => {
-      sw.classList.toggle('active', sw.dataset.color === current.toUpperCase());
-    });
+    this._drawColorWheel();
+    this._drawLightnessBar();
   }
 
   _pickColor(color) {
-    const popup = document.getElementById('color-picker-popup');
     const hexInput = document.getElementById('cpk-hex');
     const preview = document.getElementById('cpk-preview');
 
@@ -412,10 +533,6 @@ export class Editor {
     }
     hexInput.value = color.replace('#', '');
     preview.style.background = color;
-
-    popup.querySelectorAll('.cpk-swatch').forEach(sw => {
-      sw.classList.toggle('active', sw.dataset.color === color.toUpperCase());
-    });
   }
 
   _getMusicKey() {
