@@ -13,6 +13,7 @@ import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js'
 import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
+import { customConfirm } from './dialogs.js';
 
 function _lerpColor(hex1, hex2, t) {
   const r1 = parseInt(hex1.slice(1, 3), 16), g1 = parseInt(hex1.slice(3, 5), 16), b1 = parseInt(hex1.slice(5, 7), 16);
@@ -2316,7 +2317,8 @@ class Game {
     });
 
     document.getElementById('acc-reset').addEventListener('click', async () => {
-      if (!confirm('Reset ALL progress, coins, attempts, jumps, achievements, secret codes, and secret coins? This cannot be undone.')) return;
+      const confirmed = await customConfirm('RESET PROGRESS', 'Reset ALL progress, coins, attempts, jumps, achievements, secret codes, and secret coins? This cannot be undone.', 'YES, RESET', 'CANCEL');
+      if (!confirmed) return;
       // Clear from Supabase
       await resetProgressInCloud();
       // Clear everything except editor levels, friends, customization

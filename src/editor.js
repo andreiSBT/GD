@@ -5,6 +5,7 @@ import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
 import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic, uploadOfficialMusic, publishLevel, getAuthUser } from './supabase.js';
 import { loadCustomMusic, removeCustomMusic, hasCustomMusic, getRawMusicFromDB, copyMusicBuffer, getCustomMusicDuration } from './sound.js';
+import { customPrompt, showMusicPicker } from './dialogs.js';
 
 const TOOLBAR_H = 56;
 const PANEL_W = 180;
@@ -332,27 +333,23 @@ export class Editor {
       this._showToast('Save level first!');
       return;
     }
-    if (hasCustomMusic(key)) {
-      removeCustomMusic(key);
-      deleteLevelMusic(this.currentSlot);
-      this._showToast('Music removed');
-    } else {
-      this._musicInput.onchange = async () => {
-        const file = this._musicInput.files[0];
-        if (file) {
-          try {
-            await loadCustomMusic(key, file);
-            this._showToast('Music added!');
-            // Upload to cloud in background
-            uploadLevelMusic(this.currentSlot, file);
-          } catch (e) {
-            this._showToast('Failed to load audio');
-          }
+    showMusicPicker(
+      hasCustomMusic(key),
+      async (file) => {
+        try {
+          await loadCustomMusic(key, file);
+          this._showToast('Music added!');
+          uploadLevelMusic(this.currentSlot, file);
+        } catch (e) {
+          this._showToast('Failed to load audio');
         }
-        this._musicInput.value = '';
-      };
-      this._musicInput.click();
-    }
+      },
+      () => {
+        removeCustomMusic(key);
+        deleteLevelMusic(this.currentSlot);
+        this._showToast('Music removed');
+      }
+    );
   }
 
   // === EVENT HANDLERS ===
@@ -1435,8 +1432,8 @@ export class Editor {
     deleteEditorLevelFromCloud(slotId);
   }
 
-  _newLevel() {
-    const name = prompt('Level name:', 'My Level');
+  async _newLevel() {
+    const name = await customPrompt('LEVEL NAME', 'My Level');
     if (name == null) return; // cancelled
     this.currentSlot = 'lvl_' + Date.now();
     this.levelName = name.trim() || 'My Level';
@@ -2994,13 +2991,14 @@ export class Editor {
           const raw = localStorage.getItem('gd_editor_slot_' + slotId);
           if (raw) {
             const data = JSON.parse(raw);
-            const name = prompt('Level name:', data.name || 'Untitled');
-            if (name != null && name.trim()) {
-              data.name = name.trim();
-              localStorage.setItem('gd_editor_slot_' + slotId, JSON.stringify(data));
-              if (this.currentSlot === slotId) this.levelName = data.name;
-              this._showToast('Renamed!');
-            }
+            customPrompt('RENAME LEVEL', data.name || 'Untitled').then(name => {
+              if (name != null && name.trim()) {
+                data.name = name.trim();
+                localStorage.setItem('gd_editor_slot_' + slotId, JSON.stringify(data));
+                if (this.currentSlot === slotId) this.levelName = data.name;
+                this._showToast('Renamed!');
+              }
+            });
           }
         } else if (btn.id.startsWith('browse_pub_')) {
           const slotId = btn.id.replace('browse_pub_', '');
@@ -3140,16 +3138,17 @@ export class Editor {
     } else if (id === 'action_export') {
       const json = this.exportJSON();
       navigator.clipboard?.writeText(json).then(() => {
-        // Copied!
+        this._showToast('JSON copied!');
       }).catch(() => {
-        prompt('Copy level JSON:', json);
+        this._showToast('Copy failed');
       });
     } else if (id === 'action_rename') {
-      const name = prompt('Level name:', this.levelName);
-      if (name != null && name.trim()) {
-        this.levelName = name.trim();
-        this._showToast('Renamed to "' + this.levelName + '"');
-      }
+      customPrompt('RENAME LEVEL', this.levelName).then(name => {
+        if (name != null && name.trim()) {
+          this.levelName = name.trim();
+          this._showToast('Renamed to "' + this.levelName + '"');
+        }
+      });
     } else if (id === 'menu_color') {
       this.showMenu = false;
       this.showColorPicker = !this.showColorPicker;
