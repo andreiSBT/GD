@@ -2269,9 +2269,9 @@ export class Editor {
 
     const menuItems = [
       { id: 'action_load', label: 'OPEN LEVEL', color: '#AA88FF' },
-      { id: 'menu_info', label: 'LEVEL INFO', color: '#00CCDD' },
-      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  \u2713' : 'MUSIC', color: this._hasSlotMusic() ? '#FF77BB' : '#8899AA' },
-      { id: 'menu_help', label: 'HELP', color: '#7788AA' },
+      { id: 'menu_info', label: 'LEVEL INFO', color: '#44BBFF' },
+      { id: 'action_music', label: this._hasSlotMusic() ? 'MUSIC  \u2713' : 'MUSIC', color: this._hasSlotMusic() ? '#00DD66' : '#FFD700' },
+      { id: 'menu_help', label: 'HELP', color: '#00CC88' },
     ];
     if (isAdmin()) {
       menuItems.push({ id: 'action_save_official', label: 'SAVE AS OFFICIAL', color: '#FF6622' });
