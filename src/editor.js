@@ -509,10 +509,10 @@ export class Editor {
     this._colorPickerTarget = targetEl;
     this._colorPickerKey = key;
 
-    const rect = targetEl.getBoundingClientRect();
-    popup.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
-    popup.style.top = Math.max(0, rect.bottom + 4) + 'px';
+    // Center on screen
     popup.style.display = 'block';
+    popup.style.left = Math.round((window.innerWidth - popup.offsetWidth) / 2) + 'px';
+    popup.style.top = Math.round((window.innerHeight - popup.offsetHeight) / 2) + 'px';
 
     const current = this._customColorData[key] || '#FFFFFF';
     const hsl = this._hexToHsl(current);

@@ -257,15 +257,15 @@
       </div>
     </div>
     <!-- Inline color picker popup with HSL wheel -->
-    <div id="color-picker-popup" style="display:none; position:fixed; z-index:200; background:linear-gradient(180deg,#0a0e1a 0%,#111828 100%); border:1px solid rgba(0,200,255,0.2); border-radius:10px; padding:10px; box-shadow:0 8px 32px rgba(0,0,0,0.7), 0 0 20px rgba(0,100,200,0.1); font-family:monospace;">
-      <div style="display:flex; gap:10px; margin-bottom:10px;">
-        <canvas id="cpk-wheel" width="80" height="80" style="cursor:crosshair; border-radius:50%;"></canvas>
-        <canvas id="cpk-lightness" width="16" height="80" style="cursor:pointer; border-radius:4px; border:1px solid rgba(255,255,255,0.1);"></canvas>
+    <div id="color-picker-popup" style="display:none; position:fixed; z-index:200; background:linear-gradient(180deg,#0a0e1a 0%,#111828 100%); border:1px solid rgba(0,200,255,0.2); border-radius:10px; padding:10px; box-shadow:0 8px 32px rgba(0,0,0,0.7), 0 0 20px rgba(0,100,200,0.1); font-family:monospace; max-width:160px;">
+      <div style="display:flex; gap:6px; margin-bottom:8px; justify-content:center;">
+        <canvas id="cpk-wheel" width="80" height="80" style="width:80px; height:80px; cursor:crosshair; border-radius:50%;"></canvas>
+        <canvas id="cpk-lightness" width="16" height="80" style="width:16px; height:80px; cursor:pointer; border-radius:4px; border:1px solid rgba(255,255,255,0.1);"></canvas>
       </div>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <span style="color:#99AABB; font-size:11px;">#</span>
-        <input id="cpk-hex" type="text" maxlength="7" placeholder="FF00AA" style="flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:#EEE; font-size:14px; font-family:monospace; padding:8px; border-radius:6px; outline:none; letter-spacing:1px;">
-        <div id="cpk-preview" style="width:32px; height:32px; border-radius:6px; border:2px solid rgba(255,255,255,0.2);"></div>
+      <div style="display:flex; align-items:center; gap:4px;">
+        <span style="color:#99AABB; font-size:10px;">#</span>
+        <input id="cpk-hex" type="text" maxlength="7" placeholder="FF00AA" style="flex:1; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15); color:#EEE; font-size:12px; font-family:monospace; padding:5px; border-radius:4px; outline:none; letter-spacing:1px; min-width:0;">
+        <div id="cpk-preview" style="width:24px; height:24px; border-radius:4px; border:2px solid rgba(255,255,255,0.2); flex-shrink:0;"></div>
       </div>
     </div>
     <style>
