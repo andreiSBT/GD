@@ -2332,12 +2332,13 @@ export class Editor {
     };
 
     const drawSep = () => {
+      sy += 6;
       ctx.strokeStyle = 'rgba(0,170,200,0.12)';
       ctx.beginPath();
       ctx.moveTo(lx, sy - 8);
       ctx.lineTo(vx, sy - 8);
       ctx.stroke();
-      sy += 4;
+      sy += 10;
     };
 
     // Level duration
