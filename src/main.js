@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes } from './supabase.js';
+import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 import { customConfirm } from './dialogs.js';
@@ -2494,11 +2494,27 @@ class Game {
     });
 
     document.getElementById('acc-logout').addEventListener('click', async () => {
-      // Save jump count per-user before logout
       const user = getAuthUser();
       if (user) {
+        // Save jump count per-user
         const jumps = localStorage.getItem('gd_total_jumps') || '0';
         localStorage.setItem('gd_total_jumps_' + user.id, jumps);
+        // Push all data to cloud before logout
+        try {
+          await syncProgressToCloud(this.progress);
+          await syncCustomizationToCloud(this.customization);
+          // Sync editor levels
+          const slots = JSON.parse(localStorage.getItem('gd_editor_slots') || '[]');
+          for (const slot of slots) {
+            const raw = localStorage.getItem('gd_editor_slot_' + slot.id);
+            if (raw) {
+              const data = JSON.parse(raw);
+              await syncEditorLevelToCloud(slot.id, data);
+            }
+          }
+        } catch (e) {
+          console.warn('Pre-logout sync failed:', e);
+        }
       }
       await signOut();
       this._clearLocalData();
