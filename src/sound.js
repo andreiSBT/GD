@@ -187,6 +187,12 @@ export function loadCustomMusic(levelId, file) {
   });
 }
 
+export function storePendingCustomMusic(levelId, arrayBuffer) {
+  const raw = new Uint8Array(arrayBuffer);
+  _pendingMusicRaw[levelId] = raw;
+  _saveCustomMusicToDB(levelId, raw);
+}
+
 export function removeCustomMusic(levelId) {
   delete customMusicBuffers[levelId];
   _removeCustomMusicFromDB(levelId);

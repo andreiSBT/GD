@@ -1244,9 +1244,7 @@ class Game {
       try {
         const ab = await downloadOfficialMusic(levelId);
         if (ab) {
-          const blob = new Blob([ab], { type: 'audio/mpeg' });
-          const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
-          await Sound.loadCustomMusic(levelId, file);
+          Sound.storePendingCustomMusic(levelId, ab);
         }
       } catch {}
     }
@@ -2731,19 +2729,15 @@ class Game {
         if (Sound.hasCustomMusic(key)) continue;
         const ab = await downloadLevelMusic(slotId);
         if (ab) {
-          const blob = new Blob([ab], { type: 'audio/mpeg' });
-          const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
-          await Sound.loadCustomMusic(key, file);
+          Sound.storePendingCustomMusic(key, ab);
         }
       }
-      // Sync official level music (levels 1-10)
+      // Sync official level music (levels 1-10) — store as pending, decode on play
       for (let id = 1; id <= 9; id++) {
         if (Sound.hasCustomMusic(id)) continue;
         const ab = await downloadOfficialMusic(id);
         if (ab) {
-          const blob = new Blob([ab], { type: 'audio/mpeg' });
-          const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
-          await Sound.loadCustomMusic(id, file);
+          Sound.storePendingCustomMusic(id, ab);
         }
       }
     } catch (e) {
