@@ -494,7 +494,6 @@ export class UI {
       { label: 'TOTAL JUMPS', value: `${totalJumps}`, color: '#FFD700' },
       { label: 'LEVELS COMPLETED', value: `${completedLevels} / ${officialCount}`, color: '#00FF64' },
       { label: 'COINS COLLECTED', value: `${totalCoins}`, color: '#FFD700' },
-      { label: 'DIAMONDS', value: `${diamonds}`, color: '#00DDFF' },
       { label: 'LEVELS CREATED', value: `${createdLevels}`, color: '#FF8844' },
     ];
 
