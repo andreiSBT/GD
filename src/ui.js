@@ -214,19 +214,6 @@ export class UI {
 
     this._drawMenuParticles(ctx);
 
-    // Diamond counter (top left)
-    if (diamonds > 0) {
-      this._drawGem(ctx, 24, 26, 14);
-      ctx.fillStyle = '#00DDFF';
-      ctx.font = 'bold 16px monospace';
-      ctx.textAlign = 'left';
-      ctx.shadowColor = '#00DDFF';
-      ctx.shadowBlur = 6;
-      ctx.fillText(String(diamonds), 36, 31);
-      ctx.shadowBlur = 0;
-      ctx.restore();
-    }
-
     // Title with glow
     ctx.save();
     ctx.shadowColor = '#00C8FF';
@@ -414,16 +401,7 @@ export class UI {
         }
       }
 
-      // Diamonds earned for this level (top-right corner of card)
-      const lvlDTotal = 50 + (i - 1) * 25;
-      const pPool = Math.round(lvlDTotal * 0.75);
-      let lvlDEarned = Math.round(pPool * Math.min(1, prog.bestProgress));
-      if (prog.completed) lvlDEarned += lvlDTotal - pPool;
-      this._drawGem(ctx, x + cardW - 72, y + 16, 10);
-      ctx.fillStyle = '#00DDFF';
-      ctx.font = 'bold 11px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${lvlDEarned}/${lvlDTotal}`, x + cardW - 12, y + 20);
+      // (diamond counter removed from level cards)
 
       if (prog.completed) {
         ctx.save();
