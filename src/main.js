@@ -2202,8 +2202,10 @@ class Game {
     const ctx = this.ctx;
     ctx.save();
 
-    if (this.shakeIntensity > 0.5) {
+    if (this.shakeIntensity > 0.5 && (this.state === PLAYING || this.state === DEAD || this.state === EDITOR_TESTING)) {
       this.renderer.drawScreenShake(ctx, this.shakeIntensity);
+    } else {
+      this.shakeIntensity = 0;
     }
 
     if (this.state === EDITOR) {
