@@ -409,12 +409,16 @@ export class UI {
       const dText = `${lvlDEarned}/${lvlDTotal}`;
       ctx.font = 'bold 11px monospace';
       const dTextW = ctx.measureText(dText).width;
-      const dRightX = x + cardW - 10;
+      const gemSize = 7;
+      const gemGap = 4;
+      const totalW = gemSize * 2 + gemGap + dTextW;
+      const dStartX = x + cardW - 10 - totalW;
       const dTextY = y + 19;
+      // Gem centered vertically with text
+      this._drawGem(ctx, dStartX + gemSize, dTextY - 4, gemSize);
       ctx.fillStyle = '#00DDFF';
-      ctx.textAlign = 'right';
-      ctx.fillText(dText, dRightX, dTextY);
-      this._drawGem(ctx, dRightX - dTextW - 10, dTextY - 5, 7);
+      ctx.textAlign = 'left';
+      ctx.fillText(dText, dStartX + gemSize * 2 + gemGap, dTextY);
 
       if (prog.completed) {
         ctx.save();
