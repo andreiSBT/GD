@@ -3579,13 +3579,17 @@ export class Editor {
               LEVEL_DATA[levelId] = lvlData;
               // Copy editor slot music to official level
               const editorKey = this._getMusicKey();
+              console.log('[Official] Music key:', editorKey, 'hasMusic:', editorKey ? hasCustomMusic(editorKey) : false);
               if (editorKey && hasCustomMusic(editorKey)) {
                 copyMusicBuffer(editorKey, levelId);
                 const raw = await getRawMusicFromDB(editorKey);
+                console.log('[Official] Raw music from DB:', raw ? raw.byteLength + ' bytes' : 'null');
                 if (raw) {
                   const blob = new Blob([raw], { type: 'audio/mpeg' });
                   const file = new File([blob], 'music.mp3', { type: 'audio/mpeg' });
+                  console.log('[Official] Uploading music for level', levelId, '...');
                   const musicPath = await uploadOfficialMusic(levelId, file);
+                  console.log('[Official] Upload result:', musicPath);
                   if (musicPath) {
                     this._showToast('Official L' + levelId + ' + music saved!');
                   } else {
