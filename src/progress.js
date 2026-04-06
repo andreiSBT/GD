@@ -70,7 +70,13 @@ export async function initProgress() {
   if (!isConfigured()) return local;
 
   const cloud = await loadProgressFromCloud();
-  if (!cloud) return local;
+  if (!cloud) {
+    // Cloud is empty — could be a reset from another device
+    // Clear local progress to match cloud
+    const empty = { ...DEFAULT_PROGRESS };
+    saveProgress(empty);
+    return empty;
+  }
 
   // Merge: keep the best of local and cloud for ALL keys
   const allKeys = new Set([...Object.keys(DEFAULT_PROGRESS), ...Object.keys(local), ...Object.keys(cloud)]);
