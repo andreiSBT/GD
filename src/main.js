@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes } from './supabase.js';
+import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 import { customConfirm } from './dialogs.js';
@@ -153,6 +153,21 @@ class Game {
           LEVEL_DATA[id] = data;
         }
         console.log('[Admin] Loaded official levels from cloud:', Object.keys(cloudLevels));
+      }
+      // Subscribe to realtime sync channel
+      if (user) {
+        subscribeSyncChannel(user.id, (type) => {
+          if (type === 'reset') {
+            this._clearLocalData();
+            this._redeemedCodes = new Set();
+            this._achievementToasts = [];
+            this._showScrollCoin = false;
+            this._levelScrollCount = 0;
+          } else {
+            // 'update' — re-sync from cloud
+            this._syncFromCloud();
+          }
+        });
       }
       // Sync custom music from cloud storage
       this._syncCloudMusic();
@@ -1540,6 +1555,10 @@ class Game {
     for (const ach of newAchs) {
       this._achievementToasts.push({ text: `\u{1F3C6} ${ach.title}`, subtext: ach.desc, timer: 0, duration: 3 });
     }
+    if (newAchs.length > 0) {
+      syncSecretsToCloud();
+      this._broadcastUpdate();
+    }
   }
 
   _startColorTransition(colorKey, customTheme, duration) {
@@ -2568,6 +2587,9 @@ class Game {
       if (!confirmed) return;
       // Clear everything from cloud
       await resetProgressInCloud();
+      // Broadcast reset to other devices
+      const resetUser = getAuthUser();
+      if (resetUser) broadcastSync(resetUser.id, 'reset');
       // Clear all localStorage data
       this._clearLocalData();
       const user = getAuthUser();
@@ -2691,6 +2713,11 @@ class Game {
     }
   }
 
+  _broadcastUpdate() {
+    const user = getAuthUser();
+    if (user) broadcastSync(user.id, 'update');
+  }
+
   async _syncCloudMusic() {
     try {
       // Sync editor slot music
@@ -2738,6 +2765,7 @@ class Game {
       console.warn('Failed to save customization:', e);
     }
     syncCustomizationToCloud(this.customization);
+    this._broadcastUpdate();
   }
 
   _applyCustomization() {

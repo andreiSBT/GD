@@ -449,6 +449,30 @@ export async function loadSecretsFromCloud() {
   }
 }
 
+// === REALTIME BROADCAST ===
+
+let _syncChannel = null;
+
+export function subscribeSyncChannel(userId, onSync) {
+  const client = getClient();
+  if (!client || !userId) return null;
+  if (_syncChannel) _syncChannel.unsubscribe();
+  _syncChannel = client.channel('sync_' + userId);
+  _syncChannel.on('broadcast', { event: 'sync' }, (msg) => {
+    onSync(msg.payload?.type || 'update');
+  });
+  _syncChannel.subscribe();
+  return _syncChannel;
+}
+
+export function broadcastSync(userId, type = 'update') {
+  const client = getClient();
+  if (!client || !userId) return;
+  if (_syncChannel) {
+    _syncChannel.send({ type: 'broadcast', event: 'sync', payload: { type } });
+  }
+}
+
 // === EDITOR LEVELS ===
 
 export async function syncEditorLevelToCloud(slotId, levelData) {
