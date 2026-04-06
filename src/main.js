@@ -663,13 +663,7 @@ class Game {
       }
     } else if (action === 'unlock_yes') {
       const p = this._unlockPopup;
-      if (p && this._tryUnlockItem(p.type, p.idx, p.cost)) {
-        if (p.type === 'color') this.customization.colorIndex = p.idx;
-        else if (p.type === 'trail') this.customization.trailIndex = p.idx;
-        else if (p.type === 'icon') this.customization.iconIndex = p.idx;
-        else if (p.type === 'shape') this.customization.shapeIndex = p.idx;
-        this._applyCustomization();
-      }
+      if (p) this._tryUnlockItem(p.type, p.idx, p.cost);
       this._unlockPopup = null;
     } else if (action === 'unlock_no') {
       this._unlockPopup = null;

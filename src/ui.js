@@ -1497,12 +1497,8 @@ export class UI {
         this._roundRect(ctx, prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize, 8);
         ctx.fill();
       } else if (unlockPopup.type === 'shape') {
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize);
         this._drawPreviewCube(ctx, prevX, prevY, prevSize * 0.8, previewColor, null, CUBE_SHAPES[unlockPopup.idx]);
       } else if (unlockPopup.type === 'icon') {
-        ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize);
         this._drawPreviewCube(ctx, prevX, prevY, prevSize * 0.8, previewColor, CUBE_ICONS[unlockPopup.idx], CUBE_SHAPES[shapeIndex || 0]);
       }
 
