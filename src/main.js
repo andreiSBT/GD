@@ -2546,6 +2546,7 @@ class Game {
               await syncEditorLevelToCloud(slot.id, data);
             }
           }
+          await syncSecretsToCloud();
         } catch (e) {
           console.warn('Pre-logout sync failed:', e);
         }
@@ -2646,6 +2647,32 @@ class Game {
   async _syncFromCloud() {
     this.progress = await initProgress();
     await this._initCloudCustomization();
+    // Load secrets from cloud and merge with local (cloud wins)
+    const cloudSecrets = await loadSecretsFromCloud();
+    if (cloudSecrets) {
+      if (cloudSecrets.redeemed) {
+        const local = new Set(JSON.parse(localStorage.getItem('gd_redeemed_codes') || '[]'));
+        for (const code of cloudSecrets.redeemed) local.add(code);
+        localStorage.setItem('gd_redeemed_codes', JSON.stringify([...local]));
+        this._redeemedCodes = local;
+      }
+      if (cloudSecrets.secretCoins > parseInt(localStorage.getItem('gd_secret_coins') || '0'))
+        localStorage.setItem('gd_secret_coins', String(cloudSecrets.secretCoins));
+      if (cloudSecrets.rainbow) localStorage.setItem('gd_rainbow_color', '1');
+      if (cloudSecrets.dotted) localStorage.setItem('gd_dotted_trail', '1');
+      if (cloudSecrets.wink) localStorage.setItem('gd_wink_icon', '1');
+      if (cloudSecrets.boom) localStorage.setItem('gd_boom_death', '1');
+      if (cloudSecrets.scrollCoin) localStorage.setItem('gd_scroll_coin', '1');
+      if (cloudSecrets.jumps > parseInt(localStorage.getItem('gd_total_jumps') || '0'))
+        localStorage.setItem('gd_total_jumps', String(cloudSecrets.jumps));
+      if (cloudSecrets.communityCompletions > parseInt(localStorage.getItem('gd_community_completions') || '0'))
+        localStorage.setItem('gd_community_completions', String(cloudSecrets.communityCompletions));
+      if (cloudSecrets.achievements) {
+        const local = new Set(JSON.parse(localStorage.getItem('gd_achievements') || '[]'));
+        for (const a of cloudSecrets.achievements) local.add(a);
+        localStorage.setItem('gd_achievements', JSON.stringify([...local]));
+      }
+    }
     // If cloud progress was reset (all empty), clear local secrets too
     const hasAnyProgress = Object.values(this.progress).some(l => l.attempts > 0 || l.completed || l.bestProgress > 0);
     if (!hasAnyProgress && parseInt(localStorage.getItem('gd_total_jumps') || '0') > 0) {

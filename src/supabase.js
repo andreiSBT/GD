@@ -397,6 +397,58 @@ export async function loadCustomizationFromCloud() {
   }
 }
 
+// === SECRETS SYNC ===
+// Uses editor_levels table with slot_id='__secrets__' to store all secrets as JSON
+
+export async function syncSecretsToCloud() {
+  const client = getClient();
+  if (!client) return;
+  const userId = getUserId();
+  const secrets = {
+    redeemed: JSON.parse(localStorage.getItem('gd_redeemed_codes') || '[]'),
+    secretCoins: parseInt(localStorage.getItem('gd_secret_coins') || '0'),
+    rainbow: !!localStorage.getItem('gd_rainbow_color'),
+    dotted: !!localStorage.getItem('gd_dotted_trail'),
+    wink: !!localStorage.getItem('gd_wink_icon'),
+    boom: !!localStorage.getItem('gd_boom_death'),
+    scrollCoin: !!localStorage.getItem('gd_scroll_coin'),
+    jumps: parseInt(localStorage.getItem('gd_total_jumps') || '0'),
+    communityCompletions: parseInt(localStorage.getItem('gd_community_completions') || '0'),
+    achievements: JSON.parse(localStorage.getItem('gd_achievements') || '[]'),
+  };
+  try {
+    await client.from('editor_levels').upsert({
+      user_id: userId,
+      slot_id: '__secrets__',
+      name: '__secrets__',
+      theme_id: 0,
+      objects: secrets,
+      object_count: 0,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,slot_id' });
+  } catch (e) {
+    console.warn('Secrets sync failed:', e.message);
+  }
+}
+
+export async function loadSecretsFromCloud() {
+  const client = getClient();
+  if (!client) return null;
+  const userId = getUserId();
+  try {
+    const { data, error } = await client
+      .from('editor_levels')
+      .select('objects')
+      .eq('user_id', userId)
+      .eq('slot_id', '__secrets__')
+      .single();
+    if (error || !data || !data.objects) return null;
+    return data.objects;
+  } catch (e) {
+    return null;
+  }
+}
+
 // === EDITOR LEVELS ===
 
 export async function syncEditorLevelToCloud(slotId, levelData) {
