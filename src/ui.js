@@ -412,15 +412,15 @@ export class UI {
         }
       }
 
-      // Diamonds earned for this level
+      // Diamonds earned for this level (top-right corner of card)
       const lvlDTotal = 50 + (i - 1) * 25;
       const pPool = Math.round(lvlDTotal * 0.75);
       let lvlDEarned = Math.round(pPool * Math.min(1, prog.bestProgress));
       if (prog.completed) lvlDEarned += lvlDTotal - pPool;
       ctx.fillStyle = '#00DDFF';
-      ctx.font = 'bold 12px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText(`◆ ${lvlDEarned}/${lvlDTotal}`, x + cardW / 2, y + (totalCoins > 0 ? 240 : 218));
+      ctx.font = 'bold 11px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`◆ ${lvlDEarned}/${lvlDTotal}`, x + cardW - 12, y + 20);
 
       if (prog.completed) {
         ctx.save();
@@ -1139,10 +1139,26 @@ export class UI {
     this.buttons.push({ id, x: barX - pad, y: barY - pad, w: barW + pad * 2, h: barH + pad * 2 });
   }
 
-  drawCustomize(ctx, customization) {
+  drawCustomize(ctx, customization, diamonds = 0) {
     this.buttons = [];
 
     const { colorIndex, trailIndex, iconIndex, shapeIndex, trailStyleIndex } = customization;
+
+    const _isUnlocked = (type, idx) => {
+      if (idx === 0) return true;
+      const unlocked = JSON.parse(localStorage.getItem('gd_unlocked_' + type) || '[]');
+      return unlocked.includes(idx);
+    };
+
+    const _drawLock = (x, y, w, h, cost, canAfford) => {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      this._roundRect(ctx, x, y, w, h, 6);
+      ctx.fill();
+      ctx.fillStyle = canAfford ? '#00DDFF' : '#555';
+      ctx.font = `bold ${Math.min(11, w / 2.5)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('\u25C6' + cost, x + w / 2, y + h / 2 + 4);
+    };
 
     // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
