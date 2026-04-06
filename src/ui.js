@@ -1224,6 +1224,12 @@ export class UI {
     }
     ctx.globalAlpha = 1;
 
+    // Diamond count display
+    ctx.fillStyle = '#00DDFF';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText('\u25C6 ' + diamonds, SCREEN_WIDTH - 30, 40);
+
     // === COLOR SECTION ===
     const sectionY1 = 175;
     ctx.fillStyle = '#AA77DD';
@@ -1256,6 +1262,11 @@ export class UI {
       }
       this._roundRect(ctx, cx, cy, colorSize, colorSize, 6);
       ctx.fill();
+
+      // Lock overlay for non-free, non-secret, non-unlocked
+      if (i > 0 && !isRainbow && !_isUnlocked('color', i)) {
+        _drawLock(cx, cy, colorSize, colorSize, 20, diamonds >= 20);
+      }
 
       if (i === colorIndex) {
         ctx.strokeStyle = '#FFF';
@@ -1295,6 +1306,11 @@ export class UI {
         ctx.font = `${IS_MOBILE ? 12 : 10}px monospace`;
         ctx.textAlign = 'center';
         ctx.fillText('AUTO', tx + trailSize / 2, ty + trailSize / 2 + 4);
+      }
+
+      // Lock overlay
+      if (i > 0 && !_isUnlocked('trail', i)) {
+        _drawLock(tx, ty, trailSize, trailSize, 20, diamonds >= 20);
       }
 
       if (i === trailIndex) {
@@ -1370,6 +1386,11 @@ export class UI {
       // Draw mini cube with this shape
       this._drawPreviewCube(ctx, sx + shapeSize / 2, sy + shapeSize / 2, shapeSize * 0.7, previewColor, null, CUBE_SHAPES[i]);
 
+      // Lock overlay
+      if (i > 0 && !_isUnlocked('shape', i)) {
+        _drawLock(sx, sy, shapeSize, shapeSize, 30, diamonds >= 30);
+      }
+
       if (i === (shapeIndex || 0)) {
         ctx.strokeStyle = '#FFF';
         ctx.lineWidth = 3;
@@ -1406,6 +1427,12 @@ export class UI {
 
       // Draw mini cube with this icon
       this._drawPreviewCube(ctx, ix + iconSize / 2, iy + iconSize / 2, iconSize * 0.7, previewColor, CUBE_ICONS[i], previewShape);
+
+      // Lock overlay (skip wink which is secret-unlocked)
+      const isWink = CUBE_ICONS[i] === 'wink';
+      if (i > 0 && !isWink && !_isUnlocked('icon', i)) {
+        _drawLock(ix, iy, iconSize, iconSize, 30, diamonds >= 30);
+      }
 
       if (i === iconIndex) {
         ctx.strokeStyle = '#FFF';

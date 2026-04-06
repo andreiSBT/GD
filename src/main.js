@@ -630,17 +630,29 @@ class Game {
       this._saveCustomization();
       this._fadeToState(MENU);
     } else if (action.startsWith('color_')) {
-      this.customization.colorIndex = parseInt(action.split('_')[1]);
-      this._applyCustomization();
+      const idx = parseInt(action.split('_')[1]);
+      if (this._tryUnlockItem('color', idx, 20)) {
+        this.customization.colorIndex = idx;
+        this._applyCustomization();
+      }
     } else if (action.startsWith('trail_')) {
-      this.customization.trailIndex = parseInt(action.split('_')[1]);
-      this._applyCustomization();
+      const idx = parseInt(action.split('_')[1]);
+      if (this._tryUnlockItem('trail', idx, 20)) {
+        this.customization.trailIndex = idx;
+        this._applyCustomization();
+      }
     } else if (action.startsWith('icon_')) {
-      this.customization.iconIndex = parseInt(action.split('_')[1]);
-      this._applyCustomization();
+      const idx = parseInt(action.split('_')[1]);
+      if (this._tryUnlockItem('icon', idx, 30)) {
+        this.customization.iconIndex = idx;
+        this._applyCustomization();
+      }
     } else if (action.startsWith('shape_')) {
-      this.customization.shapeIndex = parseInt(action.split('_')[1]);
-      this._applyCustomization();
+      const idx = parseInt(action.split('_')[1]);
+      if (this._tryUnlockItem('shape', idx, 30)) {
+        this.customization.shapeIndex = idx;
+        this._applyCustomization();
+      }
     } else if (action.startsWith('trailstyle_')) {
       this.customization.trailStyleIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
@@ -2205,7 +2217,7 @@ class Game {
     } else if (this.state === LEVEL_SELECT) {
       this.ui.drawLevelSelect(ctx, this.progress, this.levelPage, this._showScrollCoin, this._diamonds);
     } else if (this.state === CUSTOMIZE) {
-      this.ui.drawCustomize(ctx, this.customization);
+      this.ui.drawCustomize(ctx, this.customization, this._diamonds || 0);
     } else if (this.state === STATS) {
       this.ui.drawStats(ctx, this.progress, this._diamonds);
     } else if (this.state === FRIENDS) {
@@ -2733,6 +2745,10 @@ class Game {
     localStorage.removeItem('gd_wink_icon');
     localStorage.removeItem('gd_boom_death');
     localStorage.removeItem('gd_community_completions');
+    localStorage.removeItem('gd_unlocked_color');
+    localStorage.removeItem('gd_unlocked_trail');
+    localStorage.removeItem('gd_unlocked_shape');
+    localStorage.removeItem('gd_unlocked_icon');
     // Clear replay ghosts
     for (let i = 1; i <= 9; i++) localStorage.removeItem('gd_replay_' + i);
     // Clear editor slots
@@ -2856,6 +2872,28 @@ class Game {
     }
     syncCustomizationToCloud(this.customization);
     this._broadcastUpdate();
+  }
+
+  _isItemUnlocked(type, idx) {
+    if (idx === 0) return true; // first item always free
+    const unlocked = JSON.parse(localStorage.getItem('gd_unlocked_' + type) || '[]');
+    return unlocked.includes(idx);
+  }
+
+  _tryUnlockItem(type, idx, cost) {
+    if (idx === 0) return true; // free
+    if (this._isItemUnlocked(type, idx)) return true; // already unlocked
+    // Check if it's a secret item (don't charge diamonds)
+    if (type === 'color' && PLAYER_COLORS[idx] === 'rainbow') return true;
+    if (type === 'icon' && CUBE_ICONS[idx] === 'wink') return true;
+    // Try to purchase
+    if ((this._diamonds || 0) < cost) return false; // not enough
+    this._diamonds -= cost;
+    localStorage.setItem('gd_diamonds', String(this._diamonds));
+    const unlocked = JSON.parse(localStorage.getItem('gd_unlocked_' + type) || '[]');
+    unlocked.push(idx);
+    localStorage.setItem('gd_unlocked_' + type, JSON.stringify(unlocked));
+    return true;
   }
 
   _applyCustomization() {
