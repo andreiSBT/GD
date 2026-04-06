@@ -593,6 +593,9 @@ class Game {
   }
 
   _handleAction(action) {
+    // Block all actions except popup buttons when unlock popup is open
+    if (this._unlockPopup && action !== 'unlock_yes' && action !== 'unlock_no') return;
+
     if (action === 'collect_scroll_coin') {
       this._showScrollCoin = false;
       const secretCoins = parseInt(localStorage.getItem('gd_secret_coins') || '0');
