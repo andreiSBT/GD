@@ -631,28 +631,48 @@ class Game {
       this._fadeToState(MENU);
     } else if (action.startsWith('color_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._tryUnlockItem('color', idx, 20)) {
+      if (this._isItemUnlocked('color', idx) || idx === 0 || PLAYER_COLORS[idx] === 'rainbow') {
         this.customization.colorIndex = idx;
         this._applyCustomization();
+      } else {
+        this._showUnlockPopup('color', idx, 20);
       }
     } else if (action.startsWith('trail_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._tryUnlockItem('trail', idx, 20)) {
+      if (this._isItemUnlocked('trail', idx) || idx === 0) {
         this.customization.trailIndex = idx;
         this._applyCustomization();
+      } else {
+        this._showUnlockPopup('trail', idx, 20);
       }
     } else if (action.startsWith('icon_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._tryUnlockItem('icon', idx, 30)) {
+      if (this._isItemUnlocked('icon', idx) || idx === 0 || CUBE_ICONS[idx] === 'wink') {
         this.customization.iconIndex = idx;
         this._applyCustomization();
+      } else {
+        this._showUnlockPopup('icon', idx, 30);
       }
     } else if (action.startsWith('shape_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._tryUnlockItem('shape', idx, 30)) {
+      if (this._isItemUnlocked('shape', idx) || idx === 0) {
         this.customization.shapeIndex = idx;
         this._applyCustomization();
+      } else {
+        this._showUnlockPopup('shape', idx, 30);
       }
+    } else if (action === 'unlock_yes') {
+      const p = this._unlockPopup;
+      if (p && this._tryUnlockItem(p.type, p.idx, p.cost)) {
+        if (p.type === 'color') this.customization.colorIndex = p.idx;
+        else if (p.type === 'trail') this.customization.trailIndex = p.idx;
+        else if (p.type === 'icon') this.customization.iconIndex = p.idx;
+        else if (p.type === 'shape') this.customization.shapeIndex = p.idx;
+        this._applyCustomization();
+      }
+      this._unlockPopup = null;
+    } else if (action === 'unlock_no') {
+      this._unlockPopup = null;
     } else if (action.startsWith('trailstyle_')) {
       this.customization.trailStyleIndex = parseInt(action.split('_')[1]);
       this._applyCustomization();
@@ -2217,7 +2237,7 @@ class Game {
     } else if (this.state === LEVEL_SELECT) {
       this.ui.drawLevelSelect(ctx, this.progress, this.levelPage, this._showScrollCoin, this._diamonds);
     } else if (this.state === CUSTOMIZE) {
-      this.ui.drawCustomize(ctx, this.customization, this._diamonds || 0);
+      this.ui.drawCustomize(ctx, this.customization, this._diamonds || 0, this._unlockPopup);
     } else if (this.state === STATS) {
       this.ui.drawStats(ctx, this.progress, this._diamonds);
     } else if (this.state === FRIENDS) {
@@ -2872,6 +2892,11 @@ class Game {
     }
     syncCustomizationToCloud(this.customization);
     this._broadcastUpdate();
+  }
+
+  _showUnlockPopup(type, idx, cost) {
+    const canAfford = (this._diamonds || 0) >= cost;
+    this._unlockPopup = { type, idx, cost, canAfford };
   }
 
   _isItemUnlocked(type, idx) {

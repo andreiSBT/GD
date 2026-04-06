@@ -1139,7 +1139,7 @@ export class UI {
     this.buttons.push({ id, x: barX - pad, y: barY - pad, w: barW + pad * 2, h: barH + pad * 2 });
   }
 
-  drawCustomize(ctx, customization, diamonds = 0) {
+  drawCustomize(ctx, customization, diamonds = 0, unlockPopup = null) {
     this.buttons = [];
 
     const { colorIndex, trailIndex, iconIndex, shapeIndex, trailStyleIndex } = customization;
@@ -1151,13 +1151,26 @@ export class UI {
     };
 
     const _drawLock = (x, y, w, h, cost, canAfford) => {
-      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      // Dark overlay
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
       this._roundRect(ctx, x, y, w, h, 6);
       ctx.fill();
+      // Lock icon
+      const lx = x + w / 2, ly = y + h / 2 - 4;
+      const ls = Math.min(w, h) * 0.25;
+      ctx.strokeStyle = canAfford ? '#00DDFF' : '#555';
+      ctx.lineWidth = 2;
+      // Lock shackle (arc)
+      ctx.beginPath();
+      ctx.arc(lx, ly - ls * 0.3, ls * 0.45, Math.PI, 0);
+      ctx.stroke();
+      // Lock body (rect)
       ctx.fillStyle = canAfford ? '#00DDFF' : '#555';
-      ctx.font = `bold ${Math.min(11, w / 2.5)}px monospace`;
+      ctx.fillRect(lx - ls * 0.5, ly, ls, ls * 0.7);
+      // Price below
+      ctx.font = `bold ${Math.min(10, w / 3)}px monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText('\u25C6' + cost, x + w / 2, y + h / 2 + 4);
+      ctx.fillText('\u25C6' + cost, x + w / 2, y + h - 3);
     };
 
     // Background
@@ -1441,6 +1454,76 @@ export class UI {
       }
 
       this.buttons.push({ id: `icon_${i}`, x: ix, y: iy, w: iconSize, h: iconSize });
+    }
+
+    // Unlock confirmation popup
+    if (unlockPopup) {
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+      const pw = 280, ph = 150, pr = 14;
+      const px = (SCREEN_WIDTH - pw) / 2;
+      const py = (SCREEN_HEIGHT - ph) / 2;
+
+      this._roundRect(ctx, px, py, pw, ph, pr);
+      ctx.fillStyle = 'rgba(5,10,25,0.95)';
+      ctx.fill();
+      ctx.save();
+      ctx.shadowColor = '#00DDFF';
+      ctx.shadowBlur = 10;
+      this._roundRect(ctx, px, py, pw, ph, pr);
+      ctx.strokeStyle = '#00DDFF';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 18px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('UNLOCK?', SCREEN_WIDTH / 2, py + 35);
+
+      ctx.fillStyle = unlockPopup.canAfford ? '#00DDFF' : '#FF4444';
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('\u25C6 ' + unlockPopup.cost, SCREEN_WIDTH / 2, py + 65);
+
+      if (!unlockPopup.canAfford) {
+        ctx.fillStyle = '#FF6666';
+        ctx.font = '13px monospace';
+        ctx.fillText('Not enough diamonds!', SCREEN_WIDTH / 2, py + 85);
+      }
+
+      // Buttons
+      const btnW = 100, btnH = 36, btnGap = 20;
+      const btnY = py + ph - btnH - 18;
+      if (unlockPopup.canAfford) {
+        const yesX = SCREEN_WIDTH / 2 - btnW - btnGap / 2;
+        this._roundRect(ctx, yesX, btnY, btnW, btnH, 8);
+        ctx.fillStyle = 'rgba(0,180,100,0.4)';
+        ctx.fill();
+        ctx.strokeStyle = '#00CC66';
+        ctx.lineWidth = 1;
+        this._roundRect(ctx, yesX, btnY, btnW, btnH, 8);
+        ctx.stroke();
+        ctx.fillStyle = '#00FF88';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText('BUY', yesX + btnW / 2, btnY + btnH / 2 + 5);
+        this.buttons.push({ id: 'unlock_yes', x: yesX, y: btnY, w: btnW, h: btnH });
+      }
+
+      const noX = unlockPopup.canAfford ? SCREEN_WIDTH / 2 + btnGap / 2 : SCREEN_WIDTH / 2 - btnW / 2;
+      this._roundRect(ctx, noX, btnY, btnW, btnH, 8);
+      ctx.fillStyle = 'rgba(100,50,50,0.4)';
+      ctx.fill();
+      ctx.strokeStyle = '#AA4444';
+      ctx.lineWidth = 1;
+      this._roundRect(ctx, noX, btnY, btnW, btnH, 8);
+      ctx.stroke();
+      ctx.fillStyle = '#FF6666';
+      ctx.font = 'bold 14px monospace';
+      ctx.fillText(unlockPopup.canAfford ? 'CANCEL' : 'OK', noX + btnW / 2, btnY + btnH / 2 + 5);
+      this.buttons.push({ id: 'unlock_no', x: noX, y: btnY, w: btnW, h: btnH });
     }
 
     // Back button
