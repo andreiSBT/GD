@@ -160,6 +160,7 @@ export class Editor {
     this.showInfo = false; // level info overlay
     this.showMenu = false; // editor menu overlay
     this.showColorPicker = false; // theme color picker overlay
+    this.officialLoadPicker = false; // load official level picker
 
     // Hidden file input for music
     this._musicInput = document.createElement('input');
@@ -583,6 +584,10 @@ export class Editor {
       return;
     }
     // Dismiss overlays on click
+    if (this.officialLoadPicker) {
+      const clicked = this.buttons.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
+      if (!clicked) { this.officialLoadPicker = false; return; }
+    }
     if (this.showColorPicker) {
       const clicked = this.buttons.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
       if (!clicked) { this.showColorPicker = false; return; }
@@ -814,6 +819,10 @@ export class Editor {
       if (this.movingEndMode) {
         this.movingEndMode = false;
         this.movingStart = null;
+        return true;
+      }
+      if (this.officialLoadPicker) {
+        this.officialLoadPicker = false;
         return true;
       }
       if (this.showColorPicker) {
@@ -1313,6 +1322,11 @@ export class Editor {
     // Menu overlay
     if (this.showMenu) {
       this._drawMenu(ctx);
+    }
+
+    // Official load picker
+    if (this.officialLoadPicker) {
+      this._drawOfficialLoadPicker(ctx);
     }
 
     // Color picker overlay
@@ -2485,6 +2499,7 @@ export class Editor {
       { id: 'menu_help', label: 'HELP', color: '#00CC88' },
     ];
     if (isAdmin()) {
+      menuItems.push({ id: 'menu_load_official', label: 'LOAD OFFICIAL', color: '#FFAA22' });
       menuItems.push({ id: 'action_save_official', label: 'SAVE AS OFFICIAL', color: '#FF6622' });
     }
     menuItems.push({ id: 'menu_exit', label: 'EXIT TO MENU', color: '#FF4455' });
@@ -2554,6 +2569,70 @@ export class Editor {
     ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, startY + totalH + 30);
   }
 
+
+
+  _drawOfficialLoadPicker(ctx) {
+    ctx.fillStyle = 'rgba(0,0,0,0.88)';
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    const lvlCount = Object.keys(LEVEL_DATA).length;
+    const cols = 3;
+    const btnW = 120;
+    const btnH = 50;
+    const gap = 12;
+    const rows = Math.ceil(lvlCount / cols);
+    const gridW = cols * btnW + (cols - 1) * gap;
+    const startX = (SCREEN_WIDTH - gridW) / 2;
+    const startY = (SCREEN_HEIGHT - rows * (btnH + gap)) / 2 + 40;
+
+    ctx.save();
+    ctx.shadowColor = '#FFAA22';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#FFAA22';
+    ctx.font = 'bold 24px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('LOAD OFFICIAL LEVEL', SCREEN_WIDTH / 2, startY - 30);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+
+    for (let i = 0; i < lvlCount; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const bx = startX + col * (btnW + gap);
+      const by = startY + row * (btnH + gap);
+      const theme = THEMES[i + 1] || THEMES[1];
+      const name = LEVEL_DATA[i + 1]?.name || ('Level ' + (i + 1));
+
+      const grad = ctx.createLinearGradient(bx, by, bx, by + btnH);
+      grad.addColorStop(0, theme.bgTop);
+      grad.addColorStop(1, theme.bgBot);
+      this._editorRoundRect(ctx, bx, by, btnW, btnH, 8);
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.save();
+      ctx.shadowColor = theme.accent;
+      ctx.shadowBlur = 4;
+      this._editorRoundRect(ctx, bx, by, btnW, btnH, 8);
+      ctx.strokeStyle = theme.accent;
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.5;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(name, bx + btnW / 2, by + btnH / 2 + 5);
+
+      this.buttons.push({ id: 'loadofficial_' + (i + 1), x: bx, y: by, w: btnW, h: btnH });
+    }
+
+    ctx.fillStyle = '#445566';
+    ctx.font = '12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Press ESC to close', SCREEN_WIDTH / 2, startY + rows * (btnH + gap) + 20);
+  }
 
   _drawColorPicker(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.88)';
@@ -3363,6 +3442,13 @@ export class Editor {
           this._showToast('Renamed to "' + this.levelName + '"');
         }
       });
+    } else if (id === 'menu_load_official') {
+      this.showMenu = false;
+      this.officialLoadPicker = true;
+    } else if (id.startsWith('loadofficial_')) {
+      const lvl = parseInt(id.replace('loadofficial_', ''));
+      this.officialLoadPicker = false;
+      if (this.onLoadLevel) this.onLoadLevel(lvl);
     } else if (id === 'menu_color') {
       this.showMenu = false;
       this.showColorPicker = !this.showColorPicker;
