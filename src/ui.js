@@ -101,7 +101,7 @@ export class UI {
     return null;
   }
 
-  drawMainMenu(ctx, progress) {
+  drawMainMenu(ctx, progress, diamonds = 0) {
     this.buttons = [];
 
     // Background
@@ -114,6 +114,18 @@ export class UI {
 
     // Floating particles
     this._drawMenuParticles(ctx);
+
+    // Diamond counter (top left)
+    if (diamonds > 0) {
+      ctx.save();
+      ctx.fillStyle = '#00DDFF';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'left';
+      ctx.shadowColor = '#00DDFF';
+      ctx.shadowBlur = 8;
+      ctx.fillText(`◆ ${diamonds}`, 16, 30);
+      ctx.restore();
+    }
 
     // Decorative horizontal line
     const lineW = 320;
@@ -653,7 +665,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -771,6 +783,14 @@ export class UI {
     ctx.textAlign = 'right';
     ctx.fillText(levelName, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 12);
 
+    // Level diamonds (top right, below pause button)
+    if (lvlDiamondTotal > 0) {
+      ctx.fillStyle = '#00DDFF';
+      ctx.font = 'bold 13px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`◆ ${lvlDiamondsEarned}/${lvlDiamondTotal}`, pbX - 10, 28);
+    }
+
     // NEW BEST! popup (shown on death only)
     if (isNewBest) {
       ctx.save();
@@ -826,13 +846,6 @@ export class UI {
       ctx.restore();
     }
 
-    // Diamond counter (top left, below attempts)
-    if (totalDiamonds > 0 || diamondsEarned > 0) {
-      ctx.fillStyle = '#00DDFF';
-      ctx.font = 'bold 14px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(`◆ ${totalDiamonds}`, 16, coins ? 64 : 46);
-    }
   }
 
   drawDeathScreen(ctx, progress, attempts, isNewBest = false) {

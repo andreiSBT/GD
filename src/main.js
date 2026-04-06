@@ -2201,7 +2201,7 @@ class Game {
     }
 
     if (this.state === MENU) {
-      this.ui.drawMainMenu(ctx, this.progress);
+      this.ui.drawMainMenu(ctx, this.progress, this._diamonds);
     } else if (this.state === LEVEL_SELECT) {
       this.ui.drawLevelSelect(ctx, this.progress, this.levelPage, this._showScrollCoin);
     } else if (this.state === CUSTOMIZE) {
@@ -2352,7 +2352,17 @@ class Game {
       // Show NEW BEST! only on death screen, never in practice mode
       const showNewBest = this.state === DEAD && this.newBestTriggered && !this.practiceMode;
       const totalCoins = this.level ? Math.min(3, this.level.totalCoins) : 0;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds);
+      // Calculate diamonds already earned from this level
+      const lvlId = this.level ? this.level.id : 0;
+      const lvlDiamondTotal = lvlId ? this._getLevelDiamondTotal(lvlId) : 0;
+      let lvlDiamondsEarned = 0;
+      if (lvlId && this.progress[lvlId]) {
+        const lp = this.progress[lvlId];
+        const pPool = Math.round(lvlDiamondTotal * 0.75);
+        lvlDiamondsEarned = Math.round(pPool * Math.min(1, lp.bestProgress));
+        if (lp.completed) lvlDiamondsEarned += lvlDiamondTotal - pPool;
+      }
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal);
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
