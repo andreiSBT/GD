@@ -148,6 +148,24 @@ class Game {
         const saved = localStorage.getItem('gd_total_jumps_' + user.id);
         if (saved) localStorage.setItem('gd_total_jumps', saved);
       }
+      // Grant retroactive diamonds for existing progress (one-time)
+      if (!localStorage.getItem('gd_diamonds_retroactive')) {
+        let retroDiamonds = 0;
+        for (let id = 1; id <= 9; id++) {
+          const lp = this.progress[id];
+          if (lp && lp.bestProgress > 0) {
+            const total = 50 + (id - 1) * 25;
+            const progressPool = Math.round(total * 0.75);
+            retroDiamonds += Math.round(progressPool * Math.min(1, lp.bestProgress));
+            if (lp.completed) retroDiamonds += total - progressPool;
+          }
+        }
+        if (retroDiamonds > 0) {
+          this._diamonds += retroDiamonds;
+          localStorage.setItem('gd_diamonds', String(this._diamonds));
+        }
+        localStorage.setItem('gd_diamonds_retroactive', '1');
+      }
       // Load official levels from cloud (override hardcoded ones)
       const cloudLevels = await loadOfficialLevels();
       if (cloudLevels) {
@@ -2695,8 +2713,10 @@ class Game {
     localStorage.removeItem('gd_redeemed_codes');
     localStorage.removeItem('gd_scroll_coin');
     localStorage.removeItem('gd_diamonds');
+    localStorage.removeItem('gd_diamonds_retroactive');
     this._diamonds = 0;
     localStorage.removeItem('gd_diamonds');
+    localStorage.removeItem('gd_diamonds_retroactive');
     this._diamonds = 0;
     localStorage.removeItem('gd_rainbow_color');
     localStorage.removeItem('gd_dotted_trail');
