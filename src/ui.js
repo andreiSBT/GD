@@ -410,10 +410,11 @@ export class UI {
       ctx.font = 'bold 11px monospace';
       const dTextW = ctx.measureText(dText).width;
       const dRightX = x + cardW - 10;
+      const dTextY = y + 19;
       ctx.fillStyle = '#00DDFF';
       ctx.textAlign = 'right';
-      ctx.fillText(dText, dRightX, y + 19);
-      this._drawGem(ctx, dRightX - dTextW - 10, y + 14, 7);
+      ctx.fillText(dText, dRightX, dTextY);
+      this._drawGem(ctx, dRightX - dTextW - 10, dTextY - 5, 7);
 
       if (prog.completed) {
         ctx.save();
