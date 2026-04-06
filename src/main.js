@@ -2734,10 +2734,14 @@ class Game {
       }
       // Sync official level music (levels 1-10) — store as pending, decode on play
       for (let id = 1; id <= 9; id++) {
-        if (Sound.hasCustomMusic(id)) continue;
+        if (Sound.hasCustomMusic(id)) { console.log('[Music] Level', id, 'already loaded'); continue; }
+        console.log('[Music] Downloading level', id, '...');
         const ab = await downloadOfficialMusic(id);
         if (ab) {
           Sound.storePendingCustomMusic(id, ab);
+          console.log('[Music] Level', id, 'stored as pending');
+        } else {
+          console.log('[Music] Level', id, 'not found in cloud');
         }
       }
     } catch (e) {

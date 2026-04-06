@@ -561,9 +561,12 @@ export async function downloadOfficialMusic(levelId) {
   const path = `official/${levelId}.audio`;
   try {
     const { data, error } = await client.storage.from('level-music').download(path);
-    if (error || !data) return null;
-    return await data.arrayBuffer();
-  } catch { return null; }
+    if (error) { console.warn('[Music] Download failed for level', levelId, ':', error.message); return null; }
+    if (!data) { console.warn('[Music] No data for level', levelId); return null; }
+    const ab = await data.arrayBuffer();
+    console.log('[Music] Downloaded level', levelId, ':', ab.byteLength, 'bytes');
+    return ab;
+  } catch (e) { console.warn('[Music] Error for level', levelId, ':', e.message); return null; }
 }
 
 export async function uploadLevelMusic(slotId, file) {
