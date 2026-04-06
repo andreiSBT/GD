@@ -2203,7 +2203,7 @@ class Game {
     if (this.state === MENU) {
       this.ui.drawMainMenu(ctx, this.progress, this._diamonds);
     } else if (this.state === LEVEL_SELECT) {
-      this.ui.drawLevelSelect(ctx, this.progress, this.levelPage, this._showScrollCoin);
+      this.ui.drawLevelSelect(ctx, this.progress, this.levelPage, this._showScrollCoin, this._diamonds);
     } else if (this.state === CUSTOMIZE) {
       this.ui.drawCustomize(ctx, this.customization);
     } else if (this.state === STATS) {

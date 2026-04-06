@@ -202,7 +202,7 @@ export class UI {
     ctx.fillText(IS_MOBILE ? 'TAP to jump' : 'SPACE / CLICK to jump   •   ESC for menu', SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
   }
 
-  drawLevelSelect(ctx, progress, page = 0, showScrollCoin = false) {
+  drawLevelSelect(ctx, progress, page = 0, showScrollCoin = false, diamonds = 0) {
     this.buttons = [];
 
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
@@ -212,6 +212,18 @@ export class UI {
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
     this._drawMenuParticles(ctx);
+
+    // Diamond counter (top left)
+    if (diamonds > 0) {
+      ctx.save();
+      ctx.fillStyle = '#00DDFF';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'left';
+      ctx.shadowColor = '#00DDFF';
+      ctx.shadowBlur = 8;
+      ctx.fillText(`◆ ${diamonds}`, 16, 30);
+      ctx.restore();
+    }
 
     // Title with glow
     ctx.save();
@@ -399,6 +411,16 @@ export class UI {
           ctx.stroke();
         }
       }
+
+      // Diamonds earned for this level
+      const lvlDTotal = 50 + (i - 1) * 25;
+      const pPool = Math.round(lvlDTotal * 0.75);
+      let lvlDEarned = Math.round(pPool * Math.min(1, prog.bestProgress));
+      if (prog.completed) lvlDEarned += lvlDTotal - pPool;
+      ctx.fillStyle = '#00DDFF';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`◆ ${lvlDEarned}/${lvlDTotal}`, x + cardW / 2, y + (totalCoins > 0 ? 240 : 218));
 
       if (prog.completed) {
         ctx.save();
@@ -782,14 +804,6 @@ export class UI {
     ctx.font = '11px monospace';
     ctx.textAlign = 'right';
     ctx.fillText(levelName, SCREEN_WIDTH - 20, SCREEN_HEIGHT - 12);
-
-    // Level diamonds (top right, below pause button)
-    if (lvlDiamondTotal > 0) {
-      ctx.fillStyle = '#00DDFF';
-      ctx.font = 'bold 13px monospace';
-      ctx.textAlign = 'right';
-      ctx.fillText(`◆ ${lvlDiamondsEarned}/${lvlDiamondTotal}`, pbX - 10, 28);
-    }
 
     // NEW BEST! popup (shown on death only)
     if (isNewBest) {
