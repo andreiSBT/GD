@@ -117,13 +117,14 @@ export class UI {
 
     // Diamond counter (top left)
     if (diamonds > 0) {
-      ctx.save();
+      _drawGem(24, 26, 14);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'left';
       ctx.shadowColor = '#00DDFF';
-      ctx.shadowBlur = 8;
-      ctx.fillText(`◆ ${diamonds}`, 16, 30);
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(diamonds), 36, 31);
+      ctx.shadowBlur = 0;
       ctx.restore();
     }
 
@@ -215,13 +216,14 @@ export class UI {
 
     // Diamond counter (top left)
     if (diamonds > 0) {
-      ctx.save();
+      _drawGem(24, 26, 14);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'left';
       ctx.shadowColor = '#00DDFF';
-      ctx.shadowBlur = 8;
-      ctx.fillText(`◆ ${diamonds}`, 16, 30);
+      ctx.shadowBlur = 6;
+      ctx.fillText(String(diamonds), 36, 31);
+      ctx.shadowBlur = 0;
       ctx.restore();
     }
 
@@ -417,10 +419,11 @@ export class UI {
       const pPool = Math.round(lvlDTotal * 0.75);
       let lvlDEarned = Math.round(pPool * Math.min(1, prog.bestProgress));
       if (prog.completed) lvlDEarned += lvlDTotal - pPool;
+      _drawGem(x + cardW - 72, y + 16, 10);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'right';
-      ctx.fillText(`◆ ${lvlDEarned}/${lvlDTotal}`, x + cardW - 12, y + 20);
+      ctx.fillText(`${lvlDEarned}/${lvlDTotal}`, x + cardW - 12, y + 20);
 
       if (prog.completed) {
         ctx.save();
@@ -504,7 +507,7 @@ export class UI {
       { label: 'TOTAL JUMPS', value: `${totalJumps}`, color: '#FFD700' },
       { label: 'LEVELS COMPLETED', value: `${completedLevels} / ${officialCount}`, color: '#00FF64' },
       { label: 'COINS COLLECTED', value: `${totalCoins}`, color: '#FFD700' },
-      { label: 'DIAMONDS', value: `◆ ${diamonds}`, color: '#00DDFF' },
+      { label: 'DIAMONDS', value: `${diamonds}`, color: '#00DDFF' },
       { label: 'LEVELS CREATED', value: `${createdLevels}`, color: '#FF8844' },
     ];
 
@@ -882,7 +885,8 @@ export class UI {
         ctx.shadowBlur = 10;
         ctx.fillStyle = '#00DDFF';
         ctx.font = 'bold 18px monospace';
-        ctx.fillText(`\u25C6 +${diamondsEarned}`, 0, 46);
+        _drawGem(-ctx.measureText('+' + diamondsEarned).width / 2 - 12, 42, 12);
+        ctx.fillText('+' + diamondsEarned, 4, 46);
         ctx.restore();
       }
 
@@ -1205,7 +1209,46 @@ export class UI {
       ctx.fillRect(lx - ls * 0.06, ly + bh * 0.35, ls * 0.12, bh * 0.35);
     };
 
-    // Background
+    // Diamond gem icon helper
+    const _drawGem = (cx, cy, size) => {
+      ctx.save();
+      ctx.translate(cx, cy);
+      const s = size / 2;
+      // Main diamond shape
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.lineTo(s, 0);
+      ctx.lineTo(0, s);
+      ctx.lineTo(-s, 0);
+      ctx.closePath();
+      const gGrad = ctx.createLinearGradient(-s, -s, s, s);
+      gGrad.addColorStop(0, '#88EEFF');
+      gGrad.addColorStop(0.5, '#00DDFF');
+      gGrad.addColorStop(1, '#0088CC');
+      ctx.fillStyle = gGrad;
+      ctx.fill();
+      // Highlight facet (top-left)
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.lineTo(-s, 0);
+      ctx.lineTo(0, 0);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fill();
+      // Outline
+      ctx.beginPath();
+      ctx.moveTo(0, -s);
+      ctx.lineTo(s, 0);
+      ctx.lineTo(0, s);
+      ctx.lineTo(-s, 0);
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(0,200,255,0.6)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    };
+
+        // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
     grad.addColorStop(0, '#080018');
     grad.addColorStop(0.5, '#0A0020');
@@ -1270,10 +1313,11 @@ export class UI {
     ctx.globalAlpha = 1;
 
     // Diamond count display
+    _drawGem(SCREEN_WIDTH - 78, 35, 14);
     ctx.fillStyle = '#00DDFF';
     ctx.font = 'bold 16px monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText('\u25C6 ' + diamonds, SCREEN_WIDTH - 30, 40);
+    ctx.textAlign = 'left';
+    ctx.fillText(String(diamonds), SCREEN_WIDTH - 68, 40);
 
     // === COLOR SECTION ===
     const sectionY1 = 175;
