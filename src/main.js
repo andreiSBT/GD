@@ -2646,6 +2646,22 @@ class Game {
   async _syncFromCloud() {
     this.progress = await initProgress();
     await this._initCloudCustomization();
+    // If cloud progress was reset (all empty), clear local secrets too
+    const hasAnyProgress = Object.values(this.progress).some(l => l.attempts > 0 || l.completed || l.bestProgress > 0);
+    if (!hasAnyProgress && parseInt(localStorage.getItem('gd_total_jumps') || '0') > 0) {
+      // Cloud is empty but local has data — cloud was reset from another device
+      localStorage.setItem('gd_total_jumps', '0');
+      localStorage.removeItem('gd_achievements');
+      localStorage.removeItem('gd_secret_coins');
+      localStorage.removeItem('gd_redeemed_codes');
+      localStorage.removeItem('gd_scroll_coin');
+      localStorage.removeItem('gd_rainbow_color');
+      localStorage.removeItem('gd_dotted_trail');
+      localStorage.removeItem('gd_wink_icon');
+      localStorage.removeItem('gd_boom_death');
+      localStorage.removeItem('gd_community_completions');
+      this._redeemedCodes = new Set();
+    }
   }
 
   async _syncCloudMusic() {
