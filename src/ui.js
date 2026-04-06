@@ -214,15 +214,6 @@ export class UI {
 
     this._drawMenuParticles(ctx);
 
-    // Diamond counter (top left)
-    if (diamonds > 0) {
-      this._drawGem(ctx, 22, 28, 12);
-      ctx.fillStyle = '#00DDFF';
-      ctx.font = 'bold 15px monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText(String(diamonds), 36, 33);
-    }
-
     // Title with glow
     ctx.save();
     ctx.shadowColor = '#00C8FF';
