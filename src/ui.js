@@ -115,15 +115,15 @@ export class UI {
     // Floating particles
     this._drawMenuParticles(ctx);
 
-    // Diamond counter (top left)
+    // Diamond counter (top left with spacing)
     if (diamonds > 0) {
-      this._drawGem(ctx, 24, 26, 14);
+      this._drawGem(ctx, 28, 28, 14);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'left';
       ctx.shadowColor = '#00DDFF';
       ctx.shadowBlur = 6;
-      ctx.fillText(String(diamonds), 36, 31);
+      ctx.fillText(String(diamonds), 40, 33);
       ctx.shadowBlur = 0;
       ctx.restore();
     }
@@ -1290,12 +1290,15 @@ export class UI {
     }
     ctx.globalAlpha = 1;
 
-    // Diamond count display
-    this._drawGem(ctx, SCREEN_WIDTH - 78, 35, 14);
+    // Diamond count display (top left)
+    this._drawGem(ctx, 28, 28, 14);
     ctx.fillStyle = '#00DDFF';
     ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText(String(diamonds), SCREEN_WIDTH - 68, 40);
+    ctx.shadowColor = '#00DDFF';
+    ctx.shadowBlur = 6;
+    ctx.fillText(String(diamonds), 40, 33);
+    ctx.shadowBlur = 0;
 
     // === COLOR SECTION ===
     const sectionY1 = 175;
