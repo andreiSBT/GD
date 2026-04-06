@@ -117,7 +117,7 @@ export class UI {
 
     // Diamond counter (top left)
     if (diamonds > 0) {
-      _drawGem(24, 26, 14);
+      this._drawGem(ctx, 24, 26, 14);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'left';
@@ -216,7 +216,7 @@ export class UI {
 
     // Diamond counter (top left)
     if (diamonds > 0) {
-      _drawGem(24, 26, 14);
+      this._drawGem(ctx, 24, 26, 14);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 16px monospace';
       ctx.textAlign = 'left';
@@ -419,7 +419,7 @@ export class UI {
       const pPool = Math.round(lvlDTotal * 0.75);
       let lvlDEarned = Math.round(pPool * Math.min(1, prog.bestProgress));
       if (prog.completed) lvlDEarned += lvlDTotal - pPool;
-      _drawGem(x + cardW - 72, y + 16, 10);
+      this._drawGem(ctx, x + cardW - 72, y + 16, 10);
       ctx.fillStyle = '#00DDFF';
       ctx.font = 'bold 11px monospace';
       ctx.textAlign = 'right';
@@ -885,7 +885,7 @@ export class UI {
         ctx.shadowBlur = 10;
         ctx.fillStyle = '#00DDFF';
         ctx.font = 'bold 18px monospace';
-        _drawGem(-ctx.measureText('+' + diamondsEarned).width / 2 - 12, 42, 12);
+        this._drawGem(ctx, -ctx.measureText('+' + diamondsEarned).width / 2 - 12, 42, 12);
         ctx.fillText('+' + diamondsEarned, 4, 46);
         ctx.restore();
       }
@@ -1313,7 +1313,7 @@ export class UI {
     ctx.globalAlpha = 1;
 
     // Diamond count display
-    _drawGem(SCREEN_WIDTH - 78, 35, 14);
+    this._drawGem(ctx, SCREEN_WIDTH - 78, 35, 14);
     ctx.fillStyle = '#00DDFF';
     ctx.font = 'bold 16px monospace';
     ctx.textAlign = 'left';
@@ -1909,6 +1909,41 @@ export class UI {
         ctx.stroke();
         break;
     }
+  }
+
+  _drawGem(ctx, cx, cy, size) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    const s = size / 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s, 0);
+    ctx.lineTo(0, s);
+    ctx.lineTo(-s, 0);
+    ctx.closePath();
+    const gGrad = ctx.createLinearGradient(-s, -s, s, s);
+    gGrad.addColorStop(0, '#88EEFF');
+    gGrad.addColorStop(0.5, '#00DDFF');
+    gGrad.addColorStop(1, '#0088CC');
+    ctx.fillStyle = gGrad;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(-s, 0);
+    ctx.lineTo(0, 0);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -s);
+    ctx.lineTo(s, 0);
+    ctx.lineTo(0, s);
+    ctx.lineTo(-s, 0);
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,200,255,0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
   }
 
   _wrapText(ctx, text, maxW) {
