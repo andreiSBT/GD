@@ -1150,27 +1150,30 @@ export class UI {
       return unlocked.includes(idx);
     };
 
-    const _drawLock = (x, y, w, h, cost, canAfford) => {
+    const _drawLock = (x, y, w, h) => {
       // Dark overlay
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillStyle = 'rgba(0,0,0,0.65)';
       this._roundRect(ctx, x, y, w, h, 6);
       ctx.fill();
-      // Lock icon
-      const lx = x + w / 2, ly = y + h / 2 - 4;
-      const ls = Math.min(w, h) * 0.25;
-      ctx.strokeStyle = canAfford ? '#00DDFF' : '#555';
-      ctx.lineWidth = 2;
-      // Lock shackle (arc)
+      // Lock icon centered
+      const lx = x + w / 2, ly = y + h / 2 - 2;
+      const ls = Math.min(w, h) * 0.22;
+      // Shackle
+      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.arc(lx, ly - ls * 0.3, ls * 0.45, Math.PI, 0);
+      ctx.arc(lx, ly - ls * 0.5, ls * 0.5, Math.PI, 0);
       ctx.stroke();
-      // Lock body (rect)
-      ctx.fillStyle = canAfford ? '#00DDFF' : '#555';
-      ctx.fillRect(lx - ls * 0.5, ly, ls, ls * 0.7);
-      // Price below
-      ctx.font = `bold ${Math.min(10, w / 3)}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.fillText('\u25C6' + cost, x + w / 2, y + h - 3);
+      // Body
+      const bw = ls * 1.2, bh = ls * 0.85;
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(lx - bw / 2, ly, bw, bh);
+      // Keyhole
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath();
+      ctx.arc(lx, ly + bh * 0.35, ls * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(lx - ls * 0.06, ly + bh * 0.35, ls * 0.12, bh * 0.35);
     };
 
     // Background
@@ -1278,7 +1281,7 @@ export class UI {
 
       // Lock overlay for non-free, non-secret, non-unlocked
       if (i > 0 && !isRainbow && !_isUnlocked('color', i)) {
-        _drawLock(cx, cy, colorSize, colorSize, 20, diamonds >= 20);
+        _drawLock(cx, cy, colorSize, colorSize);
       }
 
       if (i === colorIndex) {
@@ -1323,7 +1326,7 @@ export class UI {
 
       // Lock overlay
       if (i > 0 && !_isUnlocked('trail', i)) {
-        _drawLock(tx, ty, trailSize, trailSize, 20, diamonds >= 20);
+        _drawLock(tx, ty, trailSize, trailSize);
       }
 
       if (i === trailIndex) {
@@ -1401,7 +1404,7 @@ export class UI {
 
       // Lock overlay
       if (i > 0 && !_isUnlocked('shape', i)) {
-        _drawLock(sx, sy, shapeSize, shapeSize, 30, diamonds >= 30);
+        _drawLock(sx, sy, shapeSize, shapeSize);
       }
 
       if (i === (shapeIndex || 0)) {
@@ -1444,7 +1447,7 @@ export class UI {
       // Lock overlay (skip wink which is secret-unlocked)
       const isWink = CUBE_ICONS[i] === 'wink';
       if (i > 0 && !isWink && !_isUnlocked('icon', i)) {
-        _drawLock(ix, iy, iconSize, iconSize, 30, diamonds >= 30);
+        _drawLock(ix, iy, iconSize, iconSize);
       }
 
       if (i === iconIndex) {
@@ -1461,69 +1464,97 @@ export class UI {
       ctx.fillStyle = 'rgba(0,0,0,0.75)';
       ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-      const pw = 280, ph = 150, pr = 14;
-      const px = (SCREEN_WIDTH - pw) / 2;
-      const py = (SCREEN_HEIGHT - ph) / 2;
+      const pw = 300, ph = 200, pr = 14;
+      const ppx = (SCREEN_WIDTH - pw) / 2;
+      const ppy = (SCREEN_HEIGHT - ph) / 2;
 
-      this._roundRect(ctx, px, py, pw, ph, pr);
+      this._roundRect(ctx, ppx, ppy, pw, ph, pr);
       ctx.fillStyle = 'rgba(5,10,25,0.95)';
       ctx.fill();
       ctx.save();
       ctx.shadowColor = '#00DDFF';
       ctx.shadowBlur = 10;
-      this._roundRect(ctx, px, py, pw, ph, pr);
+      this._roundRect(ctx, ppx, ppy, pw, ph, pr);
       ctx.strokeStyle = '#00DDFF';
       ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.5;
+      ctx.globalAlpha = 0.4;
       ctx.stroke();
       ctx.globalAlpha = 1;
       ctx.restore();
 
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('UNLOCK?', SCREEN_WIDTH / 2, py + 35);
+      // Preview of the item (unshadowed)
+      const prevSize = 50;
+      const prevX = SCREEN_WIDTH / 2;
+      const prevY = ppy + 45;
+      if (unlockPopup.type === 'color') {
+        const c = PLAYER_COLORS[unlockPopup.idx];
+        ctx.fillStyle = c === 'rainbow' ? '#FFF' : c;
+        this._roundRect(ctx, prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize, 8);
+        ctx.fill();
+      } else if (unlockPopup.type === 'trail') {
+        const c = PLAYER_TRAIL_COLORS[unlockPopup.idx] || '#FFF';
+        ctx.fillStyle = c;
+        this._roundRect(ctx, prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize, 8);
+        ctx.fill();
+      } else if (unlockPopup.type === 'shape') {
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize);
+        this._drawPreviewCube(ctx, prevX, prevY, prevSize * 0.8, previewColor, null, CUBE_SHAPES[unlockPopup.idx]);
+      } else if (unlockPopup.type === 'icon') {
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillRect(prevX - prevSize/2, prevY - prevSize/2, prevSize, prevSize);
+        this._drawPreviewCube(ctx, prevX, prevY, prevSize * 0.8, previewColor, CUBE_ICONS[unlockPopup.idx], CUBE_SHAPES[shapeIndex || 0]);
+      }
 
+      // Title
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 16px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('UNLOCK', SCREEN_WIDTH / 2, ppy + 85);
+
+      // Cost
       ctx.fillStyle = unlockPopup.canAfford ? '#00DDFF' : '#FF4444';
-      ctx.font = 'bold 22px monospace';
-      ctx.fillText('\u25C6 ' + unlockPopup.cost, SCREEN_WIDTH / 2, py + 65);
+      ctx.font = 'bold 20px monospace';
+      ctx.fillText('\u25C6 ' + unlockPopup.cost, SCREEN_WIDTH / 2, ppy + 115);
 
       if (!unlockPopup.canAfford) {
         ctx.fillStyle = '#FF6666';
-        ctx.font = '13px monospace';
-        ctx.fillText('Not enough diamonds!', SCREEN_WIDTH / 2, py + 85);
+        ctx.font = '12px monospace';
+        ctx.fillText('Not enough diamonds!', SCREEN_WIDTH / 2, ppy + 135);
       }
 
       // Buttons
-      const btnW = 100, btnH = 36, btnGap = 20;
-      const btnY = py + ph - btnH - 18;
+      const ubW = 100, ubH = 36, ubGap = 20;
+      const ubY = ppy + ph - ubH - 16;
       if (unlockPopup.canAfford) {
-        const yesX = SCREEN_WIDTH / 2 - btnW - btnGap / 2;
-        this._roundRect(ctx, yesX, btnY, btnW, btnH, 8);
+        const yesX = SCREEN_WIDTH / 2 - ubW - ubGap / 2;
+        this._roundRect(ctx, yesX, ubY, ubW, ubH, 8);
         ctx.fillStyle = 'rgba(0,180,100,0.4)';
         ctx.fill();
         ctx.strokeStyle = '#00CC66';
         ctx.lineWidth = 1;
-        this._roundRect(ctx, yesX, btnY, btnW, btnH, 8);
+        this._roundRect(ctx, yesX, ubY, ubW, ubH, 8);
         ctx.stroke();
         ctx.fillStyle = '#00FF88';
         ctx.font = 'bold 14px monospace';
-        ctx.fillText('BUY', yesX + btnW / 2, btnY + btnH / 2 + 5);
-        this.buttons.push({ id: 'unlock_yes', x: yesX, y: btnY, w: btnW, h: btnH });
+        ctx.textAlign = 'center';
+        ctx.fillText('BUY', yesX + ubW / 2, ubY + ubH / 2 + 5);
+        this.buttons.push({ id: 'unlock_yes', x: yesX, y: ubY, w: ubW, h: ubH });
       }
 
-      const noX = unlockPopup.canAfford ? SCREEN_WIDTH / 2 + btnGap / 2 : SCREEN_WIDTH / 2 - btnW / 2;
-      this._roundRect(ctx, noX, btnY, btnW, btnH, 8);
+      const noX = unlockPopup.canAfford ? SCREEN_WIDTH / 2 + ubGap / 2 : SCREEN_WIDTH / 2 - ubW / 2;
+      this._roundRect(ctx, noX, ubY, ubW, ubH, 8);
       ctx.fillStyle = 'rgba(100,50,50,0.4)';
       ctx.fill();
       ctx.strokeStyle = '#AA4444';
       ctx.lineWidth = 1;
-      this._roundRect(ctx, noX, btnY, btnW, btnH, 8);
+      this._roundRect(ctx, noX, ubY, ubW, ubH, 8);
       ctx.stroke();
       ctx.fillStyle = '#FF6666';
       ctx.font = 'bold 14px monospace';
-      ctx.fillText(unlockPopup.canAfford ? 'CANCEL' : 'OK', noX + btnW / 2, btnY + btnH / 2 + 5);
-      this.buttons.push({ id: 'unlock_no', x: noX, y: btnY, w: btnW, h: btnH });
+      ctx.textAlign = 'center';
+      ctx.fillText(unlockPopup.canAfford ? 'CANCEL' : 'OK', noX + ubW / 2, ubY + ubH / 2 + 5);
+      this.buttons.push({ id: 'unlock_no', x: noX, y: ubY, w: ubW, h: ubH });
     }
 
     // Back button
