@@ -424,7 +424,7 @@ export class UI {
     this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, IS_MOBILE ? 150 : 130, backH, 'BACK', 'back', '#445566', 20);
   }
 
-  drawStats(ctx, progress) {
+  drawStats(ctx, progress, diamonds = 0) {
     this.buttons = [];
 
     // Background
@@ -470,6 +470,7 @@ export class UI {
       { label: 'TOTAL JUMPS', value: `${totalJumps}`, color: '#FFD700' },
       { label: 'LEVELS COMPLETED', value: `${completedLevels} / ${officialCount}`, color: '#00FF64' },
       { label: 'COINS COLLECTED', value: `${totalCoins}`, color: '#FFD700' },
+      { label: 'DIAMONDS', value: `◆ ${diamonds}`, color: '#00DDFF' },
       { label: 'LEVELS CREATED', value: `${createdLevels}`, color: '#FF8844' },
     ];
 
@@ -652,7 +653,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -812,9 +813,25 @@ export class UI {
       ctx.shadowBlur = 10;
       ctx.fillStyle = '#FFFFFF';
       ctx.font = 'bold 22px monospace';
-      ctx.fillText(`${Math.round(newBestValue * 100)}%`, 0, 18);
+      ctx.fillText(`${Math.round(newBestValue * 100)}%`, 0, 14);
+
+      // Diamond reward
+      if (diamondsEarned > 0) {
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#00DDFF';
+        ctx.font = 'bold 14px monospace';
+        ctx.fillText(`+${diamondsEarned} ◆`, 0, 32);
+      }
 
       ctx.restore();
+    }
+
+    // Diamond counter (top left, below attempts)
+    if (totalDiamonds > 0 || diamondsEarned > 0) {
+      ctx.fillStyle = '#00DDFF';
+      ctx.font = 'bold 14px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`◆ ${totalDiamonds}`, 16, coins ? 64 : 46);
     }
   }
 

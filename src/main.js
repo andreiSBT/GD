@@ -69,6 +69,8 @@ class Game {
     this.previousBest = 0;
     this.newBestTimer = 0;
     this.newBestTriggered = false;
+    this._diamondsEarned = 0;
+    this._diamonds = parseInt(localStorage.getItem('gd_diamonds') || '0');
     this.lastCheckpoint = null;
     this._checkpointTrail = []; // visual-only trail of past checkpoints {x, y}
     this._autoCheckpointTimer = 0;
@@ -1353,6 +1355,7 @@ class Game {
     Sound.stopMusic();
     this.attempts++;
     this.coinsCollected = 0;
+    this._diamondsEarned = 0;
     this._autoCheckpointTimer = 0;
     this.newBestTriggered = false;
     this.newBestTimer = 0;
@@ -1482,6 +1485,16 @@ class Game {
       this.progress = updateLevelProgress(this.progress, this.level.id, saveProgress, false);
     }
 
+    // Award diamonds for new best
+    if (this.newBestTriggered && !this.practiceMode && !this.editorLevelData && this.level) {
+      const oldPct = Math.round(this.previousBest * 100);
+      const newPct = Math.round(this.peakProgress * 100);
+      this._diamondsEarned = this._calcDiamondReward(this.level.id, oldPct, newPct, false);
+      this._awardDiamonds(this._diamondsEarned);
+    } else {
+      this._diamondsEarned = 0;
+    }
+
     // Auto-retry after a short delay
     if (this._retryTimer) clearTimeout(this._retryTimer);
     const delay = (this.practiceMode && this.lastCheckpoint) ? 800 : 1200;
@@ -1500,6 +1513,35 @@ class Game {
       totalCoins[id] = data.objects ? Math.min(3, data.objects.filter(o => o.type === 'coin').length) : 0;
     }
     return { totalCoins };
+  }
+
+  _getLevelDiamondTotal(levelId) {
+    // L1=50, L2=75, L3=100, ..., L9=250
+    return 50 + (levelId - 1) * 25;
+  }
+
+  _calcDiamondReward(levelId, oldBestPct, newBestPct, completed) {
+    const total = this._getLevelDiamondTotal(levelId);
+    const progressPool = Math.round(total * 0.75); // 75% from progress
+    const completionBonus = total - progressPool; // 25% from completion
+    // Diamonds for progress gained (new% - old%)
+    const oldDiamonds = Math.round(progressPool * oldBestPct / 100);
+    const newDiamonds = Math.round(progressPool * newBestPct / 100);
+    let earned = newDiamonds - oldDiamonds;
+    // Completion bonus (only first time)
+    if (completed && newBestPct >= 100) {
+      const lp = this.progress[levelId];
+      if (!lp || !lp._diamondCompletionClaimed) {
+        earned += completionBonus;
+      }
+    }
+    return Math.max(0, earned);
+  }
+
+  _awardDiamonds(amount) {
+    if (amount <= 0) return;
+    this._diamonds += amount;
+    localStorage.setItem('gd_diamonds', String(this._diamonds));
   }
 
   _pushCheckpointToTrail() {
@@ -2010,6 +2052,18 @@ class Game {
             this.progress = updateLevelProgress(this.progress, this.level.id, 1.0, false, this.coinsCollected || 0, true);
           }
           this._checkAchievements();
+          // Award diamonds for completion (includes progress + completion bonus)
+          if (!this.practiceMode && !this.editorLevelData && this.level) {
+            const oldPct = Math.round(this.previousBest * 100);
+            this._diamondsEarned = this._calcDiamondReward(this.level.id, oldPct, 100, true);
+            if (this._diamondsEarned > 0) {
+              this._awardDiamonds(this._diamondsEarned);
+              // Mark completion bonus as claimed
+              if (this.progress[this.level.id]) {
+                this.progress[this.level.id]._diamondCompletionClaimed = true;
+              }
+            }
+          }
           // Track community/editor level completions
           if (this.editorLevelData) {
             const count = parseInt(localStorage.getItem('gd_community_completions') || '0');
@@ -2135,7 +2189,7 @@ class Game {
     } else if (this.state === CUSTOMIZE) {
       this.ui.drawCustomize(ctx, this.customization);
     } else if (this.state === STATS) {
-      this.ui.drawStats(ctx, this.progress);
+      this.ui.drawStats(ctx, this.progress, this._diamonds);
     } else if (this.state === FRIENDS) {
       this.ui.drawFriends(ctx, this.friendsData);
     } else if (this.state === COMMUNITY) {
@@ -2280,7 +2334,7 @@ class Game {
       // Show NEW BEST! only on death screen, never in practice mode
       const showNewBest = this.state === DEAD && this.newBestTriggered && !this.practiceMode;
       const totalCoins = this.level ? Math.min(3, this.level.totalCoins) : 0;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0);
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds);
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
@@ -2640,6 +2694,10 @@ class Game {
     localStorage.removeItem('gd_secret_coins');
     localStorage.removeItem('gd_redeemed_codes');
     localStorage.removeItem('gd_scroll_coin');
+    localStorage.removeItem('gd_diamonds');
+    this._diamonds = 0;
+    localStorage.removeItem('gd_diamonds');
+    this._diamonds = 0;
     localStorage.removeItem('gd_rainbow_color');
     localStorage.removeItem('gd_dotted_trail');
     localStorage.removeItem('gd_wink_icon');
