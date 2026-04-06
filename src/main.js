@@ -178,7 +178,11 @@ class Game {
     });
     // Periodic sync every 30s (only when tab is visible)
     setInterval(() => {
-      if (!document.hidden) this._syncFromCloud();
+      if (!document.hidden) {
+        this._syncFromCloud();
+        syncSecretsToCloud();
+        this._broadcastUpdate();
+      }
     }, 30000);
     this._startLoop();
   }
