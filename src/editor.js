@@ -1587,7 +1587,8 @@ export class Editor {
   _getSlotList() {
     try {
       const raw = localStorage.getItem('gd_editor_slots');
-      return raw ? JSON.parse(raw) : [];
+      const list = raw ? JSON.parse(raw) : [];
+      return list.filter(s => s.id !== '__secrets__');
     } catch { return []; }
   }
 
