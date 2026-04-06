@@ -508,7 +508,7 @@ export async function loadEditorLevelsFromCloud() {
       .order('updated_at', { ascending: false });
 
     if (error || !data) return null;
-    return data.map(row => ({
+    return data.filter(row => row.slot_id !== '__secrets__').map(row => ({
       slotId: row.slot_id,
       name: row.name,
       themeId: row.theme_id,
