@@ -406,11 +406,14 @@ export class UI {
       const pPool = Math.round(lvlDTotal * 0.75);
       let lvlDEarned = Math.round(pPool * Math.min(1, prog.bestProgress));
       if (prog.completed) lvlDEarned += lvlDTotal - pPool;
-      this._drawGem(ctx, x + cardW - 50, y + 14, 8);
-      ctx.fillStyle = '#00DDFF';
+      const dText = `${lvlDEarned}/${lvlDTotal}`;
       ctx.font = 'bold 11px monospace';
+      const dTextW = ctx.measureText(dText).width;
+      const dRightX = x + cardW - 10;
+      ctx.fillStyle = '#00DDFF';
       ctx.textAlign = 'right';
-      ctx.fillText(`${lvlDEarned}/${lvlDTotal}`, x + cardW - 12, y + 19);
+      ctx.fillText(dText, dRightX, y + 19);
+      this._drawGem(ctx, dRightX - dTextW - 10, y + 14, 7);
 
       if (prog.completed) {
         ctx.save();
