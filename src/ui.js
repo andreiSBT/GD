@@ -809,52 +809,81 @@ export class UI {
     if (isNewBest) {
       ctx.save();
       const popY = 200;
+      const hasDiamonds = diamondsEarned > 0;
+      const pillW = 280, pillH = hasDiamonds ? 110 : 80;
 
       ctx.translate(SCREEN_WIDTH / 2, popY);
 
-      // Background pill
-      const pillW = 260, pillH = 72;
-      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      // Background with gradient
+      const pillGrad = ctx.createLinearGradient(0, -pillH / 2, 0, pillH / 2);
+      pillGrad.addColorStop(0, 'rgba(20,15,0,0.85)');
+      pillGrad.addColorStop(1, 'rgba(10,5,0,0.85)');
+      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 16);
+      ctx.fillStyle = pillGrad;
       ctx.fill();
 
-      // Gold border glow
+      // Gold border with double glow
+      ctx.save();
       ctx.shadowColor = '#FFD700';
-      ctx.shadowBlur = 25;
-      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 18);
-      ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+      ctx.shadowBlur = 30;
+      this._roundRect(ctx, -pillW / 2, -pillH / 2, pillW, pillH, 16);
+      ctx.strokeStyle = 'rgba(255,215,0,0.6)';
       ctx.lineWidth = 2;
       ctx.stroke();
-      ctx.shadowBlur = 0;
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      // Top highlight
+      ctx.globalAlpha = 0.08;
+      ctx.fillStyle = '#FFD700';
+      ctx.fillRect(-pillW / 2 + 16, -pillH / 2 + 1, pillW - 32, 1);
+      ctx.globalAlpha = 1;
 
       // Star decorations
-      ctx.fillStyle = 'rgba(255,215,0,0.35)';
-      ctx.font = '18px monospace';
+      ctx.fillStyle = 'rgba(255,215,0,0.3)';
+      ctx.font = '20px monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('\u2605', -pillW / 2 + 24, 0);
-      ctx.fillText('\u2605', pillW / 2 - 24, 0);
+      ctx.fillText('\u2605', -pillW / 2 + 22, -8);
+      ctx.fillText('\u2605', pillW / 2 - 22, -8);
 
       // "NEW BEST!" text
+      ctx.save();
       ctx.shadowColor = '#FFD700';
-      ctx.shadowBlur = 18;
+      ctx.shadowBlur = 20;
       ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 24px monospace';
-      ctx.fillText('NEW BEST!', 0, -10);
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('NEW BEST!', 0, -15);
+      ctx.restore();
 
       // Percentage
-      ctx.shadowColor = '#FFFFFF';
-      ctx.shadowBlur = 10;
-      ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 22px monospace';
+      ctx.save();
+      ctx.shadowColor = '#FFF';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 26px monospace';
       ctx.fillText(`${Math.round(newBestValue * 100)}%`, 0, 14);
+      ctx.restore();
 
       // Diamond reward
-      if (diamondsEarned > 0) {
-        ctx.shadowBlur = 0;
+      if (hasDiamonds) {
+        // Separator
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = '#FFD700';
+        ctx.fillRect(-60, 28, 120, 1);
+        ctx.globalAlpha = 1;
+
+        // Diamond icon + count
+        ctx.save();
+        ctx.shadowColor = '#00DDFF';
+        ctx.shadowBlur = 10;
         ctx.fillStyle = '#00DDFF';
-        ctx.font = 'bold 14px monospace';
-        ctx.fillText(`+${diamondsEarned} ◆`, 0, 32);
+        ctx.font = 'bold 18px monospace';
+        ctx.fillText(`\u25C6 +${diamondsEarned}`, 0, 46);
+        ctx.restore();
       }
 
       ctx.restore();
