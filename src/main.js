@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes } from './supabase.js';
+import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 import { customConfirm } from './dialogs.js';
@@ -1572,6 +1572,7 @@ class Game {
     if (amount <= 0) return;
     this._diamonds += amount;
     localStorage.setItem('gd_diamonds', String(this._diamonds));
+    syncDiamondsToCloud(this._diamonds);
   }
 
   _pushCheckpointToTrail() {
@@ -2802,6 +2803,14 @@ class Game {
         for (const a of cloudSecrets.achievements) local.add(a);
         localStorage.setItem('gd_achievements', JSON.stringify([...local]));
       }
+    }
+    // Sync diamonds: keep the higher of local vs cloud
+    const cloudDiamonds = await loadDiamondsFromCloud();
+    if (cloudDiamonds != null) {
+      const localDiamonds = parseInt(localStorage.getItem('gd_diamonds') || '0');
+      this._diamonds = Math.max(localDiamonds, cloudDiamonds);
+      localStorage.setItem('gd_diamonds', String(this._diamonds));
+      if (this._diamonds > cloudDiamonds) syncDiamondsToCloud(this._diamonds);
     }
     // If cloud progress was reset (all empty), clear local secrets too
     const hasAnyProgress = Object.values(this.progress).some(l => l.attempts > 0 || l.completed || l.bestProgress > 0);

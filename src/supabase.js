@@ -290,6 +290,7 @@ export async function syncProgressToCloud(localProgress) {
           attempts: data.attempts,
           best_progress: data.bestProgress,
           completed: data.completed,
+          best_coins: data.bestCoins || 0,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id,level_id',
@@ -300,6 +301,29 @@ export async function syncProgressToCloud(localProgress) {
   } catch (e) {
     console.warn('Supabase sync failed:', e.message);
   }
+}
+
+export async function syncDiamondsToCloud(diamonds) {
+  const client = getClient();
+  if (!client) return;
+  const userId = getUserId();
+  if (!userId) return;
+  try {
+    await client.from('profiles').update({ diamonds }).eq('user_id', userId);
+  } catch (e) {
+    console.warn('Diamond sync failed:', e.message);
+  }
+}
+
+export async function loadDiamondsFromCloud() {
+  const client = getClient();
+  if (!client) return null;
+  const userId = getUserId();
+  if (!userId) return null;
+  try {
+    const { data } = await client.from('profiles').select('diamonds').eq('user_id', userId).single();
+    return data ? (data.diamonds || 0) : null;
+  } catch { return null; }
 }
 
 export async function resetProgressInCloud() {
@@ -342,6 +366,7 @@ export async function loadProgressFromCloud() {
         attempts: row.attempts,
         bestProgress: row.best_progress,
         completed: row.completed,
+        bestCoins: row.best_coins || 0,
       };
     }
     return progress;
