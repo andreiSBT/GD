@@ -191,8 +191,10 @@ export class Player {
       if (this.dashTimer <= 0) this.dashing = false;
     }
 
-    // Store trail position (wave trail starts from the back of the diamond)
-    const trailX = this.mode === MODE_WAVE ? this.x - PLAYER_SIZE * 0.3 : this.x;
+    // Store trail position (wave: from center in air, slightly back on ground)
+    const trailX = this.mode === MODE_WAVE
+      ? (this.grounded ? this.x - PLAYER_SIZE * 0.1 : this.x + PLAYER_SIZE * 0.2)
+      : this.x;
     this.trail.push({ x: trailX, y: this.y + PLAYER_SIZE / 2 });
     const maxTrail = this.trailStyle === 'dotted' ? 45 : 20;
     if (this.trail.length > maxTrail) this.trail.shift();
