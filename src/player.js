@@ -330,7 +330,7 @@ export class Player {
       this.y = waveCeilY;
       waveOnSurface = true;
     }
-    if (this.grounded) waveOnSurface = true;
+    this.grounded = waveOnSurface;
 
     // Rotate ±45° in air, flatten to 0° on surfaces
     const targetRot = waveOnSurface ? 0 : (this.vy < 0 ? -45 : 45);
