@@ -191,11 +191,18 @@ export class Player {
       if (this.dashTimer <= 0) this.dashing = false;
     }
 
-    // Store trail position (wave: from center in air, slightly back on ground)
-    const trailX = this.mode === MODE_WAVE
-      ? (this.grounded ? this.x - PLAYER_SIZE * 0.1 : this.x + PLAYER_SIZE * 0.2)
-      : this.x;
-    this.trail.push({ x: trailX, y: this.y + PLAYER_SIZE / 2 });
+    // Store trail position (wave: from back tip of arrow, rotated)
+    let trailX = this.x;
+    let trailY = this.y + PLAYER_SIZE / 2;
+    if (this.mode === MODE_WAVE) {
+      const hs = PLAYER_SIZE / 2;
+      // Back tip of arrow shape is at (-hs + 10, 0) relative to center
+      const tipLocalX = -hs + 10;
+      const rad = (this.rotation * Math.PI) / 180;
+      trailX = this.x + PLAYER_SIZE / 2 + tipLocalX * Math.cos(rad);
+      trailY = this.y + PLAYER_SIZE / 2 + tipLocalX * Math.sin(rad);
+    }
+    this.trail.push({ x: trailX, y: trailY });
     const maxTrail = this.trailStyle === 'dotted' ? 45 : 20;
     if (this.trail.length > maxTrail) this.trail.shift();
 
