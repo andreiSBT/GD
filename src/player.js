@@ -422,9 +422,9 @@ export class Player {
     if (this.mode === MODE_CUBE) {
       this._drawCube(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_SHIP) {
-      this._drawShip(ctx, PLAYER_SIZE, color);
-    } else if (this.mode === MODE_WAVE) {
       this._drawWave(ctx, PLAYER_SIZE, color);
+    } else if (this.mode === MODE_WAVE) {
+      this._drawShip(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_BALL) {
       this._drawBall(ctx, PLAYER_SIZE, color);
     }
@@ -848,21 +848,33 @@ export class Player {
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Cockpit
-    ctx.fillStyle = lighten(color, 60);
-    ctx.beginPath();
-    ctx.arc(5, 0, 7, 0, Math.PI * 2);
-    ctx.fill();
+    if (this.mode !== MODE_WAVE) {
+      // Cockpit
+      ctx.fillStyle = lighten(color, 60);
+      ctx.beginPath();
+      ctx.arc(5, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Eye in cockpit
-    ctx.fillStyle = '#FFF';
-    ctx.beginPath();
-    ctx.arc(6, -1, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(7, -1, 2, 0, Math.PI * 2);
-    ctx.fill();
+      // Eye in cockpit
+      ctx.fillStyle = '#FFF';
+      ctx.beginPath();
+      ctx.arc(6, -1, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(7, -1, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Wave: inner lighter shape instead of cockpit
+      ctx.fillStyle = lighten(color, 50);
+      ctx.beginPath();
+      ctx.moveTo(hs - 8, 0);
+      ctx.lineTo(-hs + 12, -hs + 12);
+      ctx.lineTo(-hs + 16, 0);
+      ctx.lineTo(-hs + 12, hs - 12);
+      ctx.closePath();
+      ctx.fill();
+    }
 
     // Border
     ctx.strokeStyle = '#FFF';
@@ -875,17 +887,19 @@ export class Player {
     ctx.closePath();
     ctx.stroke();
 
-    // Engine flame
-    ctx.fillStyle = this.holding ? '#FF6600' : '#FF3300';
-    ctx.globalAlpha = 0.8 + Math.random() * 0.2;
-    const flameLen = this.holding ? 12 + Math.random() * 6 : 6 + Math.random() * 3;
-    ctx.beginPath();
-    ctx.moveTo(-hs + 10, -4);
-    ctx.lineTo(-hs - flameLen, 0);
-    ctx.lineTo(-hs + 10, 4);
-    ctx.closePath();
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    if (this.mode !== MODE_WAVE) {
+      // Engine flame (ship only)
+      ctx.fillStyle = this.holding ? '#FF6600' : '#FF3300';
+      ctx.globalAlpha = 0.8 + Math.random() * 0.2;
+      const flameLen = this.holding ? 12 + Math.random() * 6 : 6 + Math.random() * 3;
+      ctx.beginPath();
+      ctx.moveTo(-hs + 10, -4);
+      ctx.lineTo(-hs - flameLen, 0);
+      ctx.lineTo(-hs + 10, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
   }
 
   _drawWave(ctx, size, color) {
@@ -982,18 +996,18 @@ export class Player {
       ctx.fill();
     } else if (this.mode === MODE_SHIP) {
       ctx.beginPath();
-      ctx.moveTo(hs, 0);
-      ctx.lineTo(-hs, -hs + 4);
-      ctx.lineTo(-hs + 10, 0);
-      ctx.lineTo(-hs, hs - 4);
-      ctx.closePath();
-      ctx.fill();
-    } else if (this.mode === MODE_WAVE) {
-      ctx.beginPath();
       ctx.moveTo(0, -hs);
       ctx.lineTo(hs, 0);
       ctx.lineTo(0, hs);
       ctx.lineTo(-hs, 0);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.mode === MODE_WAVE) {
+      ctx.beginPath();
+      ctx.moveTo(hs, 0);
+      ctx.lineTo(-hs, -hs + 4);
+      ctx.lineTo(-hs + 10, 0);
+      ctx.lineTo(-hs, hs - 4);
       ctx.closePath();
       ctx.fill();
     } else if (this.mode === MODE_BALL) {
