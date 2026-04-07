@@ -322,16 +322,19 @@ export class Player {
     // Boundaries — clamp to ground/ceiling without dying
     const groundY = GROUND_Y - PLAYER_SIZE;
     const waveCeilY = this.mini ? (PLAYER_SIZE - this.getSize()) / 2 : 0;
+    let waveOnSurface = false;
     if (this.y >= groundY) {
       this.y = groundY;
+      waveOnSurface = true;
     } else if (this.y <= waveCeilY) {
       this.y = waveCeilY;
+      waveOnSurface = true;
     }
+    if (this.grounded) waveOnSurface = true;
 
-    // Smoothly rotate toward movement direction; flatten when touching ground/ceiling/blocks
-    const onSurface = this.y >= groundY || this.y <= waveCeilY || this.grounded;
-    const targetRot = onSurface ? 0 : (this.vy < 0 ? -45 : 45);
-    this.rotation += (targetRot - this.rotation) * 0.3;
+    // Rotate ±45° in air, flatten to 0° on surfaces
+    const targetRot = waveOnSurface ? 0 : (this.vy < 0 ? -45 : 45);
+    this.rotation += (targetRot - this.rotation) * 0.5;
   }
 
   _updateBall() {
