@@ -191,8 +191,9 @@ export class Player {
       if (this.dashTimer <= 0) this.dashing = false;
     }
 
-    // Store trail position
-    this.trail.push({ x: this.x, y: this.y + PLAYER_SIZE / 2 });
+    // Store trail position (wave trail starts from the back of the diamond)
+    const trailX = this.mode === MODE_WAVE ? this.x - PLAYER_SIZE * 0.3 : this.x;
+    this.trail.push({ x: trailX, y: this.y + PLAYER_SIZE / 2 });
     const maxTrail = this.trailStyle === 'dotted' ? 45 : 20;
     if (this.trail.length > maxTrail) this.trail.shift();
 
@@ -327,9 +328,10 @@ export class Player {
       this.y = waveCeilY;
     }
 
-    // Smoothly rotate toward movement direction
-    const targetRot = this.vy < 0 ? -45 : this.vy > 0 ? 45 : 0;
-    this.rotation += (targetRot - this.rotation) * 0.25;
+    // Smoothly rotate toward movement direction; flatten when touching ground/ceiling/blocks
+    const onSurface = this.y >= groundY || this.y <= waveCeilY || this.grounded;
+    const targetRot = onSurface ? 0 : (this.vy < 0 ? -45 : 45);
+    this.rotation += (targetRot - this.rotation) * 0.3;
   }
 
   _updateBall() {
@@ -420,9 +422,9 @@ export class Player {
     if (this.mode === MODE_CUBE) {
       this._drawCube(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_SHIP) {
-      this._drawWave(ctx, PLAYER_SIZE, color);
-    } else if (this.mode === MODE_WAVE) {
       this._drawShip(ctx, PLAYER_SIZE, color);
+    } else if (this.mode === MODE_WAVE) {
+      this._drawWave(ctx, PLAYER_SIZE, color);
     } else if (this.mode === MODE_BALL) {
       this._drawBall(ctx, PLAYER_SIZE, color);
     }
@@ -980,18 +982,18 @@ export class Player {
       ctx.fill();
     } else if (this.mode === MODE_SHIP) {
       ctx.beginPath();
-      ctx.moveTo(0, -hs);
-      ctx.lineTo(hs, 0);
-      ctx.lineTo(0, hs);
-      ctx.lineTo(-hs, 0);
-      ctx.closePath();
-      ctx.fill();
-    } else if (this.mode === MODE_WAVE) {
-      ctx.beginPath();
       ctx.moveTo(hs, 0);
       ctx.lineTo(-hs, -hs + 4);
       ctx.lineTo(-hs + 10, 0);
       ctx.lineTo(-hs, hs - 4);
+      ctx.closePath();
+      ctx.fill();
+    } else if (this.mode === MODE_WAVE) {
+      ctx.beginPath();
+      ctx.moveTo(0, -hs);
+      ctx.lineTo(hs, 0);
+      ctx.lineTo(0, hs);
+      ctx.lineTo(-hs, 0);
       ctx.closePath();
       ctx.fill();
     } else if (this.mode === MODE_BALL) {
