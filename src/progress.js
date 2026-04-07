@@ -93,5 +93,7 @@ export async function initProgress() {
     };
   }
   saveProgress(merged);
+  // Sync merged result back to cloud so both devices converge
+  syncProgressToCloud(merged);
   return merged;
 }
