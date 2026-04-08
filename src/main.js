@@ -63,6 +63,7 @@ class Game {
     this.level = null;
     this.theme = THEMES[1];
     this.practiceMode = false;
+    this._showHitboxes = false;
     this.attempts = 0;
     this.currentProgress = 0;
     this.peakProgress = 0;
@@ -256,6 +257,9 @@ class Game {
           return;
         }
         doPress();
+      }
+      if (e.code === 'KeyH' && this.practiceMode) {
+        this._showHitboxes = !this._showHitboxes;
       }
       if (e.code === 'Escape') {
         if (this.state === STATS) {
@@ -1598,6 +1602,10 @@ class Game {
       this.lastCheckpoint = null;
       return true;
     }
+    if (action === 'practice_hitbox' && this.practiceMode) {
+      this._showHitboxes = !this._showHitboxes;
+      return true;
+    }
     return false;
   }
 
@@ -2259,6 +2267,45 @@ class Game {
         obs.draw(ctx, camX, this.theme);
       }
 
+      // Draw hitbox overlays in practice mode
+      if (this._showHitboxes && this.practiceMode) {
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        for (const obs of visible) {
+          const ox = (obs.x || 0) - camX + PLAYER_X_OFFSET;
+          const oy = obs.y || 0;
+          const ow = obs.w || GRID;
+          const oh = obs.h || GRID;
+          // Determine color by type
+          const t = obs.type;
+          if (t === 'spike' || t === 'saw') {
+            ctx.fillStyle = '#FF2222'; // red = hazard
+            if (t === 'saw') {
+              // Circular hitbox
+              const r = (obs.radius || GRID) / 2;
+              const cx = ox + ow / 2, cy = oy + oh / 2;
+              ctx.beginPath();
+              ctx.arc(cx, cy, r, 0, Math.PI * 2);
+              ctx.fill();
+              continue;
+            }
+          } else if (t === 'platform' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
+            ctx.fillStyle = '#4488FF'; // blue = platform
+          } else if (t === 'orb' || t === 'pad' || t === 'portal' || t === 'coin' || t === 'checkpoint') {
+            ctx.fillStyle = '#00FF64'; // green = gameplay
+          } else {
+            continue;
+          }
+          ctx.fillRect(ox, oy, ow, oh);
+        }
+        // Player hitbox
+        const pr = this.player.getRect();
+        ctx.fillStyle = '#FFFF00';
+        ctx.globalAlpha = 0.4;
+        ctx.fillRect(pr.x - camX + PLAYER_X_OFFSET, pr.y, pr.w, pr.h);
+        ctx.restore();
+      }
+
       this.renderer.drawGround(ctx, camX, this.theme, pulseIntensity);
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
@@ -2378,6 +2425,7 @@ class Game {
         lvlDiamondsEarned = Math.round(pPool * Math.min(1, lp.bestProgress));
         if (lp.completed) lvlDiamondsEarned += lvlDiamondTotal - pPool;
       }
+      this.ui._showHitboxes = this._showHitboxes && this.practiceMode;
       this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal);
 
       if (this.state === PAUSED) {

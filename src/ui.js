@@ -780,6 +780,20 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.fillText('✕', delX + cpBtnS / 2, cpY + cpBtnS / 2 + 6);
       this.buttons.push({ id: 'practice_delete_cp', x: delX, y: cpY, w: cpBtnS, h: cpBtnS });
+
+      // Hitbox toggle button
+      const hbX = delX + cpBtnS + 6;
+      this._roundRect(ctx, hbX, cpY, cpBtnS, cpBtnS, 6);
+      ctx.fillStyle = this._showHitboxes ? 'rgba(100,150,255,0.3)' : 'rgba(255,255,255,0.08)';
+      ctx.fill();
+      ctx.strokeStyle = this._showHitboxes ? 'rgba(100,150,255,0.7)' : 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = this._showHitboxes ? '#6699FF' : '#556677';
+      ctx.font = 'bold 9px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('HIT', hbX + cpBtnS / 2, cpY + cpBtnS / 2 + 3);
+      this.buttons.push({ id: 'practice_hitbox', x: hbX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
     // Pause button (top right) — rounded
