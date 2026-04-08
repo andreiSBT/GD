@@ -661,10 +661,10 @@ export class Player {
         ctx.closePath();
         break;
       case 'heart': {
-        const s = hs * 0.9;
-        ctx.moveTo(0, s * 0.6);
-        ctx.bezierCurveTo(-s * 1.1, -s * 0.2, -s * 0.5, -s * 1.1, 0, -s * 0.4);
-        ctx.bezierCurveTo(s * 0.5, -s * 1.1, s * 1.1, -s * 0.2, 0, s * 0.6);
+        const s = hs * 1.15;
+        ctx.moveTo(0, s * 0.7);
+        ctx.bezierCurveTo(-s * 1.2, -s * 0.1, -s * 0.55, -s * 1.2, 0, -s * 0.35);
+        ctx.bezierCurveTo(s * 0.55, -s * 1.2, s * 1.2, -s * 0.1, 0, s * 0.7);
         ctx.closePath();
         break;
       }
