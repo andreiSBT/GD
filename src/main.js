@@ -1574,7 +1574,6 @@ class Game {
     this._diamonds += amount;
     localStorage.setItem('gd_diamonds', String(this._diamonds));
     syncSecretsToCloud();
-    syncDiamondsToCloud(this._diamonds);
   }
 
   _pushCheckpointToTrail() {
@@ -2809,9 +2808,12 @@ class Game {
       if (cloudSecrets.diamonds != null) {
         const localD = parseInt(localStorage.getItem('gd_diamonds') || '0');
         const cloudD = cloudSecrets.diamonds;
-        // Take cloud value if higher (earned on another device)
-        // or if local is 0 (fresh login)
-        if (cloudD > localD || localD === 0) {
+        // Count total unlocks local vs cloud to detect spending
+        const localUnlocks = ['color','trail','shape','icon'].reduce((s, k) => s + JSON.parse(localStorage.getItem('gd_unlocked_' + k) || '[]').length, 0);
+        const cloudUnlocks = ['Color','Trail','Shape','Icon'].reduce((s, k) => s + (cloudSecrets['unlocked' + k] || []).length, 0);
+        // If local has more unlocks, we spent diamonds locally — keep local value
+        // Otherwise take cloud (earned on another device or fresh login)
+        if (localUnlocks <= cloudUnlocks && (cloudD > localD || localD === 0)) {
           localStorage.setItem('gd_diamonds', String(cloudD));
           this._diamonds = cloudD;
         }
@@ -2824,14 +2826,7 @@ class Game {
         localStorage.setItem('gd_unlocked_' + key.toLowerCase(), JSON.stringify(merged));
       }
     }
-    // Sync diamonds: keep the higher of local vs cloud
-    const cloudDiamonds = await loadDiamondsFromCloud();
-    if (cloudDiamonds != null) {
-      const localDiamonds = parseInt(localStorage.getItem('gd_diamonds') || '0');
-      this._diamonds = Math.max(localDiamonds, cloudDiamonds);
-      localStorage.setItem('gd_diamonds', String(this._diamonds));
-      if (this._diamonds > cloudDiamonds) syncDiamondsToCloud(this._diamonds);
-    }
+    // (diamonds synced via secrets, not profiles)
     // If cloud progress was reset (all empty), clear local secrets too
     const hasAnyProgress = Object.values(this.progress).some(l => l.attempts > 0 || l.completed || l.bestProgress > 0);
     if (!hasAnyProgress && parseInt(localStorage.getItem('gd_total_jumps') || '0') > 0) {
