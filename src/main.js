@@ -1208,7 +1208,7 @@ class Game {
       // Holiday codes
       "IT'S HOLIDAY TIME!": { reward: 'christmas_color', desc: 'Christmas color unlocked!', condition: () => _nearHoliday(12, 25), failMsg: 'Only available around Christmas!' },
       'EGG HUNT': { reward: 'easter_icon', desc: 'Easter egg icon unlocked!', condition: () => _nearHoliday(4, 20), failMsg: 'Only available around Easter!' },
-      'ANUL CARE VINE': { reward: 'year_flag_trail', desc: 'Year flag trail unlocked!', condition: () => _nearHoliday(1, 1), failMsg: 'Only available around New Year!' },
+      [String(new Date().getFullYear() + 1)]: { reward: 'year_flag_trail', desc: 'Year flag trail unlocked!', condition: () => _nearHoliday(1, 1), failMsg: 'Only available around New Year!' },
       'I LOVE YOU': { reward: 'heart_shape', desc: 'Heart shape unlocked!', condition: () => _nearHoliday(2, 14), failMsg: 'Only available around Valentine\'s Day!' },
       'SPOOOOOKY!': { reward: 'halloween_icon', desc: 'Spooky icon unlocked!', condition: () => _nearHoliday(10, 31), failMsg: 'Only available around Halloween!' },
     };
