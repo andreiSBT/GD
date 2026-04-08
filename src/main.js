@@ -183,8 +183,6 @@ class Game {
     setInterval(() => {
       if (!document.hidden) {
         this._syncFromCloud();
-        syncSecretsToCloud();
-        this._broadcastUpdate();
       }
     }, 30000);
     this._startLoop();
@@ -1575,6 +1573,7 @@ class Game {
     if (amount <= 0) return;
     this._diamonds += amount;
     localStorage.setItem('gd_diamonds', String(this._diamonds));
+    syncSecretsToCloud();
     syncDiamondsToCloud(this._diamonds);
   }
 
@@ -2806,11 +2805,16 @@ class Game {
         for (const a of cloudSecrets.achievements) local.add(a);
         localStorage.setItem('gd_achievements', JSON.stringify([...local]));
       }
-      // Sync diamonds — only restore from cloud if local is 0 (fresh login)
-      const localDiamonds = parseInt(localStorage.getItem('gd_diamonds') || '0');
-      if (localDiamonds === 0 && cloudSecrets.diamonds > 0) {
-        localStorage.setItem('gd_diamonds', String(cloudSecrets.diamonds));
-        this._diamonds = cloudSecrets.diamonds;
+      // Sync diamonds from cloud
+      if (cloudSecrets.diamonds != null) {
+        const localD = parseInt(localStorage.getItem('gd_diamonds') || '0');
+        const cloudD = cloudSecrets.diamonds;
+        // Take cloud value if higher (earned on another device)
+        // or if local is 0 (fresh login)
+        if (cloudD > localD || localD === 0) {
+          localStorage.setItem('gd_diamonds', String(cloudD));
+          this._diamonds = cloudD;
+        }
       }
       // Sync unlocked items (merge)
       for (const key of ['Color', 'Trail', 'Shape', 'Icon']) {
