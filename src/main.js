@@ -1188,6 +1188,19 @@ class Game {
       return;
     }
 
+    // Orthodox Easter date calculation (Julian calendar + 13 day offset)
+    const _orthodoxEaster = (year) => {
+      const a = year % 4, b = year % 7, c = year % 19;
+      const d = (19 * c + 15) % 30;
+      const e = (2 * a + 4 * b - d + 34) % 7;
+      const month = Math.floor((d + e + 114) / 31); // 3=March, 4=April
+      const day = ((d + e + 114) % 31) + 1;
+      // Convert from Julian to Gregorian (+13 days)
+      const julian = new Date(year, month - 1, day);
+      julian.setDate(julian.getDate() + 13);
+      return julian;
+    };
+
     // Holiday date check (2 days before and after = 5 day window)
     const _nearHoliday = (month, day) => {
       if (isAdmin()) return true;
@@ -1195,6 +1208,14 @@ class Game {
       const y = now.getFullYear();
       const holiday = new Date(y, month - 1, day);
       const diff = Math.abs(now - holiday) / (1000 * 60 * 60 * 24);
+      return diff <= 2.5;
+    };
+
+    const _nearEaster = () => {
+      if (isAdmin()) return true;
+      const now = new Date();
+      const easter = _orthodoxEaster(now.getFullYear());
+      const diff = Math.abs(now - easter) / (1000 * 60 * 60 * 24);
       return diff <= 2.5;
     };
 
@@ -1207,7 +1228,7 @@ class Game {
       'BOOM!': { reward: 'boom_death', desc: 'BOOM explosion unlocked!' },
       // Holiday codes
       "IT'S HOLIDAY TIME!": { reward: 'christmas_color', desc: 'Christmas color unlocked!', condition: () => _nearHoliday(12, 25), failMsg: 'Only available around Christmas!' },
-      'EGG HUNT': { reward: 'easter_icon', desc: 'Easter egg icon unlocked!', condition: () => _nearHoliday(4, 20), failMsg: 'Only available around Easter!' },
+      'EGG HUNT': { reward: 'easter_icon', desc: 'Easter egg icon unlocked!', condition: () => _nearEaster(), failMsg: 'Only available around Easter!' },
       [String(new Date().getFullYear() + 1)]: { reward: 'year_flag_trail', desc: 'Year flag trail unlocked!', condition: () => _nearHoliday(1, 1), failMsg: 'Only available around New Year!' },
       'I LOVE YOU': { reward: 'heart_shape', desc: 'Heart shape unlocked!', condition: () => _nearHoliday(2, 14), failMsg: 'Only available around Valentine\'s Day!' },
       'SPOOOOOKY!': { reward: 'halloween_icon', desc: 'Spooky icon unlocked!', condition: () => _nearHoliday(10, 31), failMsg: 'Only available around Halloween!' },
