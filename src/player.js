@@ -880,24 +880,35 @@ export class Player {
         ctx.stroke();
         break;
       case 'egg':
-        // Easter egg — oval eyes with colorful dots
-        ctx.fillStyle = '#FFF';
+        // Easter — red egg with cross and decorative bands
+        // Red egg shape
+        ctx.fillStyle = '#CC2222';
         ctx.beginPath();
-        ctx.ellipse(-3, -2, 3, 4, 0, 0, Math.PI * 2);
-        ctx.ellipse(8, -2, 3, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(2, 0, 10, 12, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = '#000';
+        // Darker bottom half
+        ctx.fillStyle = '#AA1818';
         ctx.beginPath();
-        ctx.arc(-2, -1, 1.5, 0, Math.PI * 2);
-        ctx.arc(9, -1, 1.5, 0, Math.PI * 2);
+        ctx.ellipse(2, 3, 9, 8, 0, 0, Math.PI);
         ctx.fill();
-        // Colorful dots (Easter egg pattern)
-        ctx.fillStyle = '#FF69B4';
-        ctx.beginPath(); ctx.arc(-8, 5, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#00CC66';
-        ctx.beginPath(); ctx.arc(0, 7, 2, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#FFD700';
-        ctx.beginPath(); ctx.arc(8, 5, 2, 0, Math.PI * 2); ctx.fill();
+        // Gold cross
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(2, -8); ctx.lineTo(2, 6);
+        ctx.moveTo(-4, -3); ctx.lineTo(8, -3);
+        ctx.stroke();
+        // Gold band around middle
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(2, 0, 10, 3, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(-2, -5, 3, 4, -0.3, 0, Math.PI * 2);
+        ctx.fill();
         break;
       case 'spooky':
         // Halloween — glowing hollow eyes + jagged mouth
