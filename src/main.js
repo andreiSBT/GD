@@ -1188,6 +1188,16 @@ class Game {
       return;
     }
 
+    // Holiday date check (2 days before and after = 5 day window)
+    const _nearHoliday = (month, day) => {
+      if (isAdmin()) return true;
+      const now = new Date();
+      const y = now.getFullYear();
+      const holiday = new Date(y, month - 1, day);
+      const diff = Math.abs(now - holiday) / (1000 * 60 * 60 * 24);
+      return diff <= 2.5;
+    };
+
     // Define secret codes and their rewards
     const SECRET_CODES = {
       'COINS?!': { reward: 'coin', desc: '+1 Secret Coin unlocked!' },
@@ -1195,6 +1205,12 @@ class Game {
       '...': { reward: 'dotted_trail', desc: 'Dotted trail unlocked!' },
       ';)': { reward: 'wink_icon', desc: 'Wink face unlocked!' },
       'BOOM!': { reward: 'boom_death', desc: 'BOOM explosion unlocked!' },
+      // Holiday codes
+      "IT'S HOLIDAY TIME!": { reward: 'christmas_color', desc: 'Christmas color unlocked!', condition: () => _nearHoliday(12, 25), failMsg: 'Only available around Christmas!' },
+      'EGG HUNT': { reward: 'easter_icon', desc: 'Easter egg icon unlocked!', condition: () => _nearHoliday(4, 20), failMsg: 'Only available around Easter!' },
+      'ANUL CARE VINE': { reward: 'year_flag_trail', desc: 'Year flag trail unlocked!', condition: () => _nearHoliday(1, 1), failMsg: 'Only available around New Year!' },
+      'I LOVE YOU': { reward: 'heart_shape', desc: 'Heart shape unlocked!', condition: () => _nearHoliday(2, 14), failMsg: 'Only available around Valentine\'s Day!' },
+      'SPOOOOOKY!': { reward: 'halloween_icon', desc: 'Spooky icon unlocked!', condition: () => _nearHoliday(10, 31), failMsg: 'Only available around Halloween!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1222,6 +1238,16 @@ class Game {
       localStorage.setItem('gd_wink_icon', '1');
     } else if (entry.reward === 'boom_death') {
       localStorage.setItem('gd_boom_death', '1');
+    } else if (entry.reward === 'christmas_color') {
+      localStorage.setItem('gd_christmas_color', '1');
+    } else if (entry.reward === 'easter_icon') {
+      localStorage.setItem('gd_easter_icon', '1');
+    } else if (entry.reward === 'year_flag_trail') {
+      localStorage.setItem('gd_year_flag_trail', '1');
+    } else if (entry.reward === 'heart_shape') {
+      localStorage.setItem('gd_heart_shape', '1');
+    } else if (entry.reward === 'halloween_icon') {
+      localStorage.setItem('gd_halloween_icon', '1');
     }
 
     this._redeemedCodes.add(code);
@@ -2795,6 +2821,11 @@ class Game {
     localStorage.removeItem('gd_dotted_trail');
     localStorage.removeItem('gd_wink_icon');
     localStorage.removeItem('gd_boom_death');
+    localStorage.removeItem('gd_christmas_color');
+    localStorage.removeItem('gd_easter_icon');
+    localStorage.removeItem('gd_year_flag_trail');
+    localStorage.removeItem('gd_heart_shape');
+    localStorage.removeItem('gd_halloween_icon');
     localStorage.removeItem('gd_community_completions');
     localStorage.removeItem('gd_unlocked_color');
     localStorage.removeItem('gd_unlocked_trail');
@@ -2841,6 +2872,11 @@ class Game {
       if (cloudSecrets.dotted) localStorage.setItem('gd_dotted_trail', '1');
       if (cloudSecrets.wink) localStorage.setItem('gd_wink_icon', '1');
       if (cloudSecrets.boom) localStorage.setItem('gd_boom_death', '1');
+      if (cloudSecrets.christmas) localStorage.setItem('gd_christmas_color', '1');
+      if (cloudSecrets.easter) localStorage.setItem('gd_easter_icon', '1');
+      if (cloudSecrets.yearFlag) localStorage.setItem('gd_year_flag_trail', '1');
+      if (cloudSecrets.heart) localStorage.setItem('gd_heart_shape', '1');
+      if (cloudSecrets.halloween) localStorage.setItem('gd_halloween_icon', '1');
       if (cloudSecrets.scrollCoin) localStorage.setItem('gd_scroll_coin', '1');
       if (cloudSecrets.jumps > parseInt(localStorage.getItem('gd_total_jumps') || '0'))
         localStorage.setItem('gd_total_jumps', String(cloudSecrets.jumps));

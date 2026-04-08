@@ -421,6 +421,8 @@ export class Player {
     if (color === 'rainbow') {
       const hue = (Date.now() / 10) % 360;
       color = `hsl(${hue}, 100%, 60%)`;
+    } else if (color === 'christmas') {
+      color = Math.sin(Date.now() / 500) > 0 ? '#FF2222' : '#00CC44';
     }
 
     // --- GLOW TRAIL ---
@@ -495,6 +497,30 @@ export class Player {
             drawing = !drawing;
             segLeft = drawing ? dashLen : gapLen;
           }
+        }
+      }
+    } else if (this.trailStyle === 'year_flag') {
+      // Year flag trail — banner with year text
+      const year = new Date().getFullYear().toString();
+      const flagH = 14, flagW = 8;
+      for (let i = 0; i < this.trail.length; i++) {
+        const t = this.trail[i];
+        const progress = i / this.trail.length;
+        const alpha = 0.1 + progress * 0.7;
+        const tsx = t.x - cameraX + PLAYER_X_OFFSET;
+        ctx.globalAlpha = alpha;
+        // Flag pole
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillRect(tsx, t.y - flagH, 1, flagH);
+        // Flag
+        if (i % 8 === 0 && i > 0) {
+          ctx.fillStyle = trailColor;
+          ctx.fillRect(tsx + 1, t.y - flagH, flagW, flagH * 0.6);
+          // Year text on flag
+          ctx.fillStyle = '#FFF';
+          ctx.font = 'bold 6px monospace';
+          ctx.textAlign = 'left';
+          ctx.fillText(year, tsx + 2, t.y - flagH + 7);
         }
       }
     } else {
@@ -626,6 +652,14 @@ export class Player {
         ctx.lineTo(-hs + 4, hs - 2);
         ctx.closePath();
         break;
+      case 'heart': {
+        const s = hs * 0.9;
+        ctx.moveTo(0, s * 0.6);
+        ctx.bezierCurveTo(-s * 1.1, -s * 0.2, -s * 0.5, -s * 1.1, 0, -s * 0.4);
+        ctx.bezierCurveTo(s * 0.5, -s * 1.1, s * 1.1, -s * 0.2, 0, s * 0.6);
+        ctx.closePath();
+        break;
+      }
       default: // square
         ctx.rect(-hs, -hs, size, size);
         break;
@@ -835,6 +869,44 @@ export class Player {
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(4, 4, 6, 0.1, Math.PI * 0.6);
+        ctx.stroke();
+        break;
+      case 'egg':
+        // Easter egg — oval eyes with colorful dots
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.ellipse(-3, -2, 3, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(8, -2, 3, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-2, -1, 1.5, 0, Math.PI * 2);
+        ctx.arc(9, -1, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        // Colorful dots (Easter egg pattern)
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath(); ctx.arc(-8, 5, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#00CC66';
+        ctx.beginPath(); ctx.arc(0, 7, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath(); ctx.arc(8, 5, 2, 0, Math.PI * 2); ctx.fill();
+        break;
+      case 'spooky':
+        // Halloween — glowing hollow eyes + jagged mouth
+        ctx.fillStyle = '#FF8800';
+        ctx.beginPath();
+        ctx.moveTo(-7, -5); ctx.lineTo(-3, -5); ctx.lineTo(-5, 0); ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(5, -5); ctx.lineTo(9, -5); ctx.lineTo(7, 0); ctx.closePath();
+        ctx.fill();
+        // Jagged mouth
+        ctx.strokeStyle = '#FF8800';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, 5);
+        ctx.lineTo(-5, 3); ctx.lineTo(-2, 6); ctx.lineTo(1, 3);
+        ctx.lineTo(4, 6); ctx.lineTo(7, 3); ctx.lineTo(10, 5);
         ctx.stroke();
         break;
     }

@@ -1343,23 +1343,28 @@ export class UI {
     const colorSize = IS_MOBILE ? 48 : 38;
     const colorGap = IS_MOBILE ? 8 : 10;
     const rainbowUnlocked = !!localStorage.getItem('gd_rainbow_color');
-    const visibleColors = PLAYER_COLORS.filter(c => c !== 'rainbow' || rainbowUnlocked);
+    const christmasUnlocked = !!localStorage.getItem('gd_christmas_color');
+    const secretColors = { rainbow: rainbowUnlocked, christmas: christmasUnlocked };
+    const visibleColors = PLAYER_COLORS.filter(c => !secretColors.hasOwnProperty(c) || secretColors[c]);
     const colorTotalW = visibleColors.length * (colorSize + colorGap) - colorGap;
     const colorStartX = (SCREEN_WIDTH - colorTotalW) / 2;
 
     let colorSlot = 0;
     for (let i = 0; i < PLAYER_COLORS.length; i++) {
-      const isRainbow = PLAYER_COLORS[i] === 'rainbow';
-      if (isRainbow && !rainbowUnlocked) continue;
+      const colorId = PLAYER_COLORS[i];
+      const isRainbow = colorId === 'rainbow';
+      const isChristmas = colorId === 'christmas';
+      if (secretColors.hasOwnProperty(colorId) && !secretColors[colorId]) continue;
 
       const cx = colorStartX + colorSlot * (colorSize + colorGap);
       colorSlot++;
       const cy = sectionY1 + 10;
 
       if (isRainbow) {
-        // Animated rainbow swatch
         const hue = (Date.now() / 10) % 360;
         ctx.fillStyle = `hsl(${hue}, 100%, 60%)`;
+      } else if (isChristmas) {
+        ctx.fillStyle = Math.sin(Date.now() / 500) > 0 ? '#FF2222' : '#00CC44';
       } else {
         ctx.fillStyle = PLAYER_COLORS[i];
       }
@@ -1427,8 +1432,10 @@ export class UI {
 
     // === TRAIL STYLE SECTION (only if dotted unlocked) ===
     const dottedUnlocked = !!localStorage.getItem('gd_dotted_trail');
+    const yearFlagUnlocked = !!localStorage.getItem('gd_year_flag_trail');
+    const hasTrailStyles = dottedUnlocked || yearFlagUnlocked;
     let trailStyleOffset = 0;
-    if (dottedUnlocked) {
+    if (hasTrailStyles) {
       trailStyleOffset = IS_MOBILE ? 80 : 70;
       const sectionYTS = (IS_MOBILE ? 285 : 270) + (IS_MOBILE ? 75 : 65);
       ctx.fillStyle = '#AA77DD';
@@ -1436,7 +1443,9 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.fillText('TRAIL STYLE', SCREEN_WIDTH / 2, sectionYTS);
 
-      const tsLabels = ['NORMAL', 'DOTTED'];
+      const tsLabels = ['NORMAL'];
+      if (dottedUnlocked) tsLabels.push('DOTTED');
+      if (yearFlagUnlocked) tsLabels.push('FLAG');
       const tsBtnW = IS_MOBILE ? 120 : 100;
       const tsBtnH = IS_MOBILE ? 40 : 32;
       const tsGap = 14;
@@ -1475,11 +1484,17 @@ export class UI {
 
     const shapeSize = IS_MOBILE ? 60 : 55;
     const shapeGap = IS_MOBILE ? 10 : 14;
-    const shapeTotalW = CUBE_SHAPES.length * (shapeSize + shapeGap) - shapeGap;
+    const heartUnlocked = !!localStorage.getItem('gd_heart_shape');
+    const secretShapes = { heart: heartUnlocked };
+    const visibleShapes = CUBE_SHAPES.filter(s => !secretShapes.hasOwnProperty(s) || secretShapes[s]);
+    const shapeTotalW = visibleShapes.length * (shapeSize + shapeGap) - shapeGap;
     const shapeStartX = (SCREEN_WIDTH - shapeTotalW) / 2;
 
+    let shapeSlot = 0;
     for (let i = 0; i < CUBE_SHAPES.length; i++) {
-      const sx = shapeStartX + i * (shapeSize + shapeGap);
+      if (secretShapes.hasOwnProperty(CUBE_SHAPES[i]) && !secretShapes[CUBE_SHAPES[i]]) continue;
+      const sx = shapeStartX + shapeSlot * (shapeSize + shapeGap);
+      shapeSlot++;
       const sy = sectionY3 + 10;
 
       // Shape background
@@ -1513,13 +1528,17 @@ export class UI {
     const iconSize = IS_MOBILE ? 60 : 55;
     const iconGap = IS_MOBILE ? 10 : 14;
     const winkUnlocked = !!localStorage.getItem('gd_wink_icon');
-    const visibleIcons = CUBE_ICONS.filter(ic => ic !== 'wink' || winkUnlocked);
+    const eggUnlocked = !!localStorage.getItem('gd_easter_icon');
+    const spookyUnlocked = !!localStorage.getItem('gd_halloween_icon');
+    const secretIcons = { wink: winkUnlocked, egg: eggUnlocked, spooky: spookyUnlocked };
+    const visibleIcons = CUBE_ICONS.filter(ic => !secretIcons.hasOwnProperty(ic) || secretIcons[ic]);
     const iconTotalW = visibleIcons.length * (iconSize + iconGap) - iconGap;
     const iconStartX = (SCREEN_WIDTH - iconTotalW) / 2;
 
     let iconSlot = 0;
     for (let i = 0; i < CUBE_ICONS.length; i++) {
-      if (CUBE_ICONS[i] === 'wink' && !winkUnlocked) continue;
+      const iconId = CUBE_ICONS[i];
+      if (secretIcons.hasOwnProperty(iconId) && !secretIcons[iconId]) continue;
       const ix = iconStartX + iconSlot * (iconSize + iconGap);
       iconSlot++;
       const iy = sectionY4 + 10;
@@ -1768,6 +1787,14 @@ export class UI {
         ctx.lineTo(-hs + 2, hs - 2);
         ctx.closePath();
         break;
+      case 'heart': {
+        const s = hs * 0.9;
+        ctx.moveTo(0, s * 0.6);
+        ctx.bezierCurveTo(-s * 1.1, -s * 0.2, -s * 0.5, -s * 1.1, 0, -s * 0.4);
+        ctx.bezierCurveTo(s * 0.5, -s * 1.1, s * 1.1, -s * 0.2, 0, s * 0.6);
+        ctx.closePath();
+        break;
+      }
       default: // square
         ctx.rect(-hs, -hs, size, size);
         break;
@@ -1920,6 +1947,40 @@ export class UI {
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(4, 4, 6, 0.1, Math.PI * 0.6);
+        ctx.stroke();
+        break;
+      case 'egg':
+        ctx.fillStyle = '#FFF';
+        ctx.beginPath();
+        ctx.ellipse(-3, -2, 3, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(8, -2, 3, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(-2, -1, 1.5, 0, Math.PI * 2);
+        ctx.arc(9, -1, 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FF69B4';
+        ctx.beginPath(); ctx.arc(-8, 5, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#00CC66';
+        ctx.beginPath(); ctx.arc(0, 7, 2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#FFD700';
+        ctx.beginPath(); ctx.arc(8, 5, 2, 0, Math.PI * 2); ctx.fill();
+        break;
+      case 'spooky':
+        ctx.fillStyle = '#FF8800';
+        ctx.beginPath();
+        ctx.moveTo(-7, -5); ctx.lineTo(-3, -5); ctx.lineTo(-5, 0); ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(5, -5); ctx.lineTo(9, -5); ctx.lineTo(7, 0); ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#FF8800';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-8, 5);
+        ctx.lineTo(-5, 3); ctx.lineTo(-2, 6); ctx.lineTo(1, 3);
+        ctx.lineTo(4, 6); ctx.lineTo(7, 3); ctx.lineTo(10, 5);
         ctx.stroke();
         break;
     }

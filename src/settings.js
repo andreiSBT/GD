@@ -15,7 +15,7 @@ export const GRID = 50; // pixels per grid unit
 // Player
 export const PLAYER_SIZE = 44;
 export const SCROLL_SPEED = 8.4;
-export const GRAVITY = 0.88;
+export const GRAVITY = 0.87;
 export const JUMP_VEL = -14.7;
 export const PLAYER_X_OFFSET = 300; // fixed screen x
 
@@ -31,6 +31,7 @@ export const PLAYER_COLORS = [
   '#00FF64', '#00C8FF', '#FF3296', '#FFD700', '#FF6600',
   '#FF0000', '#AA00FF', '#00FFAA', '#FF69B4', '#FFFFFF',
   'rainbow',
+  'christmas',
 ];
 
 export const PLAYER_TRAIL_COLORS = [
@@ -40,7 +41,7 @@ export const PLAYER_TRAIL_COLORS = [
 ];
 
 // Trail styles
-export const PLAYER_TRAIL_STYLES = ['normal', 'dotted'];
+export const PLAYER_TRAIL_STYLES = ['normal', 'dotted', 'year_flag'];
 
 // Cube shape variants (visual only, hitbox stays the same)
 export const CUBE_SHAPES = [
@@ -52,6 +53,7 @@ export const CUBE_SHAPES = [
   'rounded',    // rounded square
   'cross',      // plus/cross shape
   'dart',       // dart/arrow shape
+  'heart',      // heart shape (Valentine's secret)
 ];
 
 // Icon IDs for cube face designs
@@ -65,6 +67,8 @@ export const CUBE_ICONS = [
   'shades',     // sunglasses
   'smile',      // simple smile
   'wink',       // wink face (secret)
+  'egg',        // Easter egg face (holiday secret)
+  'spooky',     // Halloween face (holiday secret)
 ];
 
 // Level themes
