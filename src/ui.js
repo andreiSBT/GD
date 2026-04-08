@@ -1372,7 +1372,7 @@ export class UI {
       ctx.fill();
 
       // Lock overlay for non-free, non-secret, non-unlocked
-      if (i > 0 && !isRainbow && !_isUnlocked('color', i)) {
+      if (i > 0 && !isRainbow && !isChristmas && !_isUnlocked('color', i)) {
         _drawLock(cx, cy, colorSize, colorSize);
       }
 
@@ -1504,8 +1504,9 @@ export class UI {
       // Draw mini cube with this shape
       this._drawPreviewCube(ctx, sx + shapeSize / 2, sy + shapeSize / 2, shapeSize * 0.7, previewColor, null, CUBE_SHAPES[i]);
 
-      // Lock overlay
-      if (i > 0 && !_isUnlocked('shape', i)) {
+      // Lock overlay (skip heart which is holiday-unlocked)
+      const isSecretShape = CUBE_SHAPES[i] === 'heart';
+      if (i > 0 && !isSecretShape && !_isUnlocked('shape', i)) {
         _drawLock(sx, sy, shapeSize, shapeSize);
       }
 
@@ -1550,9 +1551,9 @@ export class UI {
       // Draw mini cube with this icon
       this._drawPreviewCube(ctx, ix + iconSize / 2, iy + iconSize / 2, iconSize * 0.7, previewColor, CUBE_ICONS[i], previewShape);
 
-      // Lock overlay (skip wink which is secret-unlocked)
-      const isWink = CUBE_ICONS[i] === 'wink';
-      if (i > 0 && !isWink && !_isUnlocked('icon', i)) {
+      // Lock overlay (skip secret/holiday icons)
+      const isSecretIcon = ['wink', 'egg', 'spooky'].includes(CUBE_ICONS[i]);
+      if (i > 0 && !isSecretIcon && !_isUnlocked('icon', i)) {
         _drawLock(ix, iy, iconSize, iconSize);
       }
 

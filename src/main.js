@@ -619,7 +619,7 @@ class Game {
       this._fadeToState(MENU);
     } else if (action.startsWith('color_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._isItemUnlocked('color', idx) || idx === 0 || PLAYER_COLORS[idx] === 'rainbow') {
+      if (this._isItemUnlocked('color', idx) || idx === 0 || PLAYER_COLORS[idx] === 'rainbow' || PLAYER_COLORS[idx] === 'christmas') {
         this.customization.colorIndex = idx;
         this._applyCustomization();
       } else {
@@ -635,7 +635,7 @@ class Game {
       }
     } else if (action.startsWith('icon_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._isItemUnlocked('icon', idx) || idx === 0 || CUBE_ICONS[idx] === 'wink') {
+      if (this._isItemUnlocked('icon', idx) || idx === 0 || ['wink', 'egg', 'spooky'].includes(CUBE_ICONS[idx])) {
         this.customization.iconIndex = idx;
         this._applyCustomization();
       } else {
@@ -643,7 +643,7 @@ class Game {
       }
     } else if (action.startsWith('shape_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._isItemUnlocked('shape', idx) || idx === 0) {
+      if (this._isItemUnlocked('shape', idx) || idx === 0 || CUBE_SHAPES[idx] === 'heart') {
         this.customization.shapeIndex = idx;
         this._applyCustomization();
       } else {
@@ -3018,9 +3018,10 @@ class Game {
   _tryUnlockItem(type, idx, cost) {
     if (idx === 0) return true; // free
     if (this._isItemUnlocked(type, idx)) return true; // already unlocked
-    // Check if it's a secret item (don't charge diamonds)
-    if (type === 'color' && PLAYER_COLORS[idx] === 'rainbow') return true;
-    if (type === 'icon' && CUBE_ICONS[idx] === 'wink') return true;
+    // Secret/holiday items are free (no diamonds)
+    if (type === 'color' && (PLAYER_COLORS[idx] === 'rainbow' || PLAYER_COLORS[idx] === 'christmas')) return true;
+    if (type === 'icon' && (CUBE_ICONS[idx] === 'wink' || CUBE_ICONS[idx] === 'egg' || CUBE_ICONS[idx] === 'spooky')) return true;
+    if (type === 'shape' && CUBE_SHAPES[idx] === 'heart') return true;
     // Try to purchase
     if ((this._diamonds || 0) < cost) return false; // not enough
     this._diamonds -= cost;
