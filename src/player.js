@@ -500,27 +500,35 @@ export class Player {
         }
       }
     } else if (this.trailStyle === 'year_flag') {
-      // Year flag trail — banner with year text
+      // Year flag trail — large banners with year
       const year = new Date().getFullYear().toString();
-      const flagH = 14, flagW = 8;
+      const flagH = 22, flagW = 32;
       for (let i = 0; i < this.trail.length; i++) {
         const t = this.trail[i];
         const progress = i / this.trail.length;
-        const alpha = 0.1 + progress * 0.7;
+        const alpha = 0.1 + progress * 0.8;
         const tsx = t.x - cameraX + PLAYER_X_OFFSET;
         ctx.globalAlpha = alpha;
         // Flag pole
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillRect(tsx, t.y - flagH, 1, flagH);
-        // Flag
-        if (i % 8 === 0 && i > 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillRect(tsx, t.y - flagH - 2, 2, flagH + 4);
+        // Flag banner
+        if (i % 12 === 0 && i > 0) {
+          // Flag shape with pointed end
           ctx.fillStyle = trailColor;
-          ctx.fillRect(tsx + 1, t.y - flagH, flagW, flagH * 0.6);
-          // Year text on flag
+          ctx.beginPath();
+          ctx.moveTo(tsx + 2, t.y - flagH - 2);
+          ctx.lineTo(tsx + 2 + flagW, t.y - flagH - 2);
+          ctx.lineTo(tsx + 2 + flagW - 4, t.y - flagH / 2 - 2);
+          ctx.lineTo(tsx + 2 + flagW, t.y - 2);
+          ctx.lineTo(tsx + 2, t.y - 2);
+          ctx.closePath();
+          ctx.fill();
+          // Year text large
           ctx.fillStyle = '#FFF';
-          ctx.font = 'bold 6px monospace';
-          ctx.textAlign = 'left';
-          ctx.fillText(year, tsx + 2, t.y - flagH + 7);
+          ctx.font = 'bold 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(year, tsx + 2 + flagW / 2, t.y - flagH / 2 + 3);
         }
       }
     } else {

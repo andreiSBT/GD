@@ -1445,7 +1445,7 @@ export class UI {
 
       const tsLabels = ['NORMAL'];
       if (dottedUnlocked) tsLabels.push('DOTTED');
-      if (yearFlagUnlocked) tsLabels.push('FLAG');
+      if (yearFlagUnlocked) tsLabels.push(String(new Date().getFullYear()));
       const tsBtnW = IS_MOBILE ? 120 : 100;
       const tsBtnH = IS_MOBILE ? 40 : 32;
       const tsGap = 14;
