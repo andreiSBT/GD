@@ -649,7 +649,10 @@ class Game {
       }
     } else if (action === 'unlock_yes') {
       const p = this._unlockPopup;
-      if (p) this._tryUnlockItem(p.type, p.idx, p.cost);
+      if (p && this._tryUnlockItem(p.type, p.idx, p.cost)) {
+        syncSecretsToCloud();
+        this._broadcastUpdate();
+      }
       this._unlockPopup = null;
     } else if (action === 'unlock_no') {
       this._unlockPopup = null;
@@ -2802,6 +2805,18 @@ class Game {
         const local = new Set(JSON.parse(localStorage.getItem('gd_achievements') || '[]'));
         for (const a of cloudSecrets.achievements) local.add(a);
         localStorage.setItem('gd_achievements', JSON.stringify([...local]));
+      }
+      // Sync diamonds (take max)
+      if (cloudSecrets.diamonds > parseInt(localStorage.getItem('gd_diamonds') || '0')) {
+        localStorage.setItem('gd_diamonds', String(cloudSecrets.diamonds));
+        this._diamonds = cloudSecrets.diamonds;
+      }
+      // Sync unlocked items (merge)
+      for (const key of ['Color', 'Trail', 'Shape', 'Icon']) {
+        const cloudArr = cloudSecrets['unlocked' + key] || [];
+        const localArr = JSON.parse(localStorage.getItem('gd_unlocked_' + key.toLowerCase()) || '[]');
+        const merged = [...new Set([...localArr, ...cloudArr])];
+        localStorage.setItem('gd_unlocked_' + key.toLowerCase(), JSON.stringify(merged));
       }
     }
     // Sync diamonds: keep the higher of local vs cloud

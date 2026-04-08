@@ -440,6 +440,11 @@ export async function syncSecretsToCloud() {
     jumps: parseInt(localStorage.getItem('gd_total_jumps') || '0'),
     communityCompletions: parseInt(localStorage.getItem('gd_community_completions') || '0'),
     achievements: JSON.parse(localStorage.getItem('gd_achievements') || '[]'),
+    diamonds: parseInt(localStorage.getItem('gd_diamonds') || '0'),
+    unlockedColor: JSON.parse(localStorage.getItem('gd_unlocked_color') || '[]'),
+    unlockedTrail: JSON.parse(localStorage.getItem('gd_unlocked_trail') || '[]'),
+    unlockedShape: JSON.parse(localStorage.getItem('gd_unlocked_shape') || '[]'),
+    unlockedIcon: JSON.parse(localStorage.getItem('gd_unlocked_icon') || '[]'),
   };
   try {
     await client.from('editor_levels').upsert({
