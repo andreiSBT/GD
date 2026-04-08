@@ -4,6 +4,7 @@ export let SCREEN_WIDTH = 1200;
 export const SCREEN_HEIGHT = 700;
 
 export const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+export const UI_SCALE = IS_MOBILE ? 1.25 : 1;
 
 export function setScreenWidth(w) { SCREEN_WIDTH = w; }
 export const FPS = 60;

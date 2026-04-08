@@ -1,11 +1,14 @@
 /** UI screens: menu, level select, HUD, death screen, complete screen */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE, UI_SCALE } from './settings.js';
 import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
 import { getMusicVolume, getSFXVolume } from './sound.js';
 import { getAchievements, loadUnlocked, CATEGORIES } from './achievements.js';
+
+// Scale value for mobile UI — makes fonts, buttons, spacing bigger
+const S = (v) => IS_MOBILE ? Math.round(v * UI_SCALE) : v;
 
 function getEditorLevelCount() {
   try {
@@ -165,7 +168,7 @@ export class UI {
     ctx.fillText('A  S I D E - S C R O L L I N G  R H Y T H M  G A M E', SCREEN_WIDTH / 2, 190);
 
     // Menu buttons
-    const bw = IS_MOBILE ? 300 : 260, bh = IS_MOBILE ? 60 : 56, gap = IS_MOBILE ? 64 : 60;
+    const bw = S(260), bh = S(56), gap = S(60);
     const bx = SCREEN_WIDTH / 2 - bw / 2;
     let by = 250;
     this._drawButton(ctx, bx, by, bw, bh, 'LEVELS', 'levels', '#00C864');
@@ -188,8 +191,8 @@ export class UI {
 
     // Account button (top right)
     const username = getUsername();
-    const accH = IS_MOBILE ? 48 : 38;
-    const accFont = IS_MOBILE ? 18 : 16;
+    const accH = S(38);
+    const accFont = S(16);
     if (username) {
       this._drawButton(ctx, SCREEN_WIDTH - 210, 10, 190, accH, username, 'account', '#224466', accFont);
     } else {
@@ -276,7 +279,7 @@ export class UI {
 
       // Arrows: left goes back, right wraps to page 0
       const arrowY = 32;
-      const arrowW = IS_MOBILE ? 56 : 48, arrowH = IS_MOBILE ? 44 : 38;
+      const arrowW = S(48), arrowH = S(38);
       this._drawButton(ctx, 15, arrowY, arrowW, arrowH, '<', 'levels_prev', '#224466', 28);
       this._drawButton(ctx, SCREEN_WIDTH - arrowW - 15, arrowY, arrowW, arrowH, '>', 'levels_wrap_start', '#224466', 28);
 
@@ -286,8 +289,8 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.fillText(`${page + 1} / ${maxPage + 2}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60);
 
-      const backH = IS_MOBILE ? 52 : 44;
-      this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, IS_MOBILE ? 150 : 130, backH, 'BACK', 'back', '#445566', 20);
+      const backH = S(44);
+      this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, S(130), backH, 'BACK', 'back', '#445566', S(20));
       return;
     }
 
@@ -431,7 +434,7 @@ export class UI {
       }
 
       // Buttons
-      const btnW = IS_MOBILE ? 115 : 110, btnH = IS_MOBILE ? 50 : 40, btnGap = 10;
+      const btnW = S(110), btnH = S(40), btnGap = S(10);
       const btnY = y + cardH - btnH - 12;
       const btnX1 = x + (cardW - btnW * 2 - btnGap) / 2;
       const btnX2 = btnX1 + btnW + btnGap;
@@ -452,8 +455,8 @@ export class UI {
     ctx.fillText(`${page + 1} / ${maxPage + 2}`, SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60);
 
     // Back button
-    const backH = IS_MOBILE ? 52 : 44;
-    this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, IS_MOBILE ? 150 : 130, backH, 'BACK', 'back', '#445566', 20);
+    const backH = S(44);
+    this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, S(130), backH, 'BACK', 'back', '#445566', S(20));
   }
 
   drawStats(ctx, progress, diamonds = 0) {
@@ -680,7 +683,7 @@ export class UI {
     ctx.restore();
 
     // Back button
-    const statsBkH = IS_MOBILE ? 56 : 48;
+    const statsBkH = S(48);
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
@@ -688,8 +691,8 @@ export class UI {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
-    const barW = 360;
-    const barH = 8;
+    const barW = S(360);
+    const barH = S(8);
     const barX = (SCREEN_WIDTH - barW) / 2;
     const barY = 18;
     const barR = 4;
@@ -711,15 +714,15 @@ export class UI {
 
     // Progress percentage
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.font = 'bold 13px monospace';
+    ctx.font = `bold ${S(13)}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + 16);
+    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + S(16));
 
     // Attempts counter
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 15px monospace';
+    ctx.font = `bold ${S(15)}px monospace`;
     ctx.textAlign = 'left';
-    ctx.fillText(`ATTEMPT: ${attempts}`, 16, 28);
+    ctx.fillText(`ATTEMPT: ${attempts}`, 16, S(28));
 
     // Coins counter
     if (coins && coins.total > 0) {
@@ -780,7 +783,7 @@ export class UI {
     }
 
     // Pause button (top right) — rounded
-    const pbS = IS_MOBILE ? 52 : 44;
+    const pbS = S(48);
     const pbX = SCREEN_WIDTH - pbS - 10;
     const pbY = 8;
     this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
@@ -933,7 +936,7 @@ export class UI {
     ctx.fillText(`Attempt ${attempts}`, SCREEN_WIDTH / 2, 325);
 
     // Buttons
-    const bw = IS_MOBILE ? 280 : 240, bh = IS_MOBILE ? 58 : 52;
+    const bw = S(240), bh = S(52);
     this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365, bw, bh, 'RETRY', 'retry', '#00C864');
     this._drawButton(ctx, SCREEN_WIDTH / 2 - bw / 2, 365 + bh + 15, bw, bh, 'MENU', 'menu', '#445566');
   }
@@ -1003,7 +1006,7 @@ export class UI {
     }
 
     // Buttons
-    const cbw = IS_MOBILE ? 280 : 240, cbh = IS_MOBILE ? 58 : 52;
+    const cbw = S(240), cbh = S(52);
     let btnY = infoBottom + 15;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - cbw / 2, btnY, cbw, cbh, 'NEXT LEVEL', 'next_level', '#00C864');
     btnY += cbh + 15;
@@ -1082,7 +1085,7 @@ export class UI {
     ctx.fillRect(SCREEN_WIDTH / 2 - 100, infoBottom + 10, 200, 1);
     ctx.globalAlpha = 1;
 
-    const pbw = IS_MOBILE ? 280 : 240, pbh = IS_MOBILE ? 58 : 52, pgap = IS_MOBILE ? 68 : 64;
+    const pbw = S(240), pbh = S(52), pgap = S(64);
     let btnY = infoBottom + 24;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESUME', 'resume', '#00C864');
     btnY += pgap;
@@ -1111,9 +1114,9 @@ export class UI {
   }
 
   _drawVolumeSlider(ctx, centerX, y, label, value, id) {
-    const barW = IS_MOBILE ? 220 : 200;
-    const barH = 10;
-    const handleR = IS_MOBILE ? 12 : 10;
+    const barW = S(200);
+    const barH = S(10);
+    const handleR = S(10);
     const barX = centerX - barW / 2;
     const barY = y;
 
@@ -2301,7 +2304,7 @@ export class UI {
       ctx.restore();
     }
 
-    const backH = IS_MOBILE ? 52 : 44;
+    const backH = S(44);
     this._drawButton(ctx, 30, SCREEN_HEIGHT - backH - 20, 130, backH, 'BACK', 'back_community', '#445566', 18);
 
     // Delete confirmation popup
@@ -2440,7 +2443,7 @@ export class UI {
       ctx.restore();
     }
 
-    const backH = IS_MOBILE ? 52 : 44;
+    const backH = S(44);
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 65, SCREEN_HEIGHT - backH - 20, 130, backH, 'BACK', 'back_leaderboard', '#445566', 18);
   }
 
