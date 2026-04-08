@@ -2806,8 +2806,9 @@ class Game {
         for (const a of cloudSecrets.achievements) local.add(a);
         localStorage.setItem('gd_achievements', JSON.stringify([...local]));
       }
-      // Sync diamonds (take max)
-      if (cloudSecrets.diamonds > parseInt(localStorage.getItem('gd_diamonds') || '0')) {
+      // Sync diamonds — only restore from cloud if local is 0 (fresh login)
+      const localDiamonds = parseInt(localStorage.getItem('gd_diamonds') || '0');
+      if (localDiamonds === 0 && cloudSecrets.diamonds > 0) {
         localStorage.setItem('gd_diamonds', String(cloudSecrets.diamonds));
         this._diamonds = cloudSecrets.diamonds;
       }
