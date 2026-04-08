@@ -2276,29 +2276,28 @@ class Game {
           const oy = obs.y || 0;
           const ow = obs.w || GRID;
           const oh = obs.h || GRID;
-          // Determine color by type
           const t = obs.type;
-          if (t === 'spike' || t === 'saw') {
-            ctx.fillStyle = '#FF2222'; // red = hazard
-            if (t === 'saw') {
-              // Circular hitbox
-              const r = (obs.radius || GRID) / 2;
-              const cx = ox + ow / 2, cy = oy + oh / 2;
-              ctx.beginPath();
-              ctx.arc(cx, cy, r, 0, Math.PI * 2);
-              ctx.fill();
-              continue;
-            }
+          if (t === 'spike') {
+            // Actual spike collision hitbox (with insets)
+            ctx.fillStyle = '#FF2222';
+            const inset = 10, topInset = Math.round(GRID * 0.1);
+            ctx.fillRect(ox + inset, oy + topInset, ow - inset * 2, oh - inset - topInset);
+          } else if (t === 'saw') {
+            // Circular hitbox with forgiveness
+            ctx.fillStyle = '#FF2222';
+            const sawR = ow / 2 - 8; // 8px forgiveness
+            ctx.beginPath();
+            ctx.arc(ox + ow / 2, oy + oh / 2, sawR, 0, Math.PI * 2);
+            ctx.fill();
           } else if (t === 'platform' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
-            ctx.fillStyle = '#4488FF'; // blue = platform
+            ctx.fillStyle = '#4488FF';
+            ctx.fillRect(ox, oy, ow, oh);
           } else if (t === 'orb' || t === 'pad' || t === 'portal' || t === 'coin' || t === 'checkpoint') {
-            ctx.fillStyle = '#00FF64'; // green = gameplay
-          } else {
-            continue;
+            ctx.fillStyle = '#00FF64';
+            ctx.fillRect(ox, oy, ow, oh);
           }
-          ctx.fillRect(ox, oy, ow, oh);
         }
-        // Player hitbox
+        // Player hitbox (actual collision rect with 4px inset)
         const pr = this.player.getRect();
         ctx.fillStyle = '#FFFF00';
         ctx.globalAlpha = 0.4;
