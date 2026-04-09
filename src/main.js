@@ -1955,15 +1955,19 @@ class Game {
             if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
               this._die(); return;
             }
-            // If player was below platform piece and rising, die (hitting underside)
+            // If player was below platform piece and rising, block (bump head)
             if (!result.slopeRatio && landPiece.type !== 'slope') {
               const prevBot = this.player.prevY + PLAYER_SIZE - miniOffset;
               if (this.player.gravityMult > 0 && prevBot > landPiece.y + landPiece.h - 4 && this.player.vy < 0) {
-                this._die(); return;
+                this.player.y = landPiece.y + landPiece.h - miniOffset;
+                this.player.vy = 0;
+                continue;
               }
               const prevTop = this.player.prevY + miniOffset;
               if (this.player.gravityMult < 0 && prevTop < landPiece.y + 4 && this.player.vy > 0) {
-                this._die(); return;
+                this.player.y = landPiece.y - PLAYER_SIZE + miniOffset;
+                this.player.vy = 0;
+                continue;
               }
             }
             const jumpingOff = (this.player.gravityMult > 0 && this.player.vy < -2) || (this.player.gravityMult < 0 && this.player.vy > 2);
@@ -2022,15 +2026,18 @@ class Game {
             if (prevRight <= obs.x + 4) {
               this._die(); return;
             }
-            // If player was approaching from below and rising, die (hitting underside)
-            // Use actual player bottom (accounting for mini offset)
+            // If player was approaching from below and rising, block (bump head)
             const prevBot = this.player.prevY + PLAYER_SIZE - miniOffset;
             if (this.player.gravityMult > 0 && prevBot > obs.y + obs.h - 4 && this.player.vy < 0) {
-              this._die(); return;
+              this.player.y = obs.y + obs.h - miniOffset;
+              this.player.vy = 0;
+              continue;
             }
             const prevTop = this.player.prevY + miniOffset;
             if (this.player.gravityMult < 0 && prevTop < obs.y + 4 && this.player.vy > 0) {
-              this._die(); return;
+              this.player.y = obs.y - PLAYER_SIZE + miniOffset;
+              this.player.vy = 0;
+              continue;
             }
             // Don't land if player just jumped (vy strongly away from surface)
             // This prevents collision from cancelling a jump before player.update moves the player
