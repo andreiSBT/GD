@@ -422,7 +422,7 @@ export class Player {
 
   // Platform death hitbox — square, centered, small (for side-hit death detection)
   getPlatformRect() {
-    const inset = 11;
+    const inset = 6;
     const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
