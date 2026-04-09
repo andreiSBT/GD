@@ -326,6 +326,41 @@ export async function loadDiamondsFromCloud() {
   } catch { return null; }
 }
 
+// Diamond trading: sender pays 2x, receiver gets 1x
+export async function sendDiamondTrade(receiverId, amount) {
+  return sendMessage(receiverId, String(amount), 'trade');
+}
+
+export async function acceptDiamondTrade(messageId) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return { error: 'Not logged in' };
+  try {
+    // Get the trade message
+    const { data: msg, error: fetchErr } = await client.from('friend_messages')
+      .select('*').eq('id', messageId).single();
+    if (fetchErr || !msg) return { error: 'Trade not found' };
+    if (msg.receiver_id !== currentAuthUser.id) return { error: 'Not your trade' };
+    if (msg.message_type !== 'trade') return { error: 'Not a trade' };
+    if (msg.read) return { error: 'Already accepted' };
+
+    const amount = parseInt(msg.content) || 0;
+    if (amount <= 0) return { error: 'Invalid amount' };
+
+    // Give receiver the diamonds
+    const { data: myProfile } = await client.from('profiles')
+      .select('diamonds').eq('user_id', currentAuthUser.id).single();
+    const myDiamonds = (myProfile?.diamonds || 0) + amount;
+    await client.from('profiles').update({ diamonds: myDiamonds }).eq('user_id', currentAuthUser.id);
+
+    // Mark trade as accepted (read = true)
+    await client.from('friend_messages').update({ read: true }).eq('id', messageId);
+
+    return { received: amount, newTotal: myDiamonds };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 export async function resetProgressInCloud() {
   const client = getClient();
   if (!client) return;
@@ -995,12 +1030,13 @@ export async function getMessages(friendId) {
       .order('created_at', { ascending: true })
       .limit(50);
     if (error || !data) return [];
-    // Mark received messages as read
+    // Mark received messages as read (except trades — those need explicit accept)
     await client.from('friend_messages')
       .update({ read: true })
       .eq('sender_id', friendId)
       .eq('receiver_id', uid)
-      .eq('read', false);
+      .eq('read', false)
+      .neq('message_type', 'trade');
     return data.map(m => ({
       id: m.id,
       senderId: m.sender_id,
@@ -1009,6 +1045,7 @@ export async function getMessages(friendId) {
       levelData: m.level_data,
       createdAt: m.created_at,
       mine: m.sender_id === uid,
+      accepted: m.message_type === 'trade' ? m.read : undefined,
     }));
   } catch (e) {
     console.warn('[Friends] getMessages failed:', e.message);

@@ -2905,9 +2905,12 @@ export class UI {
     ctx.fillText(chatName, nameX, startY + 10);
     ctx.restore();
 
-    // Share level button
+    // Share level + Trade buttons
     const shareBtnH = IS_MOBILE ? 44 : 34;
-    this._drawButton(ctx, SCREEN_WIDTH - 210, startY - 14, IS_MOBILE ? 160 : 140, shareBtnH, 'SHARE LEVEL', 'friends_share_level', '#CC6600', IS_MOBILE ? 15 : 13);
+    const tradeBtnW = IS_MOBILE ? 120 : 100;
+    const shareBtnW = IS_MOBILE ? 160 : 140;
+    this._drawButton(ctx, SCREEN_WIDTH - 210 - tradeBtnW - 10, startY - 14, tradeBtnW, shareBtnH, 'TRADE \u25C7', 'friends_trade_diamonds', '#AA44FF', IS_MOBILE ? 15 : 13);
+    this._drawButton(ctx, SCREEN_WIDTH - 210, startY - 14, shareBtnW, shareBtnH, 'SHARE LEVEL', 'friends_share_level', '#CC6600', IS_MOBILE ? 15 : 13);
 
     // Message area
     const msgY = startY + 28;
@@ -2982,6 +2985,45 @@ export class UI {
             ctx.fillText('✕', delX + delS / 2, delY + delS / 2);
             ctx.textBaseline = 'alphabetic';
             this.buttons.push({ id: `friends_del_msg_${realIdx}`, x: delX, y: delY, w: delS, h: delS });
+          }
+        } else if (m.type === 'trade') {
+          // Diamond trade bubble
+          const tradeAmount = parseInt(m.content) || 0;
+          const bubbleW = msgW - 40;
+          const bubbleX = msgX + 20;
+          const bubbleH = lineH - 4;
+          ctx.save();
+          ctx.shadowColor = 'rgba(170,68,255,0.15)';
+          ctx.shadowBlur = 6;
+          this._roundRect(ctx, bubbleX, my, bubbleW, bubbleH, 8);
+          ctx.fillStyle = m.mine ? 'rgba(100,40,180,0.2)' : 'rgba(180,100,0,0.2)';
+          ctx.fill();
+          ctx.restore();
+          this._roundRect(ctx, bubbleX, my, bubbleW, bubbleH, 8);
+          ctx.strokeStyle = 'rgba(170,68,255,0.25)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = '#CC88FF';
+          ctx.font = `bold ${IS_MOBILE ? 15 : 13}px monospace`;
+          ctx.textAlign = 'left';
+          if (m.mine) {
+            ctx.fillText(`\u25C7 Sent ${tradeAmount * 2} diamonds (${tradeAmount} for them)`, bubbleX + 10, my + bubbleH / 2 + 4);
+          } else {
+            ctx.fillText(`\u25C7 ${chatFriend?.name || '?'} sent you ${tradeAmount} diamonds!`, bubbleX + 10, my + bubbleH / 2 + 4);
+            // Accept button if not yet accepted
+            if (!m.accepted) {
+              const accBtnW = IS_MOBILE ? 120 : 100;
+              const accBtnH = IS_MOBILE ? 36 : 26;
+              const accBtnX = bubbleX + bubbleW - accBtnW - 8;
+              const accBtnY = my + Math.floor((bubbleH - accBtnH) / 2);
+              this._drawButton(ctx, accBtnX, accBtnY, accBtnW, accBtnH, 'ACCEPT', `friends_accept_trade_${realIdx}`, '#AA44FF', IS_MOBILE ? 15 : 12);
+            } else {
+              ctx.fillStyle = '#667788';
+              ctx.font = `${IS_MOBILE ? 14 : 12}px monospace`;
+              ctx.textAlign = 'right';
+              ctx.fillText('Accepted', bubbleX + bubbleW - 10, my + bubbleH / 2 + 4);
+            }
           }
         } else {
           // Chat bubble

@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud } from './supabase.js';
+import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud, sendDiamondTrade, acceptDiamondTrade } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 import { customConfirm } from './dialogs.js';
@@ -913,6 +913,49 @@ class Game {
           }
         });
         this._showFriendsInput('chat');
+      }
+    } else if (action === 'friends_trade_diamonds') {
+      if (fd.chatFriend) {
+        const input = prompt('How many diamonds to send?\n(You pay 2x, they receive 1x)', '5');
+        if (input == null) return;
+        const amount = parseInt(input);
+        if (!amount || amount <= 0) {
+          fd.notification = { text: 'Invalid amount', type: 'error' };
+          fd.notificationTimer = 3;
+          return;
+        }
+        const cost = amount * 2;
+        if (this._diamonds < cost) {
+          fd.notification = { text: `Not enough diamonds! Need ${cost}, have ${this._diamonds}`, type: 'error' };
+          fd.notificationTimer = 3;
+          return;
+        }
+        // Deduct from sender
+        this._diamonds -= cost;
+        localStorage.setItem('gd_diamonds', String(this._diamonds));
+        syncDiamondsToCloud(this._diamonds);
+        // Send trade message
+        sendDiamondTrade(fd.chatFriend.id, amount).then(() => {
+          getMessages(fd.chatFriend.id).then(msgs => { fd.messages = msgs; });
+        });
+        fd.notification = { text: `Sent ${amount} diamonds (cost: ${cost})!`, type: 'success' };
+        fd.notificationTimer = 3;
+      }
+    } else if (action.startsWith('friends_accept_trade_')) {
+      const idx = parseInt(action.replace('friends_accept_trade_', ''));
+      const msg = fd.messages[idx];
+      if (msg && !msg.mine && msg.type === 'trade') {
+        acceptDiamondTrade(msg.id).then(res => {
+          if (res.error) {
+            fd.notification = { text: res.error, type: 'error' };
+          } else {
+            this._diamonds = res.newTotal;
+            localStorage.setItem('gd_diamonds', String(this._diamonds));
+            msg.accepted = true;
+            fd.notification = { text: `Received ${res.received} diamonds!`, type: 'success' };
+          }
+          fd.notificationTimer = 3;
+        });
       }
     } else if (action === 'friends_share_level') {
       if (fd.chatFriend) {
