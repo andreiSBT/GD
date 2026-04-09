@@ -55,6 +55,14 @@ class Game {
     this.progress = loadProgress();
 
     this.state = MENU;
+    // Pre-download all level music on startup
+    for (let i = 1; i <= getLevelCount(); i++) {
+      if (!Sound.hasCustomMusic(i)) {
+        downloadOfficialMusic(i).then(ab => {
+          if (ab) Sound.storePendingCustomMusic(i, ab);
+        }).catch(() => {});
+      }
+    }
     this._fadeAlpha = 0; // 0 = no fade, >0 = fading (black overlay)
     this._fadeTarget = null; // state to switch to after fade
     this._fadeCallback = null; // callback after fade
