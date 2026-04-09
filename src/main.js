@@ -369,10 +369,11 @@ class Game {
       if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause') {
+        if (action === 'pause' || action === 'ingame_settings') {
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
+          if (action === 'ingame_settings') this.ui._showSettings = true;
           return;
         }
         if (this._handlePracticeAction(action)) return;
@@ -380,11 +381,12 @@ class Game {
       } else if (this.state === DEAD) {
         // Allow pause button anytime during death
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause') {
+        if (action === 'pause' || action === 'ingame_settings') {
           if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
+          if (action === 'ingame_settings') this.ui._showSettings = true;
           return;
         }
         if (this.deathTimer > 0.3) this._restart();
@@ -483,21 +485,23 @@ class Game {
       if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause') {
+        if (action === 'pause' || action === 'ingame_settings') {
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
+          if (action === 'ingame_settings') this.ui._showSettings = true;
           return;
         }
         if (this._handlePracticeAction(action)) return;
         doPress();
       } else if (this.state === DEAD) {
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause') {
+        if (action === 'pause' || action === 'ingame_settings') {
           if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
+          if (action === 'ingame_settings') this.ui._showSettings = true;
           return;
         }
         if (this.deathTimer > 0.3) this._restart();
@@ -682,7 +686,7 @@ class Game {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
       this.state = PAUSED;
-      this._hidePause = true;
+
     } else if (action === 'ingame_settings') {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
@@ -696,7 +700,7 @@ class Game {
       this._showHitboxes = !this._showHitboxes;
     } else if (action === 'resume') {
       this.ui._showSettings = false;
-      this._hidePause = false;
+
       if (!this.player.alive) {
         // Resume into DEAD state so explosion continues, then auto-retry
         this.state = DEAD;
@@ -718,13 +722,13 @@ class Game {
       this.editorStartCheckpoint = null;
       this.state = EDITOR;
     } else if (action === 'switch_practice') {
-      this._hidePause = false;
+
       this.practiceMode = true;
       // lastCheckpoint stays as-is (set by checkpoint obstacles), or null if none passed
       this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
       Sound.resumeMusic();
     } else if (action === 'switch_normal') {
-      this._hidePause = false;
+
       this.practiceMode = false;
       this.lastCheckpoint = null;
       Sound.stopDeath();
@@ -2614,7 +2618,7 @@ class Game {
         if (lp.completed) lvlDiamondsEarned += lvlDiamondTotal - pPool;
       }
       this.ui._showHitboxes = this._showHitboxes && this.practiceMode;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal, !this._hidePause);
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal);
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;

@@ -688,7 +688,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0, showPauseBtn = true) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -797,36 +797,21 @@ export class UI {
       this.buttons.push({ id: 'practice_hitbox', x: hbX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
-    // Pause / Settings button (top right) — rounded
+    // Settings gear button (top right) — always visible, opens pause + settings
     const pbS = S(48);
     const pbX = SCREEN_WIDTH - pbS - 10;
     const pbY = 8;
     const hitPad = 15;
-    if (showPauseBtn) {
-      this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
-      ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      ctx.fill();
-      // Two vertical bars (pause icon)
-      const bw = 6, bGap = 5;
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      this._roundRect(ctx, pbX + pbS / 2 - bw - bGap / 2, pbY + 11, bw, pbS - 22, 2);
-      ctx.fill();
-      this._roundRect(ctx, pbX + pbS / 2 + bGap / 2, pbY + 11, bw, pbS - 22, 2);
-      ctx.fill();
-      this.buttons.push({ id: 'pause', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
-    } else {
-      // Settings gear in place of pause
-      this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
-      ctx.fillStyle = 'rgba(255,255,255,0.1)';
-      ctx.fill();
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.font = `${S(22)}px monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('\u2699', pbX + pbS / 2, pbY + pbS / 2 + 1);
-      ctx.textBaseline = 'alphabetic';
-      this.buttons.push({ id: 'ingame_settings', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
-    }
+    this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = `${S(22)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u2699', pbX + pbS / 2, pbY + pbS / 2 + 1);
+    ctx.textBaseline = 'alphabetic';
+    this.buttons.push({ id: 'ingame_settings', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
 
     // Level name
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
@@ -1078,7 +1063,7 @@ export class UI {
     if (this._showSettings) {
       // Settings panel
       const panelW = S(320);
-      const panelH = S(200);
+      const panelH = S(240);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
@@ -1110,9 +1095,9 @@ export class UI {
       this._drawButton(ctx, toggleX, sliderY, toggleW, toggleH, showHitboxes ? 'HITBOXES: ON' : 'HITBOXES: OFF', 'toggle_hitboxes', toggleColor, S(13));
 
       // Close button
-      const closeW = S(100);
-      const closeH = S(32);
-      this._drawButton(ctx, SCREEN_WIDTH / 2 - closeW / 2, panelY + panelH - S(44), closeW, closeH, 'CLOSE', 'close_settings', '#666666', S(13));
+      const closeW = S(140);
+      const closeH = S(40);
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - closeW / 2, panelY + panelH - S(52), closeW, closeH, 'CLOSE', 'close_settings', '#666666', S(14));
 
       return; // Don't draw pause buttons behind settings
     }
