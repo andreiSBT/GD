@@ -757,6 +757,7 @@ class Game {
       this._restart();
     } else if (action === 'menu') {
       this.ui._showSettings = false;
+      this.ui._hidePauseBtn = false;
       Sound.stopMusic();
       this.shakeIntensity = 0;
       this.editorLevelData = null;
