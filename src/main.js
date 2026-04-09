@@ -1096,9 +1096,14 @@ class Game {
 
   async _loadFriendsData() {
     await ensureProfile();
-    const [friends, requests] = await Promise.all([getFriends(), getFriendRequests()]);
+    const [friends, requests, cloudDiamonds] = await Promise.all([getFriends(), getFriendRequests(), loadDiamondsFromCloud()]);
     this.friendsData.friends = friends;
     this.friendsData.requests = requests;
+    // Sync diamonds from cloud (picks up refunds from declined trades)
+    if (cloudDiamonds != null && cloudDiamonds > this._diamonds) {
+      this._diamonds = cloudDiamonds;
+      localStorage.setItem('gd_diamonds', String(this._diamonds));
+    }
   }
 
   _showFriendsNotif(text, type = 'success') {
