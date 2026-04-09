@@ -940,8 +940,8 @@ class Game {
         localStorage.setItem('gd_diamonds', String(this._diamonds));
         syncDiamondsToCloud(this._diamonds);
         const friend = fd.tradePopup.friend;
-        sendDiamondTrade(friend.id, amount).then(() => {
-          getMessages(friend.id).then(msgs => { fd.messages = msgs; });
+        sendDiamondTrade(friend.friendId, amount).then(() => {
+          getMessages(friend.friendId).then(msgs => { fd.messages = msgs; });
         });
         fd.notification = { text: `Sent ${amount} diamonds (cost: ${cost})!`, type: 'success' };
         fd.notificationTimer = 3;
