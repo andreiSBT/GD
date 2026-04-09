@@ -2395,13 +2395,42 @@ class Game {
             ctx.fillStyle = 'rgba(68,136,255,0.5)';
             ctx.strokeStyle = '#66AAFF';
             ctx.lineWidth = 4;
+            const drawSlopeHitbox = (p, px) => {
+              const pw = p.w || GRID, ph = p.h || GRID;
+              // Triangle hitbox (bounding box used for AABB, diagonal for surface)
+              ctx.beginPath();
+              if (p.direction === 'up') {
+                ctx.moveTo(px, p.y + ph);
+                ctx.lineTo(px + pw, p.y + ph);
+                ctx.lineTo(px + pw, p.y);
+              } else {
+                ctx.moveTo(px, p.y);
+                ctx.lineTo(px, p.y + ph);
+                ctx.lineTo(px + pw, p.y + ph);
+              }
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
+              // Wall hitbox for 'down' slopes (14px wide on left side)
+              if (p.direction === 'down') {
+                ctx.fillStyle = '#FF8844';
+                ctx.fillRect(px, p.y + 6, 14, ph - 12);
+                ctx.fillStyle = 'rgba(68,136,255,0.5)';
+              }
+            };
             if (t === 'platform_group') {
               for (const p of obs.pieces) {
                 const px = p.x - camX + PLAYER_X_OFFSET;
-                const pw = p.w || GRID, ph = p.h || GRID;
-                ctx.fillRect(px, p.y, pw, ph);
-                ctx.strokeRect(px, p.y, pw, ph);
+                if (p.type === 'slope') {
+                  drawSlopeHitbox(p, px);
+                } else {
+                  const pw = p.w || GRID, ph = p.h || GRID;
+                  ctx.fillRect(px, p.y, pw, ph);
+                  ctx.strokeRect(px, p.y, pw, ph);
+                }
               }
+            } else if (t === 'slope') {
+              drawSlopeHitbox(obs, ox);
             } else {
               ctx.fillRect(ox, oy, ow, oh);
               ctx.strokeRect(ox, oy, ow, oh);
