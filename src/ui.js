@@ -1053,7 +1053,7 @@ export class UI {
     if (this._showSettings) {
       // Settings panel
       const panelW = S(320);
-      const panelH = S(270);
+      const panelH = S(310);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
@@ -1079,6 +1079,9 @@ export class UI {
       // Toggle switches
       sliderY += S(44);
       this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'HITBOXES', showHitboxes, 'toggle_hitboxes');
+      sliderY += S(36);
+      const shakeOn = !localStorage.getItem('gd_no_shake');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'SHAKE', shakeOn, 'toggle_shake');
       sliderY += S(36);
       const particlesOn = !localStorage.getItem('gd_no_particles');
       this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'PARTICLES', particlesOn, 'toggle_particles');
