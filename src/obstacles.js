@@ -136,8 +136,14 @@ export class Platform {
     const platTop = this.y;
     const platBottom = this.y + this.h;
 
-    // Collision rect: exact block bounds
-    const sideRect = { x: this.x, y: this.y, w: this.w, h: this.h };
+    // Detection rect: block bounds with vertical extension for stable re-landing
+    const ext = 10;
+    const sideRect = {
+      x: this.x,
+      y: gravityMult === -1 ? this.y : this.y - ext,
+      w: this.w,
+      h: this.h + ext,
+    };
     if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
 
@@ -502,8 +508,14 @@ export class TransportPlatform extends Platform {
     const platTop = this.y;
     const platBottom = this.y + this.h;
 
-    // Collision rect: exact block bounds
-    const sideRect = { x: this.x, y: this.y, w: this.w, h: this.h };
+    // Detection rect: block bounds with vertical extension for stable re-landing
+    const ext = 10;
+    const sideRect = {
+      x: this.x,
+      y: gravityMult === -1 ? this.y : this.y - ext,
+      w: this.w,
+      h: this.h + ext,
+    };
     if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
 
