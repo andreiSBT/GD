@@ -1401,14 +1401,11 @@ class Game {
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
     this._levelStartTime = performance.now();
-    // Ensure official music is downloaded before first play
+    // Download official music in background (don't block level start)
     if (!Sound.hasCustomMusic(levelId)) {
-      try {
-        const ab = await downloadOfficialMusic(levelId);
-        if (ab) {
-          Sound.storePendingCustomMusic(levelId, ab);
-        }
-      } catch {}
+      downloadOfficialMusic(levelId).then(ab => {
+        if (ab) Sound.storePendingCustomMusic(levelId, ab);
+      }).catch(() => {});
     }
     this._restart();
   }
