@@ -2560,21 +2560,28 @@ class Game {
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
         const ghostFrame = this._replayFrame + 30;
         if (ghostFrame <= ghost.totalFrames) {
-          // Draw green trail behind ghost
-          const trailLen = 20;
-          for (let t = trailLen; t >= 0; t--) {
-            const tf = ghostFrame - t * 3;
+          // Draw green dashed trail behind ghost
+          const dashW = 10, gapW = 12, trailH = 4;
+          const trailPoints = 40;
+          let dist = 0;
+          let drawing = true, segLeft = dashW;
+          for (let t = 0; t < trailPoints; t++) {
+            const tf = ghostFrame - t;
             if (tf < 0) continue;
             const tp = ghost.getPosition(tf);
-            if (!tp) continue;
+            const tp2 = ghost.getPosition(tf - 1);
+            if (!tp || !tp2) continue;
             const tx = tp.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
             const ty = tp.y + PLAYER_SIZE / 2;
             if (tx < -10 || tx > SCREEN_WIDTH + 10) continue;
-            const alpha = ((trailLen - t) / trailLen) * 0.3;
-            const sz = 2 + ((trailLen - t) / trailLen) * 4;
+            const dx = Math.abs(tp.x - tp2.x);
+            dist += dx;
+            const pos = dist % (dashW + gapW);
+            if (pos >= dashW) continue;
+            const alpha = 0.15 + ((trailPoints - t) / trailPoints) * 0.35;
             ctx.globalAlpha = alpha;
             ctx.fillStyle = '#00FF88';
-            ctx.fillRect(tx - sz / 2, ty - sz / 2, sz, sz);
+            ctx.fillRect(tx - 1, ty - trailH / 2, 2, trailH);
           }
           ctx.globalAlpha = 1;
 
