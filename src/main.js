@@ -588,6 +588,14 @@ class Game {
       localStorage.setItem('gd_scroll_coin', '1');
       this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
     } else if (action === 'levels') {
+      // Pre-download all level music in background
+      for (let i = 1; i <= getLevelCount(); i++) {
+        if (!Sound.hasCustomMusic(i)) {
+          downloadOfficialMusic(i).then(ab => {
+            if (ab) Sound.storePendingCustomMusic(i, ab);
+          }).catch(() => {});
+        }
+      }
       this._fadeToState(LEVEL_SELECT, () => { this.levelPage = 0; });
     } else if (action === 'levels_prev') {
       if (this.levelPage > 0) { this.levelPage--; this._onLevelScroll(); }
