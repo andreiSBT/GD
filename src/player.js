@@ -420,16 +420,17 @@ export class Player {
     };
   }
 
-  // Smaller hitbox for platform collision (more forgiveness)
+  // Smaller hitbox for platform collision (narrower on X, normal on Y for stable landing)
   getPlatformRect() {
-    const inset = 11;
+    const xInset = 10;
+    const yInset = 4;
     const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
-      x: this.x + inset + offset,
-      y: this.y + inset + offset,
-      w: s - inset * 2,
-      h: s - inset * 2,
+      x: this.x + xInset + offset,
+      y: this.y + yInset + offset,
+      w: s - xInset * 2,
+      h: s - yInset * 2,
     };
   }
 
