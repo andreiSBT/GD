@@ -2526,6 +2526,7 @@ class Game {
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
       // Draw ghost replay (behind the player)
+      if (this._replayFrame % 120 === 0) console.log('[Ghost] ghost:', !!this._replayGhost, 'alive:', this.player.alive, 'noGhost:', !!localStorage.getItem('gd_no_ghost'), 'practice:', this.practiceMode, 'frame:', this._replayFrame);
       if (this._replayGhost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
         const ghostPos = this._replayGhost.getPosition(this._replayFrame);
         if (ghostPos) {
