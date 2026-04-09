@@ -2366,7 +2366,7 @@ class Game {
     if (this._replayRecorder && this.player.alive) {
       this._replayRecorder.record(this.player);
     }
-    this._replayFrame++;
+    if (this.player.alive) this._replayFrame++;
 
     // Hold-to-jump: emit effects when auto-jumping from hold
     if (this.player.holdJumped) {
@@ -2558,8 +2558,9 @@ class Game {
       // Draw ghost (bot in practice mode) with green trail
       const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
-        const ghostFrame = this._replayFrame + 30;
-        if (ghostFrame <= ghost.totalFrames) {
+        // Find ghost frame that is exactly 30 frames ahead of player's current frame
+        const ghostFrame = Math.min(this._replayFrame + 30, ghost.totalFrames);
+        if (this._replayFrame <= ghost.totalFrames) {
           // Build ghost trail points
           const ghostTrail = [];
           for (let t = 45; t >= 0; t--) {
