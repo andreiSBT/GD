@@ -430,6 +430,7 @@ export class UI {
         ctx.shadowBlur = 8;
         ctx.fillStyle = '#00FF64';
         ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
         ctx.fillText('COMPLETED', x + cardW / 2, totalCoins > 0 ? y + 248 : y + 220);
         ctx.restore();
       }
