@@ -660,7 +660,8 @@ export class JumpOrb {
 
     this.pulseTimer += 0.05;
     const beat = getBeatIntensity();
-    const pulse = 1 + beat * 0.25 + Math.sin(this.pulseTimer) * 0.05;
+    const beatScale = beat > 0 ? (beat * 2 - 1) * 0.25 : 0;
+    const pulse = 1 + beatScale + Math.sin(this.pulseTimer) * 0.05;
     const radius = (this.w / 2) * pulse;
     const cx = sx + this.w / 2;
     const cy = sy + this.h / 2;
