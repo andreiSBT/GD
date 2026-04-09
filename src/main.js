@@ -369,11 +369,11 @@ class Game {
       if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause' || action === 'ingame_settings') {
+        if (action === 'pause') {
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
-          if (action === 'ingame_settings') this.ui._showSettings = true;
+          this.ui._hidePauseBtn = true;
           return;
         }
         if (this._handlePracticeAction(action)) return;
@@ -381,12 +381,12 @@ class Game {
       } else if (this.state === DEAD) {
         // Allow pause button anytime during death
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause' || action === 'ingame_settings') {
+        if (action === 'pause') {
           if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
-          if (action === 'ingame_settings') this.ui._showSettings = true;
+          this.ui._hidePauseBtn = true;
           return;
         }
         if (this.deathTimer > 0.3) this._restart();
@@ -485,23 +485,23 @@ class Game {
       if (this.state === PLAYING || this.state === EDITOR_TESTING) {
         // Check pause button first
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause' || action === 'ingame_settings') {
+        if (action === 'pause') {
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
-          if (action === 'ingame_settings') this.ui._showSettings = true;
+          this.ui._hidePauseBtn = true;
           return;
         }
         if (this._handlePracticeAction(action)) return;
         doPress();
       } else if (this.state === DEAD) {
         const action = this.ui.handleClick(x, y);
-        if (action === 'pause' || action === 'ingame_settings') {
+        if (action === 'pause') {
           if (this._retryTimer) { clearTimeout(this._retryTimer); this._retryTimer = null; }
           this.shakeIntensity = 0;
           Sound.pauseMusic();
           this.state = PAUSED;
-          if (action === 'ingame_settings') this.ui._showSettings = true;
+          this.ui._hidePauseBtn = true;
           return;
         }
         if (this.deathTimer > 0.3) this._restart();
@@ -687,11 +687,6 @@ class Game {
       Sound.pauseMusic();
       this.state = PAUSED;
 
-    } else if (action === 'ingame_settings') {
-      this.shakeIntensity = 0;
-      Sound.pauseMusic();
-      this.state = PAUSED;
-      this.ui._showSettings = true;
     } else if (action === 'pause_settings') {
       this.ui._showSettings = !this.ui._showSettings;
     } else if (action === 'close_settings') {
@@ -700,6 +695,7 @@ class Game {
       this._showHitboxes = !this._showHitboxes;
     } else if (action === 'resume') {
       this.ui._showSettings = false;
+      this.ui._hidePauseBtn = false;
 
       if (!this.player.alive) {
         // Resume into DEAD state so explosion continues, then auto-retry
@@ -722,19 +718,20 @@ class Game {
       this.editorStartCheckpoint = null;
       this.state = EDITOR;
     } else if (action === 'switch_practice') {
-
+      this.ui._hidePauseBtn = false;
       this.practiceMode = true;
       // lastCheckpoint stays as-is (set by checkpoint obstacles), or null if none passed
       this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
       Sound.resumeMusic();
     } else if (action === 'switch_normal') {
-
+      this.ui._hidePauseBtn = false;
       this.practiceMode = false;
       this.lastCheckpoint = null;
       Sound.stopDeath();
       this._restart();
     } else if (action === 'retry' || action === 'restart') {
       this.ui._showSettings = false;
+      this.ui._hidePauseBtn = false;
       Sound.stopDeath();
       this._restart();
     } else if (action === 'menu') {

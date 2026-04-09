@@ -797,21 +797,24 @@ export class UI {
       this.buttons.push({ id: 'practice_hitbox', x: hbX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
-    // Settings gear button (top right) — always visible, opens pause + settings
+    // Pause button (top right) — hidden after click, reappears on resume
     const pbS = S(48);
     const pbX = SCREEN_WIDTH - pbS - 10;
     const pbY = 8;
     const hitPad = 15;
-    this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = `${S(22)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\u2699', pbX + pbS / 2, pbY + pbS / 2 + 1);
-    ctx.textBaseline = 'alphabetic';
-    this.buttons.push({ id: 'ingame_settings', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
+    if (!this._hidePauseBtn) {
+      this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fill();
+      // Two vertical bars (pause icon)
+      const bw = 6, bGap = 5;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      this._roundRect(ctx, pbX + pbS / 2 - bw - bGap / 2, pbY + 11, bw, pbS - 22, 2);
+      ctx.fill();
+      this._roundRect(ctx, pbX + pbS / 2 + bGap / 2, pbY + 11, bw, pbS - 22, 2);
+      ctx.fill();
+      this.buttons.push({ id: 'pause', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
+    }
 
     // Level name
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
