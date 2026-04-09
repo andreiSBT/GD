@@ -682,7 +682,14 @@ class Game {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
       this.state = PAUSED;
+    } else if (action === 'pause_settings') {
+      this.ui._showSettings = !this.ui._showSettings;
+    } else if (action === 'close_settings') {
+      this.ui._showSettings = false;
+    } else if (action === 'toggle_hitboxes') {
+      this._showHitboxes = !this._showHitboxes;
     } else if (action === 'resume') {
+      this.ui._showSettings = false;
       if (!this.player.alive) {
         // Resume into DEAD state so explosion continues, then auto-retry
         this.state = DEAD;
@@ -716,9 +723,11 @@ class Game {
       Sound.stopDeath();
       this._restart();
     } else if (action === 'retry' || action === 'restart') {
+      this.ui._showSettings = false;
       Sound.stopDeath();
       this._restart();
     } else if (action === 'menu') {
+      this.ui._showSettings = false;
       Sound.stopMusic();
       this.shakeIntensity = 0;
       this.editorLevelData = null;
@@ -2603,7 +2612,7 @@ class Game {
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
         const pauseCoins = totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins, best: (this.level && this.progress[this.level.id]) ? (this.progress[this.level.id].bestCoins || 0) : 0 } : null;
-        this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg, pauseCoins);
+        this.ui.drawPauseScreen(ctx, !!this.editorLevelData, this.practiceMode, bestProg, pauseCoins, this._showHitboxes);
       } else if (this.state === COMPLETE) {
         const completeCoins = totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null;
         this.ui.drawCompleteScreen(ctx, this.attempts, this.theme, completeCoins, !!this.editorLevelData);

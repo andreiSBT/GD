@@ -41,6 +41,7 @@ export class UI {
   constructor() {
     this.buttons = [];
     this.pulseTimer = 0;
+    this._showSettings = false;
     // Scroll state for list screens
     this.scrollY = 0;
     this.maxScrollY = 0;
@@ -1042,11 +1043,69 @@ export class UI {
     ctx.fillText('GHOST SAVED', SCREEN_WIDTH / 2, btnY + cbh + 20);
   }
 
-  drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0, coins = null) {
+  drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0, coins = null, showHitboxes = false) {
     this.buttons = [];
 
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+    // Settings gear button (top-right)
+    const gearS = S(36);
+    const gearX = SCREEN_WIDTH - gearS - S(16);
+    const gearY = S(16);
+    ctx.fillStyle = this._showSettings ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.roundRect(gearX, gearY, gearS, gearS, 8);
+    ctx.fill();
+    ctx.fillStyle = '#FFF';
+    ctx.font = `${S(20)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u2699', gearX + gearS / 2, gearY + gearS / 2 + 1);
+    ctx.textBaseline = 'alphabetic';
+    this.buttons.push({ id: 'pause_settings', x: gearX, y: gearY, w: gearS, h: gearS });
+
+    if (this._showSettings) {
+      // Settings panel
+      const panelW = S(320);
+      const panelH = S(200);
+      const panelX = SCREEN_WIDTH / 2 - panelW / 2;
+      const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
+
+      ctx.fillStyle = 'rgba(20,25,40,0.95)';
+      ctx.beginPath();
+      ctx.roundRect(panelX, panelY, panelW, panelH, 12);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFF';
+      ctx.font = `bold ${S(20)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('SETTINGS', SCREEN_WIDTH / 2, panelY + S(32));
+
+      // Volume sliders
+      let sliderY = panelY + S(58);
+      this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, sliderY, 'MUSIC', getMusicVolume(), 'volume_music');
+      sliderY += S(42);
+      this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, sliderY, 'SFX', getSFXVolume(), 'volume_sfx');
+
+      // Hitbox toggle
+      sliderY += S(48);
+      const toggleW = S(200);
+      const toggleH = S(36);
+      const toggleX = SCREEN_WIDTH / 2 - toggleW / 2;
+      const toggleColor = showHitboxes ? '#00C864' : '#445566';
+      this._drawButton(ctx, toggleX, sliderY, toggleW, toggleH, showHitboxes ? 'HITBOXES: ON' : 'HITBOXES: OFF', 'toggle_hitboxes', toggleColor, S(13));
+
+      // Close button
+      const closeW = S(100);
+      const closeH = S(32);
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - closeW / 2, panelY + panelH - S(44), closeW, closeH, 'CLOSE', 'close_settings', '#666', S(13));
+
+      return; // Don't draw pause buttons behind settings
+    }
 
     // Title with subtle glow
     ctx.save();
@@ -1119,12 +1178,6 @@ export class UI {
     }
     btnY += pgap;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'MENU', 'menu', '#445566');
-
-    // Volume sliders
-    btnY += pgap + 8;
-    this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, btnY, 'MUSIC', getMusicVolume(), 'volume_music');
-    btnY += 42;
-    this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, btnY, 'SFX', getSFXVolume(), 'volume_sfx');
   }
 
   _drawVolumeSlider(ctx, centerX, y, label, value, id) {
