@@ -1628,6 +1628,7 @@ class Game {
       this._replayFrame = 0;
       if (this._replayGhost) this._replayGhost.reset();
       if (this._botGhost) this._botGhost.reset();
+      this._ghostTrail = [];
     }
     // else: practice checkpoint — ghost continues from where it was
     this._levelStartTime = performance.now();
@@ -2368,6 +2369,17 @@ class Game {
     }
     if (this.player.alive) this._replayFrame++;
 
+    // Update ghost trail (store positions like player trail)
+    if (this._botGhost && this.practiceMode && this.player.alive) {
+      const gf = Math.min(this._replayFrame + 30, this._botGhost.totalFrames);
+      const gp = this._botGhost.getPosition(gf);
+      if (gp) {
+        if (!this._ghostTrail) this._ghostTrail = [];
+        this._ghostTrail.push({ x: gp.x, y: gp.y + PLAYER_SIZE / 2 });
+        if (this._ghostTrail.length > 45) this._ghostTrail.shift();
+      }
+    }
+
     // Hold-to-jump: emit effects when auto-jumping from hold
     if (this.player.holdJumped) {
       Sound.playJump();
@@ -2561,16 +2573,8 @@ class Game {
         // Find ghost frame that is exactly 30 frames ahead of player's current frame
         const ghostFrame = Math.min(this._replayFrame + 30, ghost.totalFrames);
         if (this._replayFrame <= ghost.totalFrames) {
-          // Build ghost trail points
-          const ghostTrail = [];
-          for (let t = 45; t >= 0; t--) {
-            const tf = ghostFrame - t;
-            if (tf < 0) continue;
-            const tp = ghost.getPosition(tf);
-            if (tp) ghostTrail.push({ x: tp.x, y: tp.y + PLAYER_SIZE / 2 });
-          }
-
-          // Draw green dashed trail (same logic as dotted player trail)
+          // Draw green dashed trail from stored ghost positions (like player trail)
+          const ghostTrail = this._ghostTrail || [];
           if (ghostTrail.length > 1) {
             ctx.save();
             ctx.fillStyle = '#00FF88';
