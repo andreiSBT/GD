@@ -1985,38 +1985,27 @@ class Game {
           if (result.type === 'death') {
             // Slopes are safe surfaces, except wall hits (flat vertical side)
             if (piece.type === 'slope' && !result.wall) continue;
-            // Use platform death hitbox bounds for side-hit detection
-            const pdi = 17; // platform death inset — matches getPlatformRect
-            const pdOff = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
-            const prevBottom = this.player.prevY + PLAYER_SIZE - pdi - pdOff;
-            const prevTop = this.player.prevY + pdi + pdOff;
-            const prevRight = this.player.prevX + PLAYER_SIZE - pdi - pdOff;
-            const pieceLeft = piece.x;
-            const wasHorizInside = prevRight > pieceLeft + 4;
-            const pdTol = pdi + 2; // tolerance covers inset so junctions don't kill
-            const wasOnTop = wasHorizInside && this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < pdTol;
-            const wasBelow = wasHorizInside && this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
-            const wasOnBottom = wasHorizInside && this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < pdTol;
-            const wasAboveInv = wasHorizInside && this.player.gravityMult < 0 && prevTop < piece.y + 4;
+            // Only die if blue platformRect actually overlaps the piece
+            const pr = platformRect;
+            const px = piece.x, py = piece.y, pw = piece.w || GRID, ph = piece.h || GRID;
+            if (pr.x + pr.w <= px || pr.x >= px + pw || pr.y + pr.h <= py || pr.y >= py + ph) continue;
             // Skip death if player is rising near a slope in this group (just jumped off)
             const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
-            // Hitting from below = death (unless near a slope)
-            if ((wasBelow || wasAboveInv) && !risingNearSlope) {
-              this._die(); return;
-            }
-            if (wasOnTop || wasOnBottom || risingNearSlope) {
-              continue;
-            }
+            if (risingNearSlope) continue;
             this._die(); return;
           } else if (result.type === 'land') {
+            const landPiece = result._piece || piece;
+            // Side/underside hits only kill if blue platformRect overlaps the piece
+            const lpr = platformRect;
+            const lpx = landPiece.x, lpy = landPiece.y, lpw = landPiece.w || GRID, lph = landPiece.h || GRID;
+            const prOverlap = !(lpr.x + lpr.w <= lpx || lpr.x >= lpx + lpw || lpr.y + lpr.h <= lpy || lpr.y >= lpy + lph);
             // If player was approaching from the left (side hit), die instead of landing
             const prevRight = this.player.prevX + PLAYER_SIZE - 4 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
-            const landPiece = result._piece || piece;
-            if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
+            if (prevRight <= landPiece.x + 4 && !result.slopeRatio && prOverlap) {
               this._die(); return;
             }
             // If player was below platform piece and rising, die (hitting underside)
-            if (!result.slopeRatio && landPiece.type !== 'slope') {
+            if (!result.slopeRatio && landPiece.type !== 'slope' && prOverlap) {
               const prevBot = this.player.prevY + PLAYER_SIZE - miniOffset;
               if (this.player.gravityMult > 0 && prevBot > landPiece.y + landPiece.h - 4 && this.player.vy < 0) {
                 this._die(); return;
@@ -2051,44 +2040,26 @@ class Game {
         const result = obs.checkCollision(landingRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
-            // Use platform death hitbox bounds for side-hit detection
-            const pdi = 17; // platform death inset — matches getPlatformRect
-            const pdOff = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
-            const prevBottom = this.player.prevY + PLAYER_SIZE - pdi - pdOff;
-            const prevTop = this.player.prevY + pdi + pdOff;
-            const platTop = obs.y;
-            const platBottom = obs.y + obs.h;
-            const prevRight = this.player.prevX + PLAYER_SIZE - pdi - pdOff;
-            const platLeft = obs.x;
-            const wasHorizontallyInside = prevRight > platLeft + 4;
-            const pdTol = pdi + 2; // tolerance covers inset so junctions don't kill
-            const wasOnTop = wasHorizontallyInside && this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < pdTol;
-            const wasBelow = wasHorizontallyInside && this.player.gravityMult > 0 && prevBottom > platBottom - 4;
-            const wasOnBottom = wasHorizontallyInside && this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < pdTol;
-            const wasAboveInv = wasHorizontallyInside && this.player.gravityMult < 0 && prevTop < platTop + 4;
-            // Hitting platform from below = death
-            if (wasBelow || wasAboveInv) {
-              this._die(); return;
-            }
-            if (wasOnTop || wasOnBottom) {
-              continue;
-            }
-            // Side hit — always die
-            this._die();
-            return;
+            // Only die if blue platformRect actually overlaps the platform
+            const pr = platformRect;
+            if (pr.x + pr.w <= obs.x || pr.x >= obs.x + obs.w || pr.y + pr.h <= obs.y || pr.y >= obs.y + obs.h) continue;
+            this._die(); return;
           } else if (result.type === 'land') {
+            // Side/underside hits only kill if blue platformRect overlaps the platform
+            const opr = platformRect;
+            const oprOverlap = !(opr.x + opr.w <= obs.x || opr.x >= obs.x + obs.w || opr.y + opr.h <= obs.y || opr.y >= obs.y + obs.h);
             // If player was approaching from the left (side hit), die instead of landing
             const prevRight = this.player.prevX + PLAYER_SIZE - 4 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
-            if (prevRight <= obs.x + 4) {
+            if (prevRight <= obs.x + 4 && oprOverlap) {
               this._die(); return;
             }
             // If player was approaching from below and rising, die (hitting underside)
             const prevBot = this.player.prevY + PLAYER_SIZE - miniOffset;
-            if (this.player.gravityMult > 0 && prevBot > obs.y + obs.h - 4 && this.player.vy < 0) {
+            if (this.player.gravityMult > 0 && prevBot > obs.y + obs.h - 4 && this.player.vy < 0 && oprOverlap) {
               this._die(); return;
             }
             const prevTop = this.player.prevY + miniOffset;
-            if (this.player.gravityMult < 0 && prevTop < obs.y + 4 && this.player.vy > 0) {
+            if (this.player.gravityMult < 0 && prevTop < obs.y + 4 && this.player.vy > 0 && oprOverlap) {
               this._die(); return;
             }
             // Don't land if player just jumped (vy strongly away from surface)
