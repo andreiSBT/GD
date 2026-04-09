@@ -1220,44 +1220,8 @@ export class UI {
       ctx.fillRect(lx - ls * 0.06, ly + bh * 0.35, ls * 0.12, bh * 0.35);
     };
 
-    // Diamond gem icon helper
-    const _drawGem = (cx, cy, size) => {
-      ctx.save();
-      ctx.translate(cx, cy);
-      const s = size / 2;
-      // Main diamond shape
-      ctx.beginPath();
-      ctx.moveTo(0, -s);
-      ctx.lineTo(s, 0);
-      ctx.lineTo(0, s);
-      ctx.lineTo(-s, 0);
-      ctx.closePath();
-      const gGrad = ctx.createLinearGradient(-s, -s, s, s);
-      gGrad.addColorStop(0, '#88EEFF');
-      gGrad.addColorStop(0.5, '#00DDFF');
-      gGrad.addColorStop(1, '#0088CC');
-      ctx.fillStyle = gGrad;
-      ctx.fill();
-      // Highlight facet (top-left)
-      ctx.beginPath();
-      ctx.moveTo(0, -s);
-      ctx.lineTo(-s, 0);
-      ctx.lineTo(0, 0);
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.fill();
-      // Outline
-      ctx.beginPath();
-      ctx.moveTo(0, -s);
-      ctx.lineTo(s, 0);
-      ctx.lineTo(0, s);
-      ctx.lineTo(-s, 0);
-      ctx.closePath();
-      ctx.strokeStyle = 'rgba(0,200,255,0.6)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
-    };
+    // Diamond gem icon helper — delegates to shared method
+    const _drawGem = (cx, cy, size) => this._drawGem(ctx, cx, cy, size);
 
         // Background
     const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
@@ -1988,35 +1952,93 @@ export class UI {
   _drawGem(ctx, cx, cy, size) {
     ctx.save();
     ctx.translate(cx, cy);
-    const s = size / 2;
+    const s = size;
+    // Gem proportions: wide top crown, pointed bottom
+    const topY = -s * 0.45;    // top edge
+    const midY = -s * 0.1;     // crown/body junction
+    const botY = s * 0.55;     // bottom point
+    const topW = s * 0.5;      // half-width at top
+    const midW = s * 0.6;      // half-width at mid (widest)
+
+    // Outer gem shape
     ctx.beginPath();
-    ctx.moveTo(0, -s);
-    ctx.lineTo(s, 0);
-    ctx.lineTo(0, s);
-    ctx.lineTo(-s, 0);
+    ctx.moveTo(-topW, topY);
+    ctx.lineTo(topW, topY);
+    ctx.lineTo(midW, midY);
+    ctx.lineTo(0, botY);
+    ctx.lineTo(-midW, midY);
     ctx.closePath();
-    const gGrad = ctx.createLinearGradient(-s, -s, s, s);
-    gGrad.addColorStop(0, '#88EEFF');
-    gGrad.addColorStop(0.5, '#00DDFF');
-    gGrad.addColorStop(1, '#0088CC');
+    const gGrad = ctx.createLinearGradient(0, topY, 0, botY);
+    gGrad.addColorStop(0, '#66EEFF');
+    gGrad.addColorStop(0.3, '#00CCFF');
+    gGrad.addColorStop(0.7, '#0099DD');
+    gGrad.addColorStop(1, '#006699');
     ctx.fillStyle = gGrad;
     ctx.fill();
+    ctx.strokeStyle = '#00AADD';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Crown band (top section, slightly lighter)
     ctx.beginPath();
-    ctx.moveTo(0, -s);
-    ctx.lineTo(-s, 0);
-    ctx.lineTo(0, 0);
+    ctx.moveTo(-topW, topY);
+    ctx.lineTo(topW, topY);
+    ctx.lineTo(midW, midY);
+    ctx.lineTo(-midW, midY);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillStyle = 'rgba(150,240,255,0.3)';
     ctx.fill();
+
+    // Crown divider line
     ctx.beginPath();
-    ctx.moveTo(0, -s);
-    ctx.lineTo(s, 0);
-    ctx.lineTo(0, s);
-    ctx.lineTo(-s, 0);
-    ctx.closePath();
-    ctx.strokeStyle = 'rgba(0,200,255,0.6)';
+    ctx.moveTo(-midW, midY);
+    ctx.lineTo(midW, midY);
+    ctx.strokeStyle = 'rgba(0,180,220,0.5)';
     ctx.lineWidth = 1;
     ctx.stroke();
+
+    // Facet lines from crown to bottom point
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(0, botY);
+    ctx.moveTo(-topW * 0.5, midY);
+    ctx.lineTo(0, botY);
+    ctx.moveTo(topW * 0.5, midY);
+    ctx.lineTo(0, botY);
+    ctx.strokeStyle = 'rgba(0,180,220,0.35)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Crown facet lines (V shapes in top band)
+    ctx.beginPath();
+    ctx.moveTo(-topW, topY);
+    ctx.lineTo(-topW * 0.5, midY);
+    ctx.moveTo(0, topY);
+    ctx.lineTo(-topW * 0.5, midY);
+    ctx.moveTo(0, topY);
+    ctx.lineTo(topW * 0.5, midY);
+    ctx.moveTo(topW, topY);
+    ctx.lineTo(topW * 0.5, midY);
+    ctx.strokeStyle = 'rgba(0,180,220,0.4)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+
+    // Bright highlight (top-left facet)
+    ctx.beginPath();
+    ctx.moveTo(-topW, topY);
+    ctx.lineTo(0, topY);
+    ctx.lineTo(-topW * 0.5, midY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fill();
+
+    // Small sparkle
+    ctx.beginPath();
+    ctx.moveTo(-topW * 0.3, topY + (midY - topY) * 0.3);
+    const spk = s * 0.08;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(-topW * 0.3 - spk / 2, topY + (midY - topY) * 0.3 - spk / 2, spk, spk);
+
     ctx.restore();
   }
 
