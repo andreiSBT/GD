@@ -2637,6 +2637,75 @@ export class UI {
     const backTarget = (tab === 'chat' || tab === 'share_select') ? 'friends_back_to_list' : 'friends_back';
     const fbH = IS_MOBILE ? 52 : 44;
     this._drawButton(ctx, 30, SCREEN_HEIGHT - fbH - 16, IS_MOBILE ? 150 : 130, fbH, 'BACK', backTarget, '#445566', 20);
+
+    // Trade popup
+    if (friendsData.tradePopup) {
+      const tp = friendsData.tradePopup;
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+      const dlgW = Math.min(380, SCREEN_WIDTH - 40);
+      const dlgH = 260;
+      const dlgX = (SCREEN_WIDTH - dlgW) / 2;
+      const dlgY = (SCREEN_HEIGHT - dlgH) / 2;
+
+      // Panel
+      const dlgGrad = ctx.createLinearGradient(dlgX, dlgY, dlgX, dlgY + dlgH);
+      dlgGrad.addColorStop(0, '#1a1030');
+      dlgGrad.addColorStop(1, '#0e0818');
+      ctx.fillStyle = dlgGrad;
+      this._roundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(170,68,255,0.4)';
+      ctx.lineWidth = 2;
+      this._roundRect(ctx, dlgX, dlgY, dlgW, dlgH, 16);
+      ctx.stroke();
+
+      // Title
+      ctx.fillStyle = '#CC88FF';
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('TRADE DIAMONDS', SCREEN_WIDTH / 2, dlgY + 38);
+
+      // To who
+      ctx.fillStyle = '#889';
+      ctx.font = '13px monospace';
+      ctx.fillText('Send to ' + (tp.friend?.name || '?'), SCREEN_WIDTH / 2, dlgY + 60);
+
+      // Amount selector: [ - ]  amount  [ + ]
+      const selY = dlgY + 85;
+      const btnS = IS_MOBILE ? 52 : 44;
+      const numW = 80;
+      const totalSelW = btnS * 2 + numW + 16;
+      const selX = (SCREEN_WIDTH - totalSelW) / 2;
+
+      this._drawButton(ctx, selX, selY, btnS, btnS, '-', 'trade_minus', '#664488', 24);
+
+      // Amount display
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 32px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(tp.amount), selX + btnS + 8 + numW / 2, selY + btnS / 2 + 11);
+
+      this._drawButton(ctx, selX + btnS + numW + 16, selY, btnS, btnS, '+', 'trade_plus', '#664488', 24);
+
+      // Cost info
+      const cost = tp.amount * 2;
+      ctx.fillStyle = '#AA88CC';
+      ctx.font = '14px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(`They receive: ${tp.amount}  \u25C7`, SCREEN_WIDTH / 2, selY + btnS + 28);
+      ctx.fillStyle = '#FF8888';
+      ctx.font = '13px monospace';
+      ctx.fillText(`Your cost: ${cost}  \u25C7`, SCREEN_WIDTH / 2, selY + btnS + 48);
+
+      // Confirm / Cancel
+      const cbW = (dlgW - 30) / 2;
+      const cbH = IS_MOBILE ? 48 : 42;
+      const cbY = dlgY + dlgH - cbH - 18;
+      this._drawButton(ctx, dlgX + 10, cbY, cbW, cbH, 'CANCEL', 'trade_cancel', '#445566', 16);
+      this._drawButton(ctx, dlgX + dlgW - cbW - 10, cbY, cbW, cbH, 'SEND', 'trade_confirm', '#AA44FF', 16);
+    }
   }
 
   _drawFriendsList(ctx, friends, startY) {

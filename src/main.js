@@ -916,30 +916,34 @@ class Game {
       }
     } else if (action === 'friends_trade_diamonds') {
       if (fd.chatFriend) {
-        const input = prompt('How many diamonds to send?\n(You pay 2x, they receive 1x)', '5');
-        if (input == null) return;
-        const amount = parseInt(input);
-        if (!amount || amount <= 0) {
-          fd.notification = { text: 'Invalid amount', type: 'error' };
-          fd.notificationTimer = 3;
-          return;
-        }
+        fd.tradePopup = { amount: 5, friend: fd.chatFriend };
+      }
+    } else if (action === 'trade_minus') {
+      if (fd.tradePopup && fd.tradePopup.amount > 1) fd.tradePopup.amount--;
+    } else if (action === 'trade_plus') {
+      if (fd.tradePopup) fd.tradePopup.amount++;
+    } else if (action === 'trade_cancel') {
+      fd.tradePopup = null;
+    } else if (action === 'trade_confirm') {
+      if (fd.tradePopup) {
+        const amount = fd.tradePopup.amount;
         const cost = amount * 2;
         if (this._diamonds < cost) {
-          fd.notification = { text: `Not enough diamonds! Need ${cost}, have ${this._diamonds}`, type: 'error' };
+          fd.notification = { text: `Not enough! Need ${cost}, have ${this._diamonds}`, type: 'error' };
           fd.notificationTimer = 3;
+          fd.tradePopup = null;
           return;
         }
-        // Deduct from sender
         this._diamonds -= cost;
         localStorage.setItem('gd_diamonds', String(this._diamonds));
         syncDiamondsToCloud(this._diamonds);
-        // Send trade message
-        sendDiamondTrade(fd.chatFriend.id, amount).then(() => {
-          getMessages(fd.chatFriend.id).then(msgs => { fd.messages = msgs; });
+        const friend = fd.tradePopup.friend;
+        sendDiamondTrade(friend.id, amount).then(() => {
+          getMessages(friend.id).then(msgs => { fd.messages = msgs; });
         });
         fd.notification = { text: `Sent ${amount} diamonds (cost: ${cost})!`, type: 'success' };
         fd.notificationTimer = 3;
+        fd.tradePopup = null;
       }
     } else if (action.startsWith('friends_accept_trade_')) {
       const idx = parseInt(action.replace('friends_accept_trade_', ''));
