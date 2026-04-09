@@ -1512,8 +1512,9 @@ class Game {
   }
 
   async _restart() {
+    const comingFromDeath = this.state === DEAD;
+    const firstAttempt = this.attempts === 0;
     Sound.stopDeath();
-    Sound.stopMusic();
     this.attempts++;
     this.coinsCollected = 0;
     this._diamondsEarned = 0;
@@ -1595,23 +1596,29 @@ class Game {
       }
     }
 
-    // Restart music: from checkpoint offset (practice), editor start pos, or beginning
-    await Sound.resumeAudio();
-    let musicOffset = 0;
-    if (this.practiceMode && this.lastCheckpoint && this.lastCheckpoint.musicTime) {
-      musicOffset = this.lastCheckpoint.musicTime;
-    } else if (this.editorStartCheckpoint && this.editorStartCheckpoint.musicTime) {
-      musicOffset = this.editorStartCheckpoint.musicTime;
-    }
-    if (this.editorLevelData) {
-      const musicKey = this.editor._getMusicKey();
-      if (musicKey && Sound.hasCustomMusic(musicKey)) {
-        await Sound.playMusic(musicKey, musicOffset);
+    // Only restart music on death or first attempt (not on manual retry while alive)
+    if (comingFromDeath || firstAttempt) {
+      Sound.stopMusic();
+      await Sound.resumeAudio();
+      let musicOffset = 0;
+      if (this.practiceMode && this.lastCheckpoint && this.lastCheckpoint.musicTime) {
+        musicOffset = this.lastCheckpoint.musicTime;
+      } else if (this.editorStartCheckpoint && this.editorStartCheckpoint.musicTime) {
+        musicOffset = this.editorStartCheckpoint.musicTime;
+      }
+      if (this.editorLevelData) {
+        const musicKey = this.editor._getMusicKey();
+        if (musicKey && Sound.hasCustomMusic(musicKey)) {
+          await Sound.playMusic(musicKey, musicOffset);
+        } else {
+          await Sound.playMusic(this.editor.themeId, musicOffset);
+        }
       } else {
-        await Sound.playMusic(this.editor.themeId, musicOffset);
+        await Sound.playMusic(this.level.id, musicOffset);
       }
     } else {
-      await Sound.playMusic(this.level.id, musicOffset);
+      await Sound.resumeAudio();
+      Sound.resumeMusic();
     }
 
     this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
