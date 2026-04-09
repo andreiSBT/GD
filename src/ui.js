@@ -1054,7 +1054,7 @@ export class UI {
     if (this._showSettings) {
       // Settings panel — 2 column layout for toggles
       const panelW = S(440);
-      const panelH = S(320);
+      const panelH = S(370);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
