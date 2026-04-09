@@ -339,6 +339,7 @@ class Game {
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS || this.state === COMMUNITY || this.state === LEADERBOARD || this.state === SECRETS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
+          console.log('[Click] action:', action, 'state:', this.state);
           // Volume slider interaction
           if (action === 'volume_music' || action === 'volume_sfx') {
             this._draggingSlider = action;
