@@ -1290,6 +1290,10 @@ class Game {
       [String(new Date().getFullYear() + 1)]: { reward: 'year_flag_trail', desc: 'Year flag trail unlocked!', condition: () => _nearHoliday(1, 1), failMsg: 'Only available around New Year!' },
       'I LOVE YOU': { reward: 'heart_shape', desc: 'Heart shape unlocked!', condition: () => _nearHoliday(2, 14), failMsg: 'Only available around Valentine\'s Day!' },
       'SPOOOOOKY!': { reward: 'halloween_icon', desc: 'Spooky icon unlocked!', condition: () => _nearHoliday(10, 31), failMsg: 'Only available around Halloween!' },
+      // Diamond codes
+      'DIAMONDS PLEASE': { reward: 'diamonds_20', desc: '+20 Diamonds!' },
+      "I'M BROKE BRO": { reward: 'diamonds_20', desc: '+20 Diamonds!' },
+      'SWEET SWEET TREASURE': { reward: 'diamonds_20', desc: '+20 Diamonds!' },
     };
 
     const entry = SECRET_CODES[code];
@@ -1327,6 +1331,8 @@ class Game {
       localStorage.setItem('gd_heart_shape', '1');
     } else if (entry.reward === 'halloween_icon') {
       localStorage.setItem('gd_halloween_icon', '1');
+    } else if (entry.reward === 'diamonds_20') {
+      this._awardDiamonds(20);
     }
 
     this._redeemedCodes.add(code);
