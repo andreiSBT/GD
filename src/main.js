@@ -693,6 +693,12 @@ class Game {
       this.ui._showSettings = false;
     } else if (action === 'toggle_hitboxes') {
       this._showHitboxes = !this._showHitboxes;
+    } else if (action === 'toggle_shake') {
+      if (localStorage.getItem('gd_no_shake')) localStorage.removeItem('gd_no_shake');
+      else localStorage.setItem('gd_no_shake', '1');
+    } else if (action === 'toggle_particles') {
+      if (localStorage.getItem('gd_no_particles')) localStorage.removeItem('gd_no_particles');
+      else localStorage.setItem('gd_no_particles', '1');
     } else if (action === 'resume') {
       this.ui._showSettings = false;
       this.ui._hidePauseBtn = false;
@@ -2321,8 +2327,8 @@ class Game {
       );
     }
 
-    // Trail particles (skip for dashed trail style)
-    if (this.player.trailStyle !== 'dotted') {
+    // Trail particles (skip for dashed/year_flag trail or if particles disabled)
+    if (this.player.trailStyle === 'normal' && !localStorage.getItem('gd_no_particles')) {
       this.particles.emitTrail(
         this.player.x - 5,
         this.player.y + PLAYER_SIZE / 2,
@@ -2350,7 +2356,7 @@ class Game {
     const ctx = this.ctx;
     ctx.save();
 
-    if (this.shakeIntensity > 0.5 && (this.state === PLAYING || this.state === DEAD || this.state === EDITOR_TESTING)) {
+    if (this.shakeIntensity > 0.5 && !localStorage.getItem('gd_no_shake') && (this.state === PLAYING || this.state === DEAD || this.state === EDITOR_TESTING)) {
       this.renderer.drawScreenShake(ctx, this.shakeIntensity);
     } else {
       this.shakeIntensity = 0;

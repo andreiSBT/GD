@@ -733,68 +733,16 @@ export class UI {
       ctx.fillText(`★ ${coins.collected}/${coins.total}`, 16, S(44));
     }
 
-    // Practice mode indicator + checkpoint buttons
+    // Practice mode indicator
     if (practiceMode) {
       ctx.save();
       ctx.shadowColor = '#FFD700';
       ctx.shadowBlur = 6;
       ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 13px monospace';
+      ctx.font = `bold ${S(13)}px monospace`;
       ctx.textAlign = 'right';
-      ctx.fillText('PRACTICE', SCREEN_WIDTH - 65, 28);
+      ctx.fillText('PRACTICE', SCREEN_WIDTH - 65, S(28));
       ctx.restore();
-
-      // Checkpoint button (place manual checkpoint)
-      const cpBtnS = S(36);
-      const cpX = 16, cpY = S(48);
-      this._roundRect(ctx, cpX, cpY, cpBtnS, cpBtnS, 6);
-      ctx.fillStyle = 'rgba(0,200,100,0.2)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(0,255,100,0.5)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      // Diamond icon with gradient
-      ctx.save();
-      ctx.translate(cpX + cpBtnS / 2, cpY + cpBtnS / 2);
-      ctx.rotate(Math.PI / 4);
-      const cpGrad = ctx.createLinearGradient(-7, -7, 7, 7);
-      cpGrad.addColorStop(0, '#FFFFFF');
-      cpGrad.addColorStop(1, '#00FF64');
-      ctx.fillStyle = cpGrad;
-      ctx.fillRect(-7, -7, 14, 14);
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(-7, -7, 14, 14);
-      ctx.restore();
-      this.buttons.push({ id: 'practice_checkpoint', x: cpX, y: cpY, w: cpBtnS, h: cpBtnS });
-
-      // Delete checkpoint button
-      const delX = cpX + cpBtnS + 6;
-      this._roundRect(ctx, delX, cpY, cpBtnS, cpBtnS, 6);
-      ctx.fillStyle = 'rgba(200,50,50,0.2)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,50,50,0.5)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = '#FF4444';
-      ctx.font = 'bold 18px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('✕', delX + cpBtnS / 2, cpY + cpBtnS / 2 + 6);
-      this.buttons.push({ id: 'practice_delete_cp', x: delX, y: cpY, w: cpBtnS, h: cpBtnS });
-
-      // Hitbox toggle button
-      const hbX = delX + cpBtnS + 6;
-      this._roundRect(ctx, hbX, cpY, cpBtnS, cpBtnS, 6);
-      ctx.fillStyle = this._showHitboxes ? 'rgba(100,150,255,0.3)' : 'rgba(255,255,255,0.08)';
-      ctx.fill();
-      ctx.strokeStyle = this._showHitboxes ? 'rgba(100,150,255,0.7)' : 'rgba(255,255,255,0.2)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = this._showHitboxes ? '#6699FF' : '#556677';
-      ctx.font = 'bold 9px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('HIT', hbX + cpBtnS / 2, cpY + cpBtnS / 2 + 3);
-      this.buttons.push({ id: 'practice_hitbox', x: hbX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
     // Pause button (top right) — hidden after click, reappears on resume
@@ -1068,7 +1016,7 @@ export class UI {
     if (this._showSettings) {
       // Settings panel
       const panelW = S(320);
-      const panelH = S(240);
+      const panelH = S(300);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
@@ -1091,9 +1039,15 @@ export class UI {
       sliderY += S(42);
       this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, sliderY, 'SFX', getSFXVolume(), 'volume_sfx');
 
-      // Hitbox toggle switch
-      sliderY += S(48);
+      // Toggle switches
+      sliderY += S(44);
       this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'HITBOXES', showHitboxes, 'toggle_hitboxes');
+      sliderY += S(36);
+      const shakeOn = !localStorage.getItem('gd_no_shake');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'SHAKE', shakeOn, 'toggle_shake');
+      sliderY += S(36);
+      const particlesOn = !localStorage.getItem('gd_no_particles');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'PARTICLES', particlesOn, 'toggle_particles');
 
       // Close button
       const closeW = S(140);
@@ -1220,11 +1174,6 @@ export class UI {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Percentage text
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.font = '12px monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText(Math.round(value * 100) + '%', barX + barW + 14, barY + barH / 2);
     ctx.textBaseline = 'alphabetic';
 
     // Register the slider bar as a clickable button region (padded for easier interaction)
