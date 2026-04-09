@@ -422,7 +422,7 @@ export class Player {
 
   // Smaller hitbox for platform collision (narrower on X, normal on Y for stable landing)
   getPlatformRect() {
-    const xInset = 10;
+    const xInset = 6;
     const yInset = 4;
     const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
