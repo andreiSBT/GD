@@ -2551,7 +2551,7 @@ class Game {
       // Draw ghost (bot in practice mode)
       const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
-        const ghostPos = ghost.getPosition(this._replayFrame);
+        const ghostPos = ghost.getPosition(this._replayFrame + 30);
         if (ghostPos) {
           const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
           const gy = ghostPos.y;
