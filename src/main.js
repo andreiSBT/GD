@@ -2407,14 +2407,19 @@ class Game {
             ctx.arc(ox + ow / 2, oy + oh / 2, sawR, 0, Math.PI * 2);
             ctx.fill();
           } else if (t === 'platform' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
-            ctx.fillStyle = '#4488FF';
+            ctx.fillStyle = 'rgba(68,136,255,0.25)';
+            ctx.strokeStyle = '#4488FF';
+            ctx.lineWidth = 2;
             if (t === 'platform_group') {
               for (const p of obs.pieces) {
                 const px = p.x - camX + PLAYER_X_OFFSET;
-                ctx.fillRect(px, p.y, p.w || GRID, p.h || GRID);
+                const pw = p.w || GRID, ph = p.h || GRID;
+                ctx.fillRect(px, p.y, pw, ph);
+                ctx.strokeRect(px, p.y, pw, ph);
               }
             } else {
               ctx.fillRect(ox, oy, ow, oh);
+              ctx.strokeRect(ox, oy, ow, oh);
             }
           } else if (t === 'orb' || t === 'pad' || t === 'portal' || t === 'coin' || t === 'checkpoint') {
             ctx.fillStyle = '#00FF64';
