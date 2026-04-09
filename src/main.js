@@ -2560,30 +2560,55 @@ class Game {
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
         const ghostFrame = this._replayFrame + 30;
         if (ghostFrame <= ghost.totalFrames) {
-          // Draw green dashed trail behind ghost
-          const dashW = 10, gapW = 12, trailH = 4;
-          const trailPoints = 40;
-          let dist = 0;
-          let drawing = true, segLeft = dashW;
-          for (let t = 0; t < trailPoints; t++) {
+          // Build ghost trail points
+          const ghostTrail = [];
+          for (let t = 45; t >= 0; t--) {
             const tf = ghostFrame - t;
             if (tf < 0) continue;
             const tp = ghost.getPosition(tf);
-            const tp2 = ghost.getPosition(tf - 1);
-            if (!tp || !tp2) continue;
-            const tx = tp.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
-            const ty = tp.y + PLAYER_SIZE / 2;
-            if (tx < -10 || tx > SCREEN_WIDTH + 10) continue;
-            const dx = Math.abs(tp.x - tp2.x);
-            dist += dx;
-            const pos = dist % (dashW + gapW);
-            if (pos >= dashW) continue;
-            const alpha = 0.15 + ((trailPoints - t) / trailPoints) * 0.35;
-            ctx.globalAlpha = alpha;
-            ctx.fillStyle = '#00FF88';
-            ctx.fillRect(tx - 1, ty - trailH / 2, 2, trailH);
+            if (tp) ghostTrail.push({ x: tp.x, y: tp.y + PLAYER_SIZE / 2 });
           }
-          ctx.globalAlpha = 1;
+
+          // Draw green dashed trail (same logic as dotted player trail)
+          if (ghostTrail.length > 1) {
+            ctx.save();
+            ctx.fillStyle = '#00FF88';
+            const dashLen = 10, gapLen = 12, h = 6;
+            let drawing = true, segLeft = dashLen;
+            for (let i = 1; i < ghostTrail.length; i++) {
+              const prev = ghostTrail[i - 1];
+              const cur = ghostTrail[i];
+              const px = prev.x - camX + PLAYER_X_OFFSET;
+              const cx = cur.x - camX + PLAYER_X_OFFSET;
+              const py = prev.y, cy = cur.y;
+              const dx = cx - px, dy = cy - py;
+              const segDist = Math.sqrt(dx * dx + dy * dy);
+              if (segDist < 0.5) continue;
+
+              let consumed = 0;
+              while (consumed < segDist) {
+                const step = Math.min(segLeft, segDist - consumed);
+                if (drawing) {
+                  const t0 = consumed / segDist;
+                  const t1 = (consumed + step) / segDist;
+                  const x0 = px + dx * t0, y0 = py + dy * t0;
+                  const x1 = px + dx * t1, y1 = py + dy * t1;
+                  const progress = i / ghostTrail.length;
+                  ctx.globalAlpha = 0.15 + progress * 0.5;
+                  ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1) - h / 2,
+                    Math.abs(x1 - x0) + 2, Math.abs(y1 - y0) + h);
+                }
+                consumed += step;
+                segLeft -= step;
+                if (segLeft <= 0) {
+                  drawing = !drawing;
+                  segLeft = drawing ? dashLen : gapLen;
+                }
+              }
+            }
+            ctx.globalAlpha = 1;
+            ctx.restore();
+          }
 
           // Draw ghost cube
           const ghostPos = ghost.getPosition(ghostFrame);
