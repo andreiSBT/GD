@@ -595,30 +595,45 @@ export class Player {
     if (shape !== 'egg') {
       this._drawCubeIcon(ctx);
     } else {
-      // Draw chick poking out of egg
-      const s = hs * 1.1;
-      // Chick body (yellow circle above shell)
-      ctx.fillStyle = '#FFD700';
+      // Draw cute chick poking out (like reference image)
+      const s = hs * 1.15;
+      const chickY = -s * 0.5;
+      const chickR = s * 0.5;
+      // Chick head (big yellow circle)
+      ctx.fillStyle = '#FFDD44';
       ctx.beginPath();
-      ctx.arc(0, -s * 0.45, s * 0.45, 0, Math.PI * 2);
+      ctx.arc(0, chickY, chickR, 0, Math.PI * 2);
       ctx.fill();
-      // Chick eye
-      ctx.fillStyle = '#000';
+      // Crest (3 small triangles on top)
+      ctx.fillStyle = '#FFCC00';
       ctx.beginPath();
-      ctx.arc(s * 0.1, -s * 0.5, s * 0.08, 0, Math.PI * 2);
+      ctx.moveTo(-s * 0.08, chickY - chickR);
+      ctx.lineTo(0, chickY - chickR - s * 0.2);
+      ctx.lineTo(s * 0.08, chickY - chickR);
       ctx.fill();
-      // Beak
-      ctx.fillStyle = '#FF6600';
       ctx.beginPath();
-      ctx.moveTo(s * 0.3, -s * 0.45);
-      ctx.lineTo(s * 0.55, -s * 0.38);
-      ctx.lineTo(s * 0.3, -s * 0.32);
+      ctx.moveTo(-s * 0.2, chickY - chickR + s * 0.04);
+      ctx.lineTo(-s * 0.1, chickY - chickR - s * 0.12);
+      ctx.lineTo(0, chickY - chickR + s * 0.04);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, chickY - chickR + s * 0.04);
+      ctx.lineTo(s * 0.1, chickY - chickR - s * 0.12);
+      ctx.lineTo(s * 0.2, chickY - chickR + s * 0.04);
+      ctx.fill();
+      // Two eyes (black dots)
+      ctx.fillStyle = '#222';
+      ctx.beginPath();
+      ctx.arc(-s * 0.15, chickY - s * 0.05, s * 0.07, 0, Math.PI * 2);
+      ctx.arc(s * 0.15, chickY - s * 0.05, s * 0.07, 0, Math.PI * 2);
+      ctx.fill();
+      // Small orange beak (triangle pointing down)
+      ctx.fillStyle = '#FF8833';
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.06, chickY + s * 0.08);
+      ctx.lineTo(0, chickY + s * 0.2);
+      ctx.lineTo(s * 0.06, chickY + s * 0.08);
       ctx.closePath();
-      ctx.fill();
-      // Chick highlight
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
-      ctx.beginPath();
-      ctx.arc(-s * 0.1, -s * 0.6, s * 0.15, 0, Math.PI * 2);
       ctx.fill();
     }
 

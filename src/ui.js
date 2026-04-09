@@ -1797,17 +1797,17 @@ export class UI {
         break;
       }
       case 'egg': {
-        const s = hs * 1.1;
-        ctx.moveTo(-s * 0.7, -s * 0.1);
-        ctx.lineTo(-s * 0.5, -s * 0.4);
-        ctx.lineTo(-s * 0.2, -s * 0.15);
-        ctx.lineTo(0, -s * 0.45);
-        ctx.lineTo(s * 0.25, -s * 0.1);
-        ctx.lineTo(s * 0.5, -s * 0.35);
-        ctx.lineTo(s * 0.7, -s * 0.05);
-        ctx.quadraticCurveTo(s * 0.85, s * 0.5, s * 0.5, s * 0.85);
-        ctx.quadraticCurveTo(0, s * 1.05, -s * 0.5, s * 0.85);
-        ctx.quadraticCurveTo(-s * 0.85, s * 0.5, -s * 0.7, -s * 0.1);
+        const s = hs * 1.15;
+        ctx.moveTo(-s * 0.75, -s * 0.15);
+        ctx.lineTo(-s * 0.45, -s * 0.45);
+        ctx.lineTo(-s * 0.15, -s * 0.1);
+        ctx.lineTo(s * 0.15, -s * 0.5);
+        ctx.lineTo(s * 0.45, -s * 0.1);
+        ctx.lineTo(s * 0.7, -s * 0.4);
+        ctx.lineTo(s * 0.8, -s * 0.1);
+        ctx.quadraticCurveTo(s * 0.95, s * 0.4, s * 0.6, s * 0.85);
+        ctx.quadraticCurveTo(0, s * 1.1, -s * 0.6, s * 0.85);
+        ctx.quadraticCurveTo(-s * 0.95, s * 0.4, -s * 0.75, -s * 0.15);
         ctx.closePath();
         break;
       }
