@@ -421,7 +421,7 @@ export class Player {
 
   // Smaller hitbox for platform collision (more forgiveness)
   getPlatformRect() {
-    const inset = 8;
+    const inset = 11;
     const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
