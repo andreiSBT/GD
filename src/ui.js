@@ -169,9 +169,9 @@ export class UI {
     ctx.fillText('A  S I D E - S C R O L L I N G  R H Y T H M  G A M E', SCREEN_WIDTH / 2, 190);
 
     // Menu buttons
-    const bw = S(260), bh = S(56), gap = S(60);
+    const bw = S(260), bh = S(50), gap = IS_MOBILE ? S(46) : S(56);
     const bx = SCREEN_WIDTH / 2 - bw / 2;
-    let by = 250;
+    let by = IS_MOBILE ? 220 : 250;
     this._drawButton(ctx, bx, by, bw, bh, 'LEVELS', 'levels', '#00C864');
     by += gap;
     this._drawButton(ctx, bx, by, bw, bh, 'CUSTOMIZE', 'customize', '#8844CC');
@@ -1091,13 +1091,9 @@ export class UI {
       sliderY += S(42);
       this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, sliderY, 'SFX', getSFXVolume(), 'volume_sfx');
 
-      // Hitbox toggle
+      // Hitbox toggle switch
       sliderY += S(48);
-      const toggleW = S(200);
-      const toggleH = S(36);
-      const toggleX = SCREEN_WIDTH / 2 - toggleW / 2;
-      const toggleColor = showHitboxes ? '#00C864' : '#445566';
-      this._drawButton(ctx, toggleX, sliderY, toggleW, toggleH, showHitboxes ? 'HITBOXES: ON' : 'HITBOXES: OFF', 'toggle_hitboxes', toggleColor, S(13));
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'HITBOXES', showHitboxes, 'toggle_hitboxes');
 
       // Close button
       const closeW = S(140);
@@ -1234,6 +1230,45 @@ export class UI {
     // Register the slider bar as a clickable button region (padded for easier interaction)
     const pad = IS_MOBILE ? 18 : 14;
     this.buttons.push({ id, x: barX - pad, y: barY - pad, w: barW + pad * 2, h: barH + pad * 2 });
+  }
+
+  _drawToggleSwitch(ctx, centerX, y, label, active, id) {
+    const trackW = S(50);
+    const trackH = S(24);
+    const discR = S(10);
+    const trackX = centerX - trackW / 2 + S(40);
+    const trackY = y;
+    const trackR = trackH / 2;
+
+    // Label
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.font = `bold ${S(13)}px monospace`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, trackX - S(12), trackY + trackH / 2);
+
+    // Track background
+    ctx.beginPath();
+    ctx.roundRect(trackX, trackY, trackW, trackH, trackR);
+    ctx.fillStyle = active ? '#00C864' : 'rgba(255,255,255,0.15)';
+    ctx.fill();
+
+    // Disc
+    const discX = active ? trackX + trackW - discR - 3 : trackX + discR + 3;
+    const discY = trackY + trackH / 2;
+    ctx.beginPath();
+    ctx.arc(discX, discY, discR, 0, Math.PI * 2);
+    ctx.fillStyle = '#FFF';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.textBaseline = 'alphabetic';
+
+    // Clickable area
+    const pad = IS_MOBILE ? 18 : 14;
+    this.buttons.push({ id, x: trackX - pad, y: trackY - pad, w: trackW + pad * 2, h: trackH + pad * 2 });
   }
 
   drawCustomize(ctx, customization, diamonds = 0, unlockPopup = null) {
