@@ -2555,26 +2555,44 @@ class Game {
       this.renderer.drawGround(ctx, camX, this.theme, pulseIntensity);
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
-      // Draw ghost (bot in practice mode)
+      // Draw ghost (bot in practice mode) with green trail
       const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
         const ghostFrame = this._replayFrame + 30;
-        // Don't show if past end of replay
         if (ghostFrame <= ghost.totalFrames) {
+          // Draw green trail behind ghost
+          const trailLen = 20;
+          for (let t = trailLen; t >= 0; t--) {
+            const tf = ghostFrame - t * 3;
+            if (tf < 0) continue;
+            const tp = ghost.getPosition(tf);
+            if (!tp) continue;
+            const tx = tp.x - camX + PLAYER_X_OFFSET + PLAYER_SIZE / 2;
+            const ty = tp.y + PLAYER_SIZE / 2;
+            if (tx < -10 || tx > SCREEN_WIDTH + 10) continue;
+            const alpha = ((trailLen - t) / trailLen) * 0.3;
+            const sz = 2 + ((trailLen - t) / trailLen) * 4;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = '#00FF88';
+            ctx.fillRect(tx - sz / 2, ty - sz / 2, sz, sz);
+          }
+          ctx.globalAlpha = 1;
+
+          // Draw ghost cube
           const ghostPos = ghost.getPosition(ghostFrame);
           if (ghostPos) {
             const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
-            // Only draw if on screen
             if (gx > -PLAYER_SIZE && gx < SCREEN_WIDTH + PLAYER_SIZE) {
               const gy = ghostPos.y;
               const sz = PLAYER_SIZE;
               ctx.save();
-              ctx.globalAlpha = 0.25;
+              ctx.globalAlpha = 0.3;
               ctx.translate(gx + sz / 2, gy + sz / 2);
               ctx.rotate(ghostPos.rotation);
-              ctx.fillStyle = 'rgba(255,255,255,0.3)';
+              // Green tinted ghost
+              ctx.fillStyle = 'rgba(0,255,136,0.35)';
               ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
-              ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+              ctx.strokeStyle = 'rgba(0,255,136,0.6)';
               ctx.lineWidth = 1.5;
               ctx.strokeRect(-sz / 2, -sz / 2, sz, sz);
               ctx.restore();

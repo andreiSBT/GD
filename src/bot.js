@@ -1,17 +1,18 @@
-/** Bot that learns from deaths — multiple fast passes with real collision */
+/** Bot that learns from deaths — multiple passes with hold-jump support */
 
 import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './settings.js';
 
 const MAX_FRAMES = 60 * 120;
 const RECORD_INTERVAL = 3;
 const LOOK_AHEAD_FRAMES = 7;
-const MAX_LEARN_PASSES = 15;
+const MAX_LEARN_PASSES = 20;
 
 function runSimulation(obstacles, endX, speed, forceJumpZones) {
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
   let prevY = y;
   let grounded = true, rotation = 0, alive = true;
   let deathX = -1;
+  let holding = false; // simulates holding jump button
   const inset = 4;
   const frames = [];
 
@@ -24,37 +25,39 @@ function runSimulation(obstacles, endX, speed, forceJumpZones) {
 
     const playerRect = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
 
-    // Should jump? Look-ahead OR forced jump zone from previous death
-    let shouldJump = false;
-    if (grounded) {
-      // Check forced jump zones (learned from deaths)
-      for (const zone of forceJumpZones) {
-        if (x >= zone.x - speed * 4 && x <= zone.x + speed * 2) {
-          shouldJump = true;
+    // Decide: should we be holding jump?
+    let wantJump = false;
+
+    // Check forced jump zones (learned from deaths)
+    for (const zone of forceJumpZones) {
+      if (x >= zone.start && x <= zone.end) {
+        wantJump = true;
+        break;
+      }
+    }
+
+    // Look-ahead for hazards
+    if (!wantJump) {
+      const lookX = x + speed * LOOK_AHEAD_FRAMES;
+      const futureRect = { x: x + inset, y: y + inset, w: lookX - x + PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+      for (const obs of obstacles) {
+        if (obs.type !== 'spike' && obs.type !== 'saw') continue;
+        const hr = { x: obs.x + 10, y: obs.y + 10, w: (obs.w || GRID) - 20, h: (obs.h || GRID) - 20 };
+        if (futureRect.x < hr.x + hr.w && futureRect.x + futureRect.w > hr.x &&
+            futureRect.y < hr.y + hr.h && futureRect.y + futureRect.h > hr.y) {
+          wantJump = true;
           break;
         }
       }
+    }
 
-      // Look-ahead for hazards
-      if (!shouldJump) {
-        const lookX = x + speed * LOOK_AHEAD_FRAMES;
-        const futureRect = { x: x + inset, y: y + inset, w: lookX - x + PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
-        for (const obs of obstacles) {
-          if (obs.type !== 'spike' && obs.type !== 'saw') continue;
-          const hr = { x: obs.x + 10, y: obs.y + 10, w: (obs.w || GRID) - 20, h: (obs.h || GRID) - 20 };
-          if (futureRect.x < hr.x + hr.w && futureRect.x + futureRect.w > hr.x &&
-              futureRect.y < hr.y + hr.h && futureRect.y + futureRect.h > hr.y) {
-            shouldJump = true;
-            break;
-          }
-        }
-      }
+    holding = wantJump;
 
-      if (shouldJump) {
-        vy = JUMP_VEL;
-        grounded = false;
-        rotation -= 90;
-      }
+    // Jump if holding and grounded (hold = instant jump on landing)
+    if (holding && grounded) {
+      vy = JUMP_VEL;
+      grounded = false;
+      rotation -= 90;
     }
 
     // Physics
@@ -131,6 +134,8 @@ export function generateBotReplay(level) {
 
   const forceJumpZones = [];
   let bestResult = null;
+  let lastDeathX = -1;
+  let sameDeathCount = 0;
 
   for (let pass = 0; pass < MAX_LEARN_PASSES; pass++) {
     const result = runSimulation(obstacles, endX, speed, forceJumpZones);
@@ -140,20 +145,28 @@ export function generateBotReplay(level) {
       break;
     }
 
-    // Learn: if died, add a forced jump zone at death location
     if (result.deathX >= 0) {
-      // Check if we already have a zone near this death
-      const nearby = forceJumpZones.find(z => Math.abs(z.x - result.deathX) < speed * 8);
-      if (nearby) {
-        // Already tried jumping here — try jumping earlier
-        nearby.x -= speed * 3;
+      // Check if dying at same spot repeatedly
+      if (lastDeathX >= 0 && Math.abs(result.deathX - lastDeathX) < speed * 5) {
+        sameDeathCount++;
+        // Widen the jump zone each time
+        const zone = forceJumpZones.find(z => Math.abs(z.start - result.deathX + speed * 6) < speed * 10);
+        if (zone) {
+          zone.start -= speed * 3;
+          zone.end += speed * 2;
+        } else {
+          forceJumpZones.push({ start: result.deathX - speed * (6 + sameDeathCount * 3), end: result.deathX + speed * 2 });
+        }
       } else {
-        forceJumpZones.push({ x: result.deathX });
+        sameDeathCount = 0;
+        // New death location — add jump zone
+        forceJumpZones.push({ start: result.deathX - speed * 6, end: result.deathX + speed * 2 });
       }
+      lastDeathX = result.deathX;
     }
 
     bestResult = result;
-    if (result.deathX < 0) break; // timed out
+    if (result.deathX < 0) break;
   }
 
   if (!bestResult || bestResult.frames.length < 5) return null;
