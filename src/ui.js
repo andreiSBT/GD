@@ -1052,9 +1052,9 @@ export class UI {
     }
 
     if (this._showSettings) {
-      // Settings panel
-      const panelW = S(320);
-      const panelH = S(420);
+      // Settings panel — 2 column layout for toggles
+      const panelW = S(440);
+      const panelH = S(320);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
@@ -1071,33 +1071,40 @@ export class UI {
       ctx.textAlign = 'center';
       ctx.fillText('SETTINGS', SCREEN_WIDTH / 2, panelY + S(32));
 
-      // Volume sliders
+      // Volume sliders (full width)
       let sliderY = panelY + S(58);
       this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, sliderY, 'MUSIC', getMusicVolume(), 'volume_music');
       sliderY += S(42);
       this._drawVolumeSlider(ctx, SCREEN_WIDTH / 2, sliderY, 'SFX', getSFXVolume(), 'volume_sfx');
 
-      // Toggle switches
-      sliderY += S(44);
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'HITBOXES', showHitboxes, 'toggle_hitboxes');
-      sliderY += S(36);
-      const shakeOn = !localStorage.getItem('gd_no_shake');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'SHAKE', shakeOn, 'toggle_shake');
-      sliderY += S(36);
-      const particlesOn = !localStorage.getItem('gd_no_particles');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'PARTICLES', particlesOn, 'toggle_particles');
-      sliderY += S(36);
-      const lowDetail = !!localStorage.getItem('gd_low_detail');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'LOW DETAIL', lowDetail, 'toggle_low_detail');
-      sliderY += S(36);
-      const autoRetry = !!localStorage.getItem('gd_auto_retry');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'AUTO RETRY', autoRetry, 'toggle_auto_retry');
-      sliderY += S(36);
-      const barBottom = !!localStorage.getItem('gd_bar_bottom');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'BAR BOTTOM', barBottom, 'toggle_bar_bottom');
-      sliderY += S(36);
-      const ghostOn = !localStorage.getItem('gd_no_ghost');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'GHOST', ghostOn, 'toggle_ghost');
+      // Separator
+      sliderY += S(30);
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(panelX + S(20), sliderY, panelW - S(40), 1);
+      ctx.globalAlpha = 1;
+      sliderY += S(14);
+
+      // Toggle switches in 2 columns
+      const colL = panelX + panelW * 0.27;
+      const colR = panelX + panelW * 0.73;
+      const rowH = S(34);
+
+      const toggles = [
+        { x: colL, label: 'HITBOXES', on: showHitboxes, id: 'toggle_hitboxes' },
+        { x: colR, label: 'SHAKE', on: !localStorage.getItem('gd_no_shake'), id: 'toggle_shake' },
+        { x: colL, label: 'PARTICLES', on: !localStorage.getItem('gd_no_particles'), id: 'toggle_particles' },
+        { x: colR, label: 'LOW DETAIL', on: !!localStorage.getItem('gd_low_detail'), id: 'toggle_low_detail' },
+        { x: colL, label: 'AUTO RETRY', on: !!localStorage.getItem('gd_auto_retry'), id: 'toggle_auto_retry' },
+        { x: colR, label: 'BAR BOTTOM', on: !!localStorage.getItem('gd_bar_bottom'), id: 'toggle_bar_bottom' },
+        { x: colL, label: 'GHOST', on: !localStorage.getItem('gd_no_ghost'), id: 'toggle_ghost' },
+      ];
+
+      for (let i = 0; i < toggles.length; i++) {
+        const t = toggles[i];
+        const ty = sliderY + Math.floor(i / 2) * rowH;
+        this._drawToggleSwitch(ctx, t.x, ty, t.label, t.on, t.id);
+      }
 
       // Close button
       const closeW = S(140);
