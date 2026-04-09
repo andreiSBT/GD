@@ -821,7 +821,7 @@ class Game {
       this.state = COMPLETE;
     } else if (action === 'back') {
       this.state = MENU;
-    } else if (action.startsWith('friends_')) {
+    } else if (action.startsWith('friends_') || action.startsWith('trade_')) {
       this._handleFriendsAction(action);
     }
   }
