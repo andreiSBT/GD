@@ -1182,7 +1182,16 @@ class Game {
     const code = (this.secretsData.inputText || '').trim().toUpperCase();
     if (!code) return;
 
-    if (this._redeemedCodes.has(code)) {
+    // Reward key mapping for re-redeem check
+    const REWARD_KEYS = {
+      'COINS?!': 'gd_secret_coins', 'GD GO!': 'gd_rainbow_color', '...': 'gd_dotted_trail',
+      ';)': 'gd_wink_icon', 'BOOM!': 'gd_boom_death', "IT'S HOLIDAY TIME!": 'gd_christmas_color',
+      'EGG HUNT': 'gd_easter_shape', 'I LOVE YOU': 'gd_heart_shape', 'SPOOOOOKY!': 'gd_halloween_icon',
+    };
+    const rewardKey = REWARD_KEYS[code] || REWARD_KEYS[code.toUpperCase()];
+    const rewardActive = rewardKey && localStorage.getItem(rewardKey);
+
+    if (this._redeemedCodes.has(code) && rewardActive) {
       this.secretsData.message = { text: 'Code already redeemed!', color: '#FF6644' };
       this.secretsData.messageTimer = 3;
       return;
