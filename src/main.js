@@ -760,9 +760,10 @@ class Game {
       this.ui._hidePauseBtn = false;
       Sound.stopMusic();
       this.shakeIntensity = 0;
+      const wasEditor = !!this.editorLevelData;
       this.editorLevelData = null;
       this.editorStartCheckpoint = null;
-      this._fadeToState(MENU);
+      this._fadeToState(wasEditor ? MENU : LEVEL_SELECT);
     } else if (action === 'next_level') {
       const nextId = this.level.id + 1;
       if (nextId <= getLevelCount()) {
@@ -1460,10 +1461,10 @@ class Game {
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
-    // Generate bot ghost if no replay exists
-    if (!this._replayGhost && this.level) {
+    // Generate bot ghost (used in practice mode)
+    if (this.level) {
       const botData = generateBotReplay(this.level);
-      if (botData) this._replayGhost = new ReplayGhost(botData);
+      if (botData) this._botGhost = new ReplayGhost(botData);
     }
     this._levelStartTime = performance.now();
     this._restart();
@@ -1602,6 +1603,7 @@ class Game {
     this._replayFrame = 0;
     this._levelStartTime = performance.now();
     if (this._replayGhost) this._replayGhost.reset();
+    if (this._botGhost) this._botGhost.reset();
     // Reset theme and re-apply any color triggers before spawn point
     this._colorTransition = null;
     if (this._baseTheme) this.theme = this._baseTheme;
@@ -2526,10 +2528,10 @@ class Game {
       this.renderer.drawGround(ctx, camX, this.theme, pulseIntensity);
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
-      // Draw ghost replay (behind the player)
-      if (this._replayFrame % 120 === 0) console.log('[Ghost] ghost:', !!this._replayGhost, 'alive:', this.player.alive, 'noGhost:', !!localStorage.getItem('gd_no_ghost'), 'practice:', this.practiceMode, 'frame:', this._replayFrame);
-      if (this._replayGhost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
-        const ghostPos = this._replayGhost.getPosition(this._replayFrame);
+      // Draw ghost (bot in practice mode)
+      const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
+      if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
+        const ghostPos = ghost.getPosition(this._replayFrame);
         if (ghostPos) {
           const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
           const gy = ghostPos.y;
