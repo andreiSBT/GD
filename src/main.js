@@ -2010,7 +2010,7 @@ class Game {
             this._die(); return;
           } else if (result.type === 'land') {
             // If player was approaching from the left (side hit), die instead of landing
-            const prevRight = this.player.prevX + PLAYER_SIZE - 17 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
+            const prevRight = this.player.prevX + PLAYER_SIZE - 4 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
             const landPiece = result._piece || piece;
             if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
               this._die(); return;
@@ -2078,7 +2078,7 @@ class Game {
             return;
           } else if (result.type === 'land') {
             // If player was approaching from the left (side hit), die instead of landing
-            const prevRight = this.player.prevX + PLAYER_SIZE - 17 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
+            const prevRight = this.player.prevX + PLAYER_SIZE - 4 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
             if (prevRight <= obs.x + 4) {
               this._die(); return;
             }
