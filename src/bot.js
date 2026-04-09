@@ -120,13 +120,14 @@ export function generateBotReplay(level) {
         const result = obs.checkCollision(playerRect, prevY, 1);
         if (result) {
           if (result.type === 'land') { y = result.y - PLAYER_SIZE; vy = 0; grounded = true; }
-          else if (result.type === 'death') { return frames.length > 5 ? JSON.stringify(frames) : null; }
+          else if (result.type === 'death') { console.log('[Bot] Died at x:', Math.round(x), 'y:', Math.round(y), 'frame:', frame, 'from platform side'); return frames.length > 5 ? JSON.stringify(frames) : null; }
         }
       }
     }
 
     // Death
     if (checkDeath(x, y, obstacles)) {
+      console.log('[Bot] Died at x:', Math.round(x), 'y:', Math.round(y), 'frame:', frame, 'from hazard');
       break;
     }
 
