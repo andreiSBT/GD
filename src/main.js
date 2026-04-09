@@ -2372,11 +2372,17 @@ class Game {
     // Update ghost trail (freeze when player dead)
     if (this._botGhost && this.practiceMode && this.player.alive) {
       const gf = Math.min(this._replayFrame + 30, this._botGhost.totalFrames);
-      const gp = this._botGhost.getPosition(gf);
-      if (gp) {
-        if (!this._ghostTrail) this._ghostTrail = [];
-        this._ghostTrail.push({ x: gp.x, y: gp.y + PLAYER_SIZE / 2 });
-        if (this._ghostTrail.length > 45) this._ghostTrail.shift();
+      if (gf <= this._botGhost.totalFrames) {
+        const gp = this._botGhost.getPosition(gf);
+        if (gp) {
+          if (!this._ghostTrail) this._ghostTrail = [];
+          // Store ghost Y but use fixed X offset from player
+          const ghostX = this.player.x + SCROLL_SPEED * (this.level?.speedMult || 1) * 30;
+          this._ghostTrail.push({ x: ghostX, y: gp.y + PLAYER_SIZE / 2 });
+          if (this._ghostTrail.length > 45) this._ghostTrail.shift();
+          // Store current ghost Y for drawing
+          this._ghostY = gp.y;
+        }
       }
     }
 
@@ -2615,20 +2621,20 @@ class Game {
             ctx.restore();
           }
 
-          // Draw ghost cube
-          const ghostPos = ghost.getPosition(ghostFrame);
-          if (ghostPos) {
-            let gx = ghostPos.x - camX + PLAYER_X_OFFSET;
-            // Clamp ghost to stay on screen (max ~250px ahead of player)
-            const maxAhead = PLAYER_X_OFFSET + 250;
-            if (gx > maxAhead) gx = maxAhead;
+          // Draw ghost cube — fixed distance ahead of player
+          const ghostSpd = SCROLL_SPEED * (this.level?.speedMult || 1);
+          const fixedOffset = ghostSpd * 30; // exactly 30 frames ahead
+          const ghostY = this._ghostY != null ? this._ghostY : GROUND_Y - PLAYER_SIZE;
+          {
+            let gx = this.player.x + fixedOffset - camX + PLAYER_X_OFFSET;
             if (gx > -PLAYER_SIZE && gx < SCREEN_WIDTH + PLAYER_SIZE) {
-              const gy = ghostPos.y;
+              const gy = ghostY;
               const sz = PLAYER_SIZE;
               ctx.save();
               ctx.globalAlpha = 0.3;
               ctx.translate(gx + sz / 2, gy + sz / 2);
-              ctx.rotate(ghostPos.rotation);
+              const gRot = ghost.getPosition(ghostFrame);
+              ctx.rotate(gRot ? gRot.rotation : 0);
               // Green tinted ghost
               ctx.fillStyle = 'rgba(0,255,136,0.35)';
               ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
