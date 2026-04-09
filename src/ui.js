@@ -2032,12 +2032,34 @@ export class UI {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.fill();
 
-    // Small sparkle
-    ctx.beginPath();
-    ctx.moveTo(-topW * 0.3, topY + (midY - topY) * 0.3);
-    const spk = s * 0.08;
+    // 4-ray star sparkle (top-left area of gem)
+    const spkX = -topW * 0.15;
+    const spkY = topY + (midY - topY) * 0.35;
+    const ray = s * 0.3;
+    const thick = s * 0.06;
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(-topW * 0.3 - spk / 2, topY + (midY - topY) * 0.3 - spk / 2, spk, spk);
+    ctx.globalAlpha = 0.9;
+    // Vertical ray
+    ctx.beginPath();
+    ctx.moveTo(spkX, spkY - ray);
+    ctx.lineTo(spkX + thick, spkY);
+    ctx.lineTo(spkX, spkY + ray);
+    ctx.lineTo(spkX - thick, spkY);
+    ctx.closePath();
+    ctx.fill();
+    // Horizontal ray
+    ctx.beginPath();
+    ctx.moveTo(spkX - ray, spkY);
+    ctx.lineTo(spkX, spkY - thick);
+    ctx.lineTo(spkX + ray, spkY);
+    ctx.lineTo(spkX, spkY + thick);
+    ctx.closePath();
+    ctx.fill();
+    // Glow
+    ctx.globalAlpha = 0.4;
+    ctx.beginPath();
+    ctx.arc(spkX, spkY, s * 0.15, 0, Math.PI * 2);
+    ctx.fill();
 
     ctx.restore();
   }
