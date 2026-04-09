@@ -922,6 +922,14 @@ class Game {
       if (fd.tradePopup && fd.tradePopup.amount > 1) fd.tradePopup.amount--;
     } else if (action === 'trade_plus') {
       if (fd.tradePopup) fd.tradePopup.amount++;
+    } else if (action === 'trade_type_amount') {
+      if (fd.tradePopup) {
+        const input = prompt('Enter amount:', String(fd.tradePopup.amount));
+        if (input != null) {
+          const val = parseInt(input);
+          if (val > 0) fd.tradePopup.amount = val;
+        }
+      }
     } else if (action === 'trade_cancel') {
       fd.tradePopup = null;
     } else if (action === 'trade_confirm') {

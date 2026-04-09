@@ -2681,11 +2681,20 @@ export class UI {
 
       this._drawButton(ctx, selX, selY, btnS, btnS, '-', 'trade_minus', '#664488', 24);
 
-      // Amount display
+      // Amount display (clickable)
+      const numX = selX + btnS + 8;
+      this._roundRect(ctx, numX, selY, numW, btnS, 8);
+      ctx.fillStyle = 'rgba(100,60,160,0.25)';
+      ctx.fill();
+      this._roundRect(ctx, numX, selY, numW, btnS, 8);
+      ctx.strokeStyle = 'rgba(170,100,255,0.35)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 32px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(String(tp.amount), selX + btnS + 8 + numW / 2, selY + btnS / 2 + 11);
+      ctx.fillText(String(tp.amount), numX + numW / 2, selY + btnS / 2 + 11);
+      this.buttons.push({ id: 'trade_type_amount', x: numX, y: selY, w: numW, h: btnS });
 
       this._drawButton(ctx, selX + btnS + numW + 16, selY, btnS, btnS, '+', 'trade_plus', '#664488', 24);
 
