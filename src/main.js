@@ -55,8 +55,10 @@ class Game {
     this.progress = loadProgress();
 
     this.state = MENU;
-    // Pre-download all level music on startup
+    // Pre-load all levels and download music on startup
+    this._levelCache = {};
     for (let i = 1; i <= getLevelCount(); i++) {
+      this._levelCache[i] = new Level(i);
       if (!Sound.hasCustomMusic(i)) {
         downloadOfficialMusic(i).then(ab => {
           if (ab) Sound.storePendingCustomMusic(i, ab);
@@ -596,14 +598,6 @@ class Game {
       localStorage.setItem('gd_scroll_coin', '1');
       this._achievementToasts.push({ text: '\u{1F31F} Secret Coin found!', subtext: 'Hidden in the level list...', timer: 0, duration: 3 });
     } else if (action === 'levels') {
-      // Pre-download all level music in background
-      for (let i = 1; i <= getLevelCount(); i++) {
-        if (!Sound.hasCustomMusic(i)) {
-          downloadOfficialMusic(i).then(ab => {
-            if (ab) Sound.storePendingCustomMusic(i, ab);
-          }).catch(() => {});
-        }
-      }
       this._fadeToState(LEVEL_SELECT, () => { this.levelPage = 0; });
     } else if (action === 'levels_prev') {
       if (this.levelPage > 0) { this.levelPage--; this._onLevelScroll(); }
@@ -1405,24 +1399,18 @@ class Game {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
     this._checkpointTrail = [];
-    this.level = new Level(levelId);
+    this.level = this._levelCache[levelId] || new Level(levelId);
+    this.level.reset();
     this.theme = THEMES[levelId] || THEMES[1];
     this._baseTheme = this.theme;
     this._colorTransition = null;
     this.attempts = 0;
     this.lastCheckpoint = null;
-    // Track previous best for "NEW BEST!" popup
     const lp = this.progress[levelId];
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
     this._levelStartTime = performance.now();
-    // Download official music in background (don't block level start)
-    if (!Sound.hasCustomMusic(levelId)) {
-      downloadOfficialMusic(levelId).then(ab => {
-        if (ab) Sound.storePendingCustomMusic(levelId, ab);
-      }).catch(() => {});
-    }
     this._restart();
   }
 
