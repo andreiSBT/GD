@@ -1,14 +1,10 @@
-/** Fast bot that generates a ghost replay using look-ahead + collision */
+/** Fast bot that generates a ghost replay using live obstacle collision */
 
 import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './settings.js';
 
 const MAX_FRAMES = 60 * 120;
 const RECORD_INTERVAL = 3;
-const INSET = 6;
-
-function rectsOverlap(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
+const LOOK_AHEAD_FRAMES = 7;
 
 export function generateBotReplay(level) {
   if (!level || !level.obstacles) return null;
@@ -20,31 +16,10 @@ export function generateBotReplay(level) {
   const endX = endMarker.x;
   const speed = SCROLL_SPEED * (level.speedMult || 1);
 
-  // Collect all hazards and platforms (including from PlatformGroups)
-  const hazards = [];
-  const platforms = [];
-  const _extract = (obs) => {
-    if (!obs) return;
-    if (obs.type === 'spike' || obs.type === 'saw') {
-      hazards.push({ x: obs.x, y: obs.y, w: obs.w || GRID, h: obs.h || GRID });
-    } else if (obs.type === 'platform') {
-      platforms.push({ x: obs.x, y: obs.y, w: obs.w || GRID, h: obs.h || GRID });
-    } else if (obs.type === 'platform_group') {
-      // Use bounding box as platform
-      platforms.push({ x: obs.x, y: obs.y, w: obs.w, h: obs.h });
-      // Also extract individual pieces
-      if (obs.pieces) {
-        for (const p of obs.pieces) _extract(p);
-      }
-    } else if (obs.type === 'slope') {
-      // Treat slopes as platforms (simplified)
-      platforms.push({ x: obs.x, y: obs.y, w: obs.w || GRID, h: obs.h || GRID });
-    }
-  };
-  for (const obs of obstacles) _extract(obs);
-
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
-  let grounded = true, rotation = 0, alive = true;
+  let prevY = y;
+  let grounded = true, onPlatform = false;
+  let rotation = 0, alive = true;
 
   const frames = [];
 
@@ -55,72 +30,117 @@ export function generateBotReplay(level) {
       frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
     }
 
-    // Look ahead for hazards
+    // Build player rect (same inset as real game)
+    const inset = 4;
+    const playerRect = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+
+    // Look ahead: check if any hazard will hit us at current Y
     if (grounded) {
-      const lookDist = speed * 7;
       let danger = false;
-      for (const h of hazards) {
-        // Only check hazards that are ahead and nearby
-        if (h.x + h.w <= x || h.x >= x + PLAYER_SIZE + lookDist) continue;
-        // Would we collide at ground level?
-        if (h.y + h.h > y + INSET && h.y < y + PLAYER_SIZE - INSET) {
-          danger = true;
-          break;
+      const lookX = x + speed * LOOK_AHEAD_FRAMES;
+      const futureRect = { x: x + inset, y: y + inset, w: lookX - x + PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+
+      for (const obs of obstacles) {
+        if (obs.type === 'spike' || obs.type === 'saw') {
+          const hr = { x: obs.x + 10, y: obs.y + 10, w: (obs.w || GRID) - 20, h: (obs.h || GRID) - 20 };
+          if (futureRect.x < hr.x + hr.w && futureRect.x + futureRect.w > hr.x &&
+              futureRect.y < hr.y + hr.h && futureRect.y + futureRect.h > hr.y) {
+            danger = true;
+            break;
+          }
         }
       }
+
       if (danger) {
         vy = JUMP_VEL;
         grounded = false;
+        onPlatform = false;
         rotation -= 90;
       }
     }
 
     // Physics
-    if (!grounded) vy += GRAVITY;
+    prevY = y;
+    if (!grounded) {
+      vy += GRAVITY;
+    }
     y += vy;
 
-    // Ground
+    // Ground collision
     if (y >= GROUND_Y - PLAYER_SIZE) {
       y = GROUND_Y - PLAYER_SIZE;
       vy = 0;
       grounded = true;
+      onPlatform = false;
     }
 
-    // Platform landing
-    if (vy >= 0) {
-      for (const p of platforms) {
-        if (x + PLAYER_SIZE > p.x + 4 && x < p.x + p.w - 4) {
-          const bot = y + PLAYER_SIZE;
-          const prevBot = bot - vy;
-          if (prevBot <= p.y + 6 && bot >= p.y) {
-            y = p.y - PLAYER_SIZE;
+    // Update player rect after physics
+    playerRect.x = x + inset;
+    playerRect.y = y + inset;
+
+    // Use real obstacle checkCollision for platforms
+    let landedOnPlatform = false;
+    for (const obs of obstacles) {
+      if (obs.type === 'platform' && obs.checkCollision) {
+        const result = obs.checkCollision(playerRect, prevY, 1);
+        if (result) {
+          if (result.type === 'land') {
+            y = result.y - PLAYER_SIZE;
             vy = 0;
             grounded = true;
+            landedOnPlatform = true;
+          } else if (result.type === 'death') {
+            // Hit side of platform — die
+            alive = false;
+            break;
+          }
+        }
+      }
+      // PlatformGroup
+      if (obs.type === 'platform_group' && obs.checkCollision) {
+        const result = obs.checkCollision(playerRect, prevY, 1);
+        if (result) {
+          if (result.type === 'land') {
+            y = result.y - PLAYER_SIZE;
+            vy = 0;
+            grounded = true;
+            landedOnPlatform = true;
+          } else if (result.type === 'death') {
+            alive = false;
+            break;
           }
         }
       }
     }
 
-    // Walk off edge check
-    if (grounded && y < GROUND_Y - PLAYER_SIZE - 2) {
-      let onSurface = false;
-      for (const p of platforms) {
-        if (x + PLAYER_SIZE > p.x + 2 && x < p.x + p.w - 2 && Math.abs(y + PLAYER_SIZE - p.y) < 4) {
-          onSurface = true;
-          break;
-        }
+    if (!alive) break;
+
+    // Spike/saw collision (use real checkCollision)
+    playerRect.y = y + inset; // update after platform landing
+    for (const obs of obstacles) {
+      if (obs.type === 'spike' && obs.checkCollision) {
+        const result = obs.checkCollision(playerRect);
+        if (result === 'death') { alive = false; break; }
       }
-      if (!onSurface) grounded = false;
+      if (obs.type === 'saw' && obs.checkCollision) {
+        const result = obs.checkCollision(playerRect);
+        if (result === 'death') { alive = false; break; }
+      }
     }
 
-    // Death check
-    const pr = { x: x + INSET, y: y + INSET, w: PLAYER_SIZE - INSET * 2, h: PLAYER_SIZE - INSET * 2 };
-    for (const h of hazards) {
-      const hr = { x: h.x + INSET, y: h.y + INSET, w: h.w - INSET * 2, h: h.h - INSET * 2 };
-      if (rectsOverlap(pr, hr)) {
-        alive = false;
-        break;
+    if (!alive) break;
+
+    // Edge detection — if on platform but platform ended
+    if (grounded && landedOnPlatform === false && y < GROUND_Y - PLAYER_SIZE - 2) {
+      let stillOnSomething = false;
+      for (const obs of obstacles) {
+        if ((obs.type === 'platform' || obs.type === 'platform_group') && obs.checkCollision) {
+          const testRect = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+          const result = obs.checkCollision(testRect, y, 1);
+          if (result && result.type === 'land') { stillOnSomething = true; break; }
+        }
       }
+      if (!stillOnSomething) { grounded = false; onPlatform = false; }
     }
 
     x += speed;
