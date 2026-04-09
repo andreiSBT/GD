@@ -593,6 +593,9 @@ class Game {
           this.state = PAUSED;
         }
         Sound.pauseMusic();
+        Sound.suspendAudio();
+      } else {
+        Sound.resumeAudio();
       }
     });
   }
@@ -1620,10 +1623,14 @@ class Game {
     this.pendingOrbHit = null;
     // Reset replay and timer
     this._replayRecorder = new ReplayRecorder();
-    this._replayFrame = 0;
+    if (!(this.practiceMode && this.lastCheckpoint)) {
+      // Full restart — reset ghost to beginning
+      this._replayFrame = 0;
+      if (this._replayGhost) this._replayGhost.reset();
+      if (this._botGhost) this._botGhost.reset();
+    }
+    // else: practice checkpoint — ghost continues from where it was
     this._levelStartTime = performance.now();
-    if (this._replayGhost) this._replayGhost.reset();
-    if (this._botGhost) this._botGhost.reset();
     // Reset theme and re-apply any color triggers before spawn point
     this._colorTransition = null;
     if (this._baseTheme) this.theme = this._baseTheme;
