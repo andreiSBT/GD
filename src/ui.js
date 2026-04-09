@@ -88,7 +88,7 @@ export class UI {
 
   handleScrollTouchMove(y) {
     const dy = this.scrollTouchStartY - y;
-    if (Math.abs(dy) > 5) this.isScrollDragging = true;
+    if (Math.abs(dy) > 5 && this.maxScrollY > 0) this.isScrollDragging = true;
     this.scrollY = Math.max(0, Math.min(this.maxScrollY, this.scrollTouchStartScroll + dy));
   }
 
