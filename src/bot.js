@@ -3,7 +3,7 @@
 import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './settings.js';
 
 const MAX_FRAMES = 60 * 120;
-const RECORD_INTERVAL = 3;
+const RECORD_INTERVAL = 1; // every frame for smooth trail curves
 const LOOK_AHEAD_FRAMES = 7;
 const MAX_LEARN_PASSES = 20;
 

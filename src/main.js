@@ -2614,7 +2614,10 @@ class Game {
           // Draw ghost cube
           const ghostPos = ghost.getPosition(ghostFrame);
           if (ghostPos) {
-            const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
+            let gx = ghostPos.x - camX + PLAYER_X_OFFSET;
+            // Clamp ghost to stay on screen (max ~250px ahead of player)
+            const maxAhead = PLAYER_X_OFFSET + 250;
+            if (gx > maxAhead) gx = maxAhead;
             if (gx > -PLAYER_SIZE && gx < SCREEN_WIDTH + PLAYER_SIZE) {
               const gy = ghostPos.y;
               const sz = PLAYER_SIZE;
