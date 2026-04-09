@@ -691,34 +691,36 @@ export class UI {
   drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0) {
     this.buttons = [];
 
-    // Progress bar — rounded, sleek
-    const barBottom = !!localStorage.getItem('gd_bar_bottom');
+    // Progress bar — rounded, sleek (hidden if gd_hide_bar is set)
+    const hideBar = !!localStorage.getItem('gd_hide_bar');
     const barW = S(360);
     const barH = S(8);
     const barX = (SCREEN_WIDTH - barW) / 2;
-    const barY = barBottom ? SCREEN_HEIGHT - 26 : 18;
+    const barY = 18;
     const barR = 4;
 
-    this._roundRect(ctx, barX, barY, barW, barH, barR);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.fill();
-
-    if (progress > 0) {
-      const fillW = Math.max(barH, barW * progress);
-      ctx.save();
-      ctx.shadowColor = '#00FF64';
-      ctx.shadowBlur = 6;
-      this._roundRect(ctx, barX, barY, fillW, barH, barR);
-      ctx.fillStyle = '#00FF64';
+    if (!hideBar) {
+      this._roundRect(ctx, barX, barY, barW, barH, barR);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.fill();
-      ctx.restore();
-    }
 
-    // Progress percentage
-    ctx.fillStyle = 'rgba(255,255,255,0.8)';
-    ctx.font = `bold ${S(13)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barBottom ? barY - S(8) : barY + barH + S(16));
+      if (progress > 0) {
+        const fillW = Math.max(barH, barW * progress);
+        ctx.save();
+        ctx.shadowColor = '#00FF64';
+        ctx.shadowBlur = 6;
+        this._roundRect(ctx, barX, barY, fillW, barH, barR);
+        ctx.fillStyle = '#00FF64';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Progress percentage
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.font = `bold ${S(13)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + S(16));
+    }
 
     // Attempts counter
     ctx.fillStyle = '#FFFFFF';
@@ -1101,7 +1103,7 @@ export class UI {
       const togglesR = [
         { label: 'SHAKE', on: !localStorage.getItem('gd_no_shake'), id: 'toggle_shake' },
         { label: 'LOW DETAIL', on: !!localStorage.getItem('gd_low_detail'), id: 'toggle_low_detail' },
-        { label: 'BAR BOTTOM', on: !!localStorage.getItem('gd_bar_bottom'), id: 'toggle_bar_bottom' },
+        { label: 'SHOW BAR', on: !localStorage.getItem('gd_hide_bar'), id: 'toggle_show_bar' },
       ];
 
       for (let i = 0; i < togglesL.length; i++) {

@@ -705,9 +705,9 @@ class Game {
     } else if (action === 'toggle_auto_retry') {
       if (localStorage.getItem('gd_auto_retry')) localStorage.removeItem('gd_auto_retry');
       else localStorage.setItem('gd_auto_retry', '1');
-    } else if (action === 'toggle_bar_bottom') {
-      if (localStorage.getItem('gd_bar_bottom')) localStorage.removeItem('gd_bar_bottom');
-      else localStorage.setItem('gd_bar_bottom', '1');
+    } else if (action === 'toggle_show_bar') {
+      if (localStorage.getItem('gd_hide_bar')) localStorage.removeItem('gd_hide_bar');
+      else localStorage.setItem('gd_hide_bar', '1');
     } else if (action === 'toggle_ghost') {
       if (localStorage.getItem('gd_no_ghost')) localStorage.removeItem('gd_no_ghost');
       else localStorage.setItem('gd_no_ghost', '1');
