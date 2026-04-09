@@ -1112,7 +1112,7 @@ export class UI {
       // Close button
       const closeW = S(100);
       const closeH = S(32);
-      this._drawButton(ctx, SCREEN_WIDTH / 2 - closeW / 2, panelY + panelH - S(44), closeW, closeH, 'CLOSE', 'close_settings', '#666', S(13));
+      this._drawButton(ctx, SCREEN_WIDTH / 2 - closeW / 2, panelY + panelH - S(44), closeW, closeH, 'CLOSE', 'close_settings', '#666666', S(13));
 
       return; // Don't draw pause buttons behind settings
     }
