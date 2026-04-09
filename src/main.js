@@ -203,19 +203,20 @@ class Game {
       }
     }, 30000);
     this._startLoop();
-    // Pre-compute bot ghosts for all levels in background
+    // Pre-compute bot ghosts one at a time to not block UI
     this._botGhostCache = {};
-    setTimeout(() => {
-      for (let id = 1; id <= getLevelCount(); id++) {
-        if (LEVEL_DATA[id]) {
-          try {
-            const lvl = createLevelFromData(LEVEL_DATA[id]);
-            const botData = generateBotReplay(lvl);
-            if (botData) this._botGhostCache[id] = botData;
-          } catch {}
-        }
+    const _computeBot = (id) => {
+      if (id > getLevelCount()) return;
+      if (LEVEL_DATA[id]) {
+        try {
+          const lvl = createLevelFromData(LEVEL_DATA[id]);
+          const botData = generateBotReplay(lvl);
+          if (botData) this._botGhostCache[id] = botData;
+        } catch {}
       }
-    }, 2000); // delay to not block startup
+      setTimeout(() => _computeBot(id + 1), 100);
+    };
+    setTimeout(() => _computeBot(1), 3000);
   }
 
   _bindEvents() {
