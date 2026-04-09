@@ -733,7 +733,7 @@ export class UI {
       ctx.fillText(`★ ${coins.collected}/${coins.total}`, 16, S(44));
     }
 
-    // Practice mode indicator
+    // Practice mode indicator + checkpoint buttons
     if (practiceMode) {
       ctx.save();
       ctx.shadowColor = '#FFD700';
@@ -743,6 +743,43 @@ export class UI {
       ctx.textAlign = 'right';
       ctx.fillText('PRACTICE', SCREEN_WIDTH - 65, S(28));
       ctx.restore();
+
+      // Checkpoint button (place manual checkpoint)
+      const cpBtnS = S(36);
+      const cpX = 16, cpY = S(48);
+      this._roundRect(ctx, cpX, cpY, cpBtnS, cpBtnS, 6);
+      ctx.fillStyle = 'rgba(0,200,100,0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(0,255,100,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.save();
+      ctx.translate(cpX + cpBtnS / 2, cpY + cpBtnS / 2);
+      ctx.rotate(Math.PI / 4);
+      const cpGrad = ctx.createLinearGradient(-7, -7, 7, 7);
+      cpGrad.addColorStop(0, '#FFFFFF');
+      cpGrad.addColorStop(1, '#00FF64');
+      ctx.fillStyle = cpGrad;
+      ctx.fillRect(-7, -7, 14, 14);
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-7, -7, 14, 14);
+      ctx.restore();
+      this.buttons.push({ id: 'practice_checkpoint', x: cpX, y: cpY, w: cpBtnS, h: cpBtnS });
+
+      // Delete checkpoint button
+      const delX = cpX + cpBtnS + 6;
+      this._roundRect(ctx, delX, cpY, cpBtnS, cpBtnS, 6);
+      ctx.fillStyle = 'rgba(200,50,50,0.2)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,50,50,0.5)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#FF4444';
+      ctx.font = `bold ${S(18)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.fillText('✕', delX + cpBtnS / 2, cpY + cpBtnS / 2 + 6);
+      this.buttons.push({ id: 'practice_delete_cp', x: delX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
     // Pause button (top right) — hidden after click, reappears on resume
@@ -1016,7 +1053,7 @@ export class UI {
     if (this._showSettings) {
       // Settings panel
       const panelW = S(320);
-      const panelH = S(300);
+      const panelH = S(270);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
@@ -1042,9 +1079,6 @@ export class UI {
       // Toggle switches
       sliderY += S(44);
       this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'HITBOXES', showHitboxes, 'toggle_hitboxes');
-      sliderY += S(36);
-      const shakeOn = !localStorage.getItem('gd_no_shake');
-      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'SHAKE', shakeOn, 'toggle_shake');
       sliderY += S(36);
       const particlesOn = !localStorage.getItem('gd_no_particles');
       this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'PARTICLES', particlesOn, 'toggle_particles');
