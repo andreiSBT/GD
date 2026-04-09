@@ -691,11 +691,12 @@ export class UI {
   drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0) {
     this.buttons = [];
 
-    // Progress bar at top — rounded, sleek
+    // Progress bar — rounded, sleek
+    const barBottom = !!localStorage.getItem('gd_bar_bottom');
     const barW = S(360);
     const barH = S(8);
     const barX = (SCREEN_WIDTH - barW) / 2;
-    const barY = 18;
+    const barY = barBottom ? SCREEN_HEIGHT - 26 : 18;
     const barR = 4;
 
     this._roundRect(ctx, barX, barY, barW, barH, barR);
@@ -717,7 +718,7 @@ export class UI {
     ctx.fillStyle = 'rgba(255,255,255,0.8)';
     ctx.font = `bold ${S(13)}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barY + barH + S(16));
+    ctx.fillText(`${Math.round(progress * 100)}%`, SCREEN_WIDTH / 2, barBottom ? barY - S(8) : barY + barH + S(16));
 
     // Attempts counter
     ctx.fillStyle = '#FFFFFF';
@@ -1053,7 +1054,7 @@ export class UI {
     if (this._showSettings) {
       // Settings panel
       const panelW = S(320);
-      const panelH = S(310);
+      const panelH = S(420);
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
@@ -1085,6 +1086,18 @@ export class UI {
       sliderY += S(36);
       const particlesOn = !localStorage.getItem('gd_no_particles');
       this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'PARTICLES', particlesOn, 'toggle_particles');
+      sliderY += S(36);
+      const lowDetail = !!localStorage.getItem('gd_low_detail');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'LOW DETAIL', lowDetail, 'toggle_low_detail');
+      sliderY += S(36);
+      const autoRetry = !!localStorage.getItem('gd_auto_retry');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'AUTO RETRY', autoRetry, 'toggle_auto_retry');
+      sliderY += S(36);
+      const barBottom = !!localStorage.getItem('gd_bar_bottom');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'BAR BOTTOM', barBottom, 'toggle_bar_bottom');
+      sliderY += S(36);
+      const ghostOn = !localStorage.getItem('gd_no_ghost');
+      this._drawToggleSwitch(ctx, SCREEN_WIDTH / 2, sliderY, 'GHOST', ghostOn, 'toggle_ghost');
 
       // Close button
       const closeW = S(140);

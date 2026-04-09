@@ -699,6 +699,18 @@ class Game {
     } else if (action === 'toggle_particles') {
       if (localStorage.getItem('gd_no_particles')) localStorage.removeItem('gd_no_particles');
       else localStorage.setItem('gd_no_particles', '1');
+    } else if (action === 'toggle_low_detail') {
+      if (localStorage.getItem('gd_low_detail')) localStorage.removeItem('gd_low_detail');
+      else localStorage.setItem('gd_low_detail', '1');
+    } else if (action === 'toggle_auto_retry') {
+      if (localStorage.getItem('gd_auto_retry')) localStorage.removeItem('gd_auto_retry');
+      else localStorage.setItem('gd_auto_retry', '1');
+    } else if (action === 'toggle_bar_bottom') {
+      if (localStorage.getItem('gd_bar_bottom')) localStorage.removeItem('gd_bar_bottom');
+      else localStorage.setItem('gd_bar_bottom', '1');
+    } else if (action === 'toggle_ghost') {
+      if (localStorage.getItem('gd_no_ghost')) localStorage.removeItem('gd_no_ghost');
+      else localStorage.setItem('gd_no_ghost', '1');
     } else if (action === 'resume') {
       this.ui._showSettings = false;
       this.ui._hidePauseBtn = false;
@@ -1699,7 +1711,8 @@ class Game {
 
     // Auto-retry after a short delay
     if (this._retryTimer) clearTimeout(this._retryTimer);
-    const delay = (this.practiceMode && this.lastCheckpoint) ? 800 : 1200;
+    const autoRetry = !!localStorage.getItem('gd_auto_retry');
+    const delay = autoRetry ? 300 : ((this.practiceMode && this.lastCheckpoint) ? 800 : 1200);
     this._retryTimer = setTimeout(() => {
       this._retryTimer = null;
       if (this.state === DEAD) this._restart();
@@ -2505,7 +2518,7 @@ class Game {
       this.particles.draw(ctx, camX - PLAYER_X_OFFSET);
 
       // Draw ghost replay (behind the player)
-      if (this._replayGhost && this.player.alive) {
+      if (this._replayGhost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
         const ghostPos = this._replayGhost.getPosition(this._replayFrame);
         if (ghostPos) {
           const gx = ghostPos.x - camX + PLAYER_X_OFFSET;

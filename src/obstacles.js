@@ -10,6 +10,7 @@ function rectsOverlap(a, b) {
 
 // Shared neon glow helper
 function drawNeonGlow(ctx, color, blur = 10) {
+  if (localStorage.getItem('gd_low_detail')) return;
   ctx.shadowColor = color;
   ctx.shadowBlur = blur;
 }
