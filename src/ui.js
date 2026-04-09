@@ -688,7 +688,7 @@ export class UI {
     this._drawButton(ctx, SCREEN_WIDTH / 2 - 110, SCREEN_HEIGHT - statsBkH - 28, 220, statsBkH, 'BACK', 'back_stats', '#445566', 20);
   }
 
-  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0) {
+  drawHUD(ctx, progress, attempts, practiceMode, levelName, isNewBest = false, coins = null, newBestValue = 0, diamondsEarned = 0, totalDiamonds = 0, lvlDiamondsEarned = 0, lvlDiamondTotal = 0, showPauseBtn = true) {
     this.buttons = [];
 
     // Progress bar at top — rounded, sleek
@@ -797,22 +797,36 @@ export class UI {
       this.buttons.push({ id: 'practice_hitbox', x: hbX, y: cpY, w: cpBtnS, h: cpBtnS });
     }
 
-    // Pause button (top right) — rounded
+    // Pause / Settings button (top right) — rounded
     const pbS = S(48);
     const pbX = SCREEN_WIDTH - pbS - 10;
     const pbY = 8;
-    this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
-    ctx.fill();
-    // Two vertical bars (pause icon)
-    const bw = 6, bGap = 5;
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    this._roundRect(ctx, pbX + pbS / 2 - bw - bGap / 2, pbY + 11, bw, pbS - 22, 2);
-    ctx.fill();
-    this._roundRect(ctx, pbX + pbS / 2 + bGap / 2, pbY + 11, bw, pbS - 22, 2);
-    ctx.fill();
     const hitPad = 15;
-    this.buttons.push({ id: 'pause', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
+    if (showPauseBtn) {
+      this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fill();
+      // Two vertical bars (pause icon)
+      const bw = 6, bGap = 5;
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      this._roundRect(ctx, pbX + pbS / 2 - bw - bGap / 2, pbY + 11, bw, pbS - 22, 2);
+      ctx.fill();
+      this._roundRect(ctx, pbX + pbS / 2 + bGap / 2, pbY + 11, bw, pbS - 22, 2);
+      ctx.fill();
+      this.buttons.push({ id: 'pause', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
+    } else {
+      // Settings gear in place of pause
+      this._roundRect(ctx, pbX, pbY, pbS, pbS, 8);
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.font = `${S(22)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u2699', pbX + pbS / 2, pbY + pbS / 2 + 1);
+      ctx.textBaseline = 'alphabetic';
+      this.buttons.push({ id: 'ingame_settings', x: pbX - hitPad, y: 0, w: pbS + hitPad + 10, h: pbS + pbY + hitPad });
+    }
 
     // Level name
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
@@ -1049,16 +1063,12 @@ export class UI {
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Settings gear button (top-right)
+    // Settings gear button (top-right) — no background
     const gearS = S(36);
     const gearX = SCREEN_WIDTH - gearS - S(16);
     const gearY = S(16);
-    ctx.fillStyle = this._showSettings ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)';
-    ctx.beginPath();
-    ctx.roundRect(gearX, gearY, gearS, gearS, 8);
-    ctx.fill();
-    ctx.fillStyle = '#FFF';
-    ctx.font = `${S(20)}px monospace`;
+    ctx.fillStyle = this._showSettings ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)';
+    ctx.font = `${S(24)}px monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('\u2699', gearX + gearS / 2, gearY + gearS / 2 + 1);

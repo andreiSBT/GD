@@ -682,6 +682,12 @@ class Game {
       this.shakeIntensity = 0;
       Sound.pauseMusic();
       this.state = PAUSED;
+      this._hidePause = true;
+    } else if (action === 'ingame_settings') {
+      this.shakeIntensity = 0;
+      Sound.pauseMusic();
+      this.state = PAUSED;
+      this.ui._showSettings = true;
     } else if (action === 'pause_settings') {
       this.ui._showSettings = !this.ui._showSettings;
     } else if (action === 'close_settings') {
@@ -690,6 +696,7 @@ class Game {
       this._showHitboxes = !this._showHitboxes;
     } else if (action === 'resume') {
       this.ui._showSettings = false;
+      this._hidePause = false;
       if (!this.player.alive) {
         // Resume into DEAD state so explosion continues, then auto-retry
         this.state = DEAD;
@@ -711,13 +718,13 @@ class Game {
       this.editorStartCheckpoint = null;
       this.state = EDITOR;
     } else if (action === 'switch_practice') {
-      // Switch to practice mode, keep last checkpoint if one was passed
+      this._hidePause = false;
       this.practiceMode = true;
       // lastCheckpoint stays as-is (set by checkpoint obstacles), or null if none passed
       this.state = this.editorLevelData ? EDITOR_TESTING : PLAYING;
       Sound.resumeMusic();
     } else if (action === 'switch_normal') {
-      // Switch to normal mode, restart from beginning
+      this._hidePause = false;
       this.practiceMode = false;
       this.lastCheckpoint = null;
       Sound.stopDeath();
@@ -2607,7 +2614,7 @@ class Game {
         if (lp.completed) lvlDiamondsEarned += lvlDiamondTotal - pPool;
       }
       this.ui._showHitboxes = this._showHitboxes && this.practiceMode;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal);
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal, !this._hidePause);
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
