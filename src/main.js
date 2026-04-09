@@ -2410,29 +2410,16 @@ class Game {
             ctx.fillStyle = 'rgba(68,136,255,0.5)';
             ctx.strokeStyle = '#66AAFF';
             ctx.lineWidth = 4;
-            const forg = Math.round(GRID * 0.1); // matches checkCollision forgiveness
-            const ext = 10; // matches checkCollision extension
-            const gm = this.player.gravityMult;
             if (t === 'platform_group') {
               for (const p of obs.pieces) {
                 const px = p.x - camX + PLAYER_X_OFFSET;
                 const pw = p.w || GRID, ph = p.h || GRID;
-                if (p.type === 'slope') {
-                  ctx.fillRect(px, p.y, pw, ph);
-                  ctx.strokeRect(px, p.y, pw, ph);
-                } else {
-                  const sy = gm === -1 ? p.y : p.y - ext;
-                  ctx.fillRect(px + forg, sy, pw - forg * 2, ph + ext);
-                  ctx.strokeRect(px + forg, sy, pw - forg * 2, ph + ext);
-                }
+                ctx.fillRect(px, p.y, pw, ph);
+                ctx.strokeRect(px, p.y, pw, ph);
               }
-            } else if (t === 'slope') {
+            } else {
               ctx.fillRect(ox, oy, ow, oh);
               ctx.strokeRect(ox, oy, ow, oh);
-            } else {
-              const sy = gm === -1 ? oy : oy - ext;
-              ctx.fillRect(ox + forg, sy, ow - forg * 2, oh + ext);
-              ctx.strokeRect(ox + forg, sy, ow - forg * 2, oh + ext);
             }
           } else if (t === 'orb' || t === 'pad' || t === 'portal' || t === 'coin' || t === 'checkpoint') {
             ctx.fillStyle = '#00FF64';

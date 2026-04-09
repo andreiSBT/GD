@@ -133,61 +133,47 @@ export class Platform {
   }
 
   checkCollision(playerRect, prevPlayerY, gravityMult = 1) {
-    const forgiveness = Math.round(GRID * 0.1);
     const platTop = this.y;
     const platBottom = this.y + this.h;
 
-    // Collision rect: narrow on x (side forgiveness), extended for re-detection
-    // Extend in direction player approaches from: above for normal, below for inverted
-    const ext = 10;
-    const sideRect = {
-      x: this.x + forgiveness,
-      y: gravityMult === -1 ? this.y : this.y - ext,
-      w: this.w - forgiveness * 2,
-      h: this.h + ext,
-    };
+    // Collision rect: exact block bounds
+    const sideRect = { x: this.x, y: this.y, w: this.w, h: this.h };
     if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
 
     // Inverted gravity: player rises and lands on bottom of platform
     if (gravityMult === -1) {
       const playerTop = playerRect.y;
-      const rawTop = playerTop - 4; // remove getRect inset for direction checks
-      // Was below platform last frame
-      const wasBelow = prevPlayerY >= platBottom - forgiveness - 4;
+      const rawTop = playerTop - 4;
+      const wasBelow = prevPlayerY >= platBottom - 4;
       if (wasBelow) {
         return { type: 'land', y: platBottom };
       }
-      // Rising into platform bottom
       const rising = rawTop < prevPlayerY;
-      if (rising && playerTop <= platBottom + forgiveness) {
+      if (rising && playerTop <= platBottom) {
         return { type: 'land', y: platBottom };
       }
-      // Already standing on bottom of platform (re-land check)
-      if (playerTop >= platBottom - 8 && playerTop <= platBottom + forgiveness + 4 &&
-          prevPlayerY >= platBottom - forgiveness - 8) {
+      if (playerTop >= platBottom - 8 && playerTop <= platBottom + 4 &&
+          prevPlayerY >= platBottom - 8) {
         return { type: 'land', y: platBottom };
       }
       return { type: 'death' };
     }
 
     // Normal gravity: check if player is on top of platform
-    const pSize = playerRect.h + 8; // actual player size (mini-aware, 8 = 2*inset)
-    const wasAbove = prevPlayerY + pSize <= platTop + forgiveness;
+    const pSize = playerRect.h + 8;
+    const wasAbove = prevPlayerY + pSize <= platTop;
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
-    // Falling onto platform
     const currentY = playerRect.y - 4;
     const falling = currentY > prevPlayerY;
-    if (falling && currentY <= platTop + forgiveness) {
+    if (falling && currentY <= platTop) {
       return { type: 'land', y: platTop };
     }
-    // Already standing on platform (feet near top, within 6px above) - re-land
-    // Only if player was also near the top last frame (prevents side approach false land)
     const prevBottom = prevPlayerY + pSize;
-    if (playerBottom >= platTop - 6 && playerBottom <= platTop + forgiveness + 2 &&
-        prevBottom >= platTop - 6 && prevBottom <= platTop + forgiveness + 2) {
+    if (playerBottom >= platTop - 6 && playerBottom <= platTop + 2 &&
+        prevBottom >= platTop - 6 && prevBottom <= platTop + 2) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
@@ -513,61 +499,47 @@ export class TransportPlatform extends Platform {
   }
 
   checkCollision(playerRect, prevPlayerY, gravityMult = 1) {
-    const forgiveness = Math.round(GRID * 0.1);
     const platTop = this.y;
     const platBottom = this.y + this.h;
 
-    // Collision rect: narrow on x (side forgiveness), extended for re-detection
-    // Extend in direction player approaches from: above for normal, below for inverted
-    const ext = 10;
-    const sideRect = {
-      x: this.x + forgiveness,
-      y: gravityMult === -1 ? this.y : this.y - ext,
-      w: this.w - forgiveness * 2,
-      h: this.h + ext,
-    };
+    // Collision rect: exact block bounds
+    const sideRect = { x: this.x, y: this.y, w: this.w, h: this.h };
     if (!rectsOverlap(playerRect, sideRect)) return null;
     const playerBottom = playerRect.y + playerRect.h;
 
     // Inverted gravity: player rises and lands on bottom of platform
     if (gravityMult === -1) {
       const playerTop = playerRect.y;
-      const rawTop = playerTop - 4; // remove getRect inset for direction checks
-      // Was below platform last frame
-      const wasBelow = prevPlayerY >= platBottom - forgiveness - 4;
+      const rawTop = playerTop - 4;
+      const wasBelow = prevPlayerY >= platBottom - 4;
       if (wasBelow) {
         return { type: 'land', y: platBottom };
       }
-      // Rising into platform bottom
       const rising = rawTop < prevPlayerY;
-      if (rising && playerTop <= platBottom + forgiveness) {
+      if (rising && playerTop <= platBottom) {
         return { type: 'land', y: platBottom };
       }
-      // Already standing on bottom of platform (re-land check)
-      if (playerTop >= platBottom - 8 && playerTop <= platBottom + forgiveness + 4 &&
-          prevPlayerY >= platBottom - forgiveness - 8) {
+      if (playerTop >= platBottom - 8 && playerTop <= platBottom + 4 &&
+          prevPlayerY >= platBottom - 8) {
         return { type: 'land', y: platBottom };
       }
       return { type: 'death' };
     }
 
     // Normal gravity: check if player is on top of platform
-    const pSize = playerRect.h + 8; // actual player size (mini-aware, 8 = 2*inset)
-    const wasAbove = prevPlayerY + pSize <= platTop + forgiveness;
+    const pSize = playerRect.h + 8;
+    const wasAbove = prevPlayerY + pSize <= platTop;
     if (wasAbove) {
       return { type: 'land', y: platTop };
     }
-    // Falling onto platform
     const currentY = playerRect.y - 4;
     const falling = currentY > prevPlayerY;
-    if (falling && currentY <= platTop + forgiveness) {
+    if (falling && currentY <= platTop) {
       return { type: 'land', y: platTop };
     }
-    // Already standing on platform (feet near top, within 6px above) - re-land
-    // Only if player was also near the top last frame (prevents side approach false land)
     const prevBottom = prevPlayerY + pSize;
-    if (playerBottom >= platTop - 6 && playerBottom <= platTop + forgiveness + 2 &&
-        prevBottom >= platTop - 6 && prevBottom <= platTop + forgiveness + 2) {
+    if (playerBottom >= platTop - 6 && playerBottom <= platTop + 2 &&
+        prevBottom >= platTop - 6 && prevBottom <= platTop + 2) {
       return { type: 'land', y: platTop };
     }
     return { type: 'death' };
