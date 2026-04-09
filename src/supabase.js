@@ -437,7 +437,7 @@ export async function syncSecretsToCloud() {
     wink: !!localStorage.getItem('gd_wink_icon'),
     boom: !!localStorage.getItem('gd_boom_death'),
     christmas: !!localStorage.getItem('gd_christmas_color'),
-    easter: !!localStorage.getItem('gd_easter_icon'),
+    easter: !!localStorage.getItem('gd_easter_shape'),
     yearFlag: !!localStorage.getItem('gd_year_flag_trail'),
     heart: !!localStorage.getItem('gd_heart_shape'),
     halloween: !!localStorage.getItem('gd_halloween_icon'),

@@ -635,7 +635,7 @@ class Game {
       }
     } else if (action.startsWith('icon_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._isItemUnlocked('icon', idx) || idx === 0 || ['wink', 'egg', 'spooky'].includes(CUBE_ICONS[idx])) {
+      if (this._isItemUnlocked('icon', idx) || idx === 0 || ['wink', 'spooky'].includes(CUBE_ICONS[idx])) {
         this.customization.iconIndex = idx;
         this._applyCustomization();
       } else {
@@ -643,7 +643,7 @@ class Game {
       }
     } else if (action.startsWith('shape_')) {
       const idx = parseInt(action.split('_')[1]);
-      if (this._isItemUnlocked('shape', idx) || idx === 0 || CUBE_SHAPES[idx] === 'heart') {
+      if (this._isItemUnlocked('shape', idx) || idx === 0 || CUBE_SHAPES[idx] === 'heart' || CUBE_SHAPES[idx] === 'egg') {
         this.customization.shapeIndex = idx;
         this._applyCustomization();
       } else {
@@ -1228,7 +1228,7 @@ class Game {
       'BOOM!': { reward: 'boom_death', desc: 'BOOM explosion unlocked!' },
       // Holiday codes
       "IT'S HOLIDAY TIME!": { reward: 'christmas_color', desc: 'Christmas color unlocked!', condition: () => _nearHoliday(12, 25), failMsg: 'Only available around Christmas!' },
-      'EGG HUNT': { reward: 'easter_icon', desc: 'Easter egg icon unlocked!', condition: () => _nearEaster(), failMsg: 'Only available around Easter!' },
+      'EGG HUNT': { reward: 'easter_shape', desc: 'Easter egg shape unlocked!', condition: () => _nearEaster(), failMsg: 'Only available around Easter!' },
       [String(new Date().getFullYear() + 1)]: { reward: 'year_flag_trail', desc: 'Year flag trail unlocked!', condition: () => _nearHoliday(1, 1), failMsg: 'Only available around New Year!' },
       'I LOVE YOU': { reward: 'heart_shape', desc: 'Heart shape unlocked!', condition: () => _nearHoliday(2, 14), failMsg: 'Only available around Valentine\'s Day!' },
       'SPOOOOOKY!': { reward: 'halloween_icon', desc: 'Spooky icon unlocked!', condition: () => _nearHoliday(10, 31), failMsg: 'Only available around Halloween!' },
@@ -1261,8 +1261,8 @@ class Game {
       localStorage.setItem('gd_boom_death', '1');
     } else if (entry.reward === 'christmas_color') {
       localStorage.setItem('gd_christmas_color', '1');
-    } else if (entry.reward === 'easter_icon') {
-      localStorage.setItem('gd_easter_icon', '1');
+    } else if (entry.reward === 'easter_shape') {
+      localStorage.setItem('gd_easter_shape', '1');
     } else if (entry.reward === 'year_flag_trail') {
       localStorage.setItem('gd_year_flag_trail', '1');
     } else if (entry.reward === 'heart_shape') {
@@ -2843,7 +2843,7 @@ class Game {
     localStorage.removeItem('gd_wink_icon');
     localStorage.removeItem('gd_boom_death');
     localStorage.removeItem('gd_christmas_color');
-    localStorage.removeItem('gd_easter_icon');
+    localStorage.removeItem('gd_easter_shape');
     localStorage.removeItem('gd_year_flag_trail');
     localStorage.removeItem('gd_heart_shape');
     localStorage.removeItem('gd_halloween_icon');
@@ -2894,7 +2894,7 @@ class Game {
       if (cloudSecrets.wink) localStorage.setItem('gd_wink_icon', '1');
       if (cloudSecrets.boom) localStorage.setItem('gd_boom_death', '1');
       if (cloudSecrets.christmas) localStorage.setItem('gd_christmas_color', '1');
-      if (cloudSecrets.easter) localStorage.setItem('gd_easter_icon', '1');
+      if (cloudSecrets.easter) localStorage.setItem('gd_easter_shape', '1');
       if (cloudSecrets.yearFlag) localStorage.setItem('gd_year_flag_trail', '1');
       if (cloudSecrets.heart) localStorage.setItem('gd_heart_shape', '1');
       if (cloudSecrets.halloween) localStorage.setItem('gd_halloween_icon', '1');
@@ -3021,7 +3021,7 @@ class Game {
     // Secret/holiday items are free (no diamonds)
     if (type === 'color' && (PLAYER_COLORS[idx] === 'rainbow' || PLAYER_COLORS[idx] === 'christmas')) return true;
     if (type === 'icon' && (CUBE_ICONS[idx] === 'wink' || CUBE_ICONS[idx] === 'egg' || CUBE_ICONS[idx] === 'spooky')) return true;
-    if (type === 'shape' && CUBE_SHAPES[idx] === 'heart') return true;
+    if (type === 'shape' && CUBE_SHAPES[idx] === 'heart' || CUBE_SHAPES[idx] === 'egg') return true;
     // Try to purchase
     if ((this._diamonds || 0) < cost) return false; // not enough
     this._diamonds -= cost;

@@ -567,7 +567,35 @@ export class Player {
     this._fillInnerShape(ctx, size, hs, m, shape);
 
     // Face/icon based on cubeIcon
-    this._drawCubeIcon(ctx);
+    if (shape !== 'egg') {
+      this._drawCubeIcon(ctx);
+    } else {
+      // Draw chick poking out of egg
+      const s = hs * 1.1;
+      // Chick body (yellow circle above shell)
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.45, s * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+      // Chick eye
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(s * 0.1, -s * 0.5, s * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+      // Beak
+      ctx.fillStyle = '#FF6600';
+      ctx.beginPath();
+      ctx.moveTo(s * 0.3, -s * 0.45);
+      ctx.lineTo(s * 0.55, -s * 0.38);
+      ctx.lineTo(s * 0.3, -s * 0.32);
+      ctx.closePath();
+      ctx.fill();
+      // Chick highlight
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.beginPath();
+      ctx.arc(-s * 0.1, -s * 0.6, s * 0.15, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     // Border
     ctx.strokeStyle = '#FFF';
@@ -665,6 +693,23 @@ export class Player {
         ctx.moveTo(0, s * 0.7);
         ctx.bezierCurveTo(-s * 1.2, -s * 0.1, -s * 0.55, -s * 1.2, 0, -s * 0.35);
         ctx.bezierCurveTo(s * 0.55, -s * 1.2, s * 1.2, -s * 0.1, 0, s * 0.7);
+        ctx.closePath();
+        break;
+      }
+      case 'egg': {
+        // Cracked egg bottom half + chick head poking out
+        const s = hs * 1.1;
+        // Egg bottom (cracked shell)
+        ctx.moveTo(-s * 0.7, -s * 0.1);
+        ctx.lineTo(-s * 0.5, -s * 0.4);
+        ctx.lineTo(-s * 0.2, -s * 0.15);
+        ctx.lineTo(0, -s * 0.45);
+        ctx.lineTo(s * 0.25, -s * 0.1);
+        ctx.lineTo(s * 0.5, -s * 0.35);
+        ctx.lineTo(s * 0.7, -s * 0.05);
+        ctx.quadraticCurveTo(s * 0.85, s * 0.5, s * 0.5, s * 0.85);
+        ctx.quadraticCurveTo(0, s * 1.05, -s * 0.5, s * 0.85);
+        ctx.quadraticCurveTo(-s * 0.85, s * 0.5, -s * 0.7, -s * 0.1);
         ctx.closePath();
         break;
       }
@@ -879,37 +924,7 @@ export class Player {
         ctx.arc(4, 4, 6, 0.1, Math.PI * 0.6);
         ctx.stroke();
         break;
-      case 'egg':
-        // Easter — red egg with cross and decorative bands
-        // Red egg shape
-        ctx.fillStyle = '#CC2222';
-        ctx.beginPath();
-        ctx.ellipse(2, 0, 10, 12, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Darker bottom half
-        ctx.fillStyle = '#AA1818';
-        ctx.beginPath();
-        ctx.ellipse(2, 3, 9, 8, 0, 0, Math.PI);
-        ctx.fill();
-        // Gold cross
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(2, -8); ctx.lineTo(2, 6);
-        ctx.moveTo(-4, -3); ctx.lineTo(8, -3);
-        ctx.stroke();
-        // Gold band around middle
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.ellipse(2, 0, 10, 3, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        // Highlight
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(-2, -5, 3, 4, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-        break;
+
       case 'spooky':
         // Halloween — glowing hollow eyes + jagged mouth
         ctx.fillStyle = '#FF8800';

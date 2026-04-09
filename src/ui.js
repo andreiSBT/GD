@@ -1485,7 +1485,8 @@ export class UI {
     const shapeSize = IS_MOBILE ? 60 : 55;
     const shapeGap = IS_MOBILE ? 10 : 14;
     const heartUnlocked = !!localStorage.getItem('gd_heart_shape');
-    const secretShapes = { heart: heartUnlocked };
+    const eggUnlocked = !!localStorage.getItem('gd_easter_shape');
+    const secretShapes = { heart: heartUnlocked, egg: eggUnlocked };
     const visibleShapes = CUBE_SHAPES.filter(s => !secretShapes.hasOwnProperty(s) || secretShapes[s]);
     const shapeTotalW = visibleShapes.length * (shapeSize + shapeGap) - shapeGap;
     const shapeStartX = (SCREEN_WIDTH - shapeTotalW) / 2;
@@ -1505,7 +1506,7 @@ export class UI {
       this._drawPreviewCube(ctx, sx + shapeSize / 2, sy + shapeSize / 2, shapeSize * 0.7, previewColor, null, CUBE_SHAPES[i]);
 
       // Lock overlay (skip heart which is holiday-unlocked)
-      const isSecretShape = CUBE_SHAPES[i] === 'heart';
+      const isSecretShape = CUBE_SHAPES[i] === 'heart' || CUBE_SHAPES[i] === 'egg';
       if (i > 0 && !isSecretShape && !_isUnlocked('shape', i)) {
         _drawLock(sx, sy, shapeSize, shapeSize);
       }
@@ -1529,9 +1530,8 @@ export class UI {
     const iconSize = IS_MOBILE ? 60 : 55;
     const iconGap = IS_MOBILE ? 10 : 14;
     const winkUnlocked = !!localStorage.getItem('gd_wink_icon');
-    const eggUnlocked = !!localStorage.getItem('gd_easter_icon');
     const spookyUnlocked = !!localStorage.getItem('gd_halloween_icon');
-    const secretIcons = { wink: winkUnlocked, egg: eggUnlocked, spooky: spookyUnlocked };
+    const secretIcons = { wink: winkUnlocked, spooky: spookyUnlocked };
     const visibleIcons = CUBE_ICONS.filter(ic => !secretIcons.hasOwnProperty(ic) || secretIcons[ic]);
     const iconTotalW = visibleIcons.length * (iconSize + iconGap) - iconGap;
     const iconStartX = (SCREEN_WIDTH - iconTotalW) / 2;
@@ -1552,7 +1552,7 @@ export class UI {
       this._drawPreviewCube(ctx, ix + iconSize / 2, iy + iconSize / 2, iconSize * 0.7, previewColor, CUBE_ICONS[i], previewShape);
 
       // Lock overlay (skip secret/holiday icons)
-      const isSecretIcon = ['wink', 'egg', 'spooky'].includes(CUBE_ICONS[i]);
+      const isSecretIcon = ['wink', 'spooky'].includes(CUBE_ICONS[i]);
       if (i > 0 && !isSecretIcon && !_isUnlocked('icon', i)) {
         _drawLock(ix, iy, iconSize, iconSize);
       }
@@ -1796,6 +1796,21 @@ export class UI {
         ctx.closePath();
         break;
       }
+      case 'egg': {
+        const s = hs * 1.1;
+        ctx.moveTo(-s * 0.7, -s * 0.1);
+        ctx.lineTo(-s * 0.5, -s * 0.4);
+        ctx.lineTo(-s * 0.2, -s * 0.15);
+        ctx.lineTo(0, -s * 0.45);
+        ctx.lineTo(s * 0.25, -s * 0.1);
+        ctx.lineTo(s * 0.5, -s * 0.35);
+        ctx.lineTo(s * 0.7, -s * 0.05);
+        ctx.quadraticCurveTo(s * 0.85, s * 0.5, s * 0.5, s * 0.85);
+        ctx.quadraticCurveTo(0, s * 1.05, -s * 0.5, s * 0.85);
+        ctx.quadraticCurveTo(-s * 0.85, s * 0.5, -s * 0.7, -s * 0.1);
+        ctx.closePath();
+        break;
+      }
       default: // square
         ctx.rect(-hs, -hs, size, size);
         break;
@@ -1950,32 +1965,7 @@ export class UI {
         ctx.arc(4, 4, 6, 0.1, Math.PI * 0.6);
         ctx.stroke();
         break;
-      case 'egg':
-        // Red Easter egg with gold cross
-        ctx.fillStyle = '#CC2222';
-        ctx.beginPath();
-        ctx.ellipse(2, 0, 10, 12, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#AA1818';
-        ctx.beginPath();
-        ctx.ellipse(2, 3, 9, 8, 0, 0, Math.PI);
-        ctx.fill();
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(2, -8); ctx.lineTo(2, 6);
-        ctx.moveTo(-4, -3); ctx.lineTo(8, -3);
-        ctx.stroke();
-        ctx.strokeStyle = '#FFD700';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.ellipse(2, 0, 10, 3, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(-2, -5, 3, 4, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-        break;
+
       case 'spooky':
         ctx.fillStyle = '#FF8800';
         ctx.beginPath();

@@ -54,6 +54,7 @@ export const CUBE_SHAPES = [
   'cross',      // plus/cross shape
   'dart',       // dart/arrow shape
   'heart',      // heart shape (Valentine's secret)
+  'egg',        // cracked egg with chick (Easter secret)
 ];
 
 // Icon IDs for cube face designs
@@ -67,7 +68,6 @@ export const CUBE_ICONS = [
   'shades',     // sunglasses
   'smile',      // simple smile
   'wink',       // wink face (secret)
-  'egg',        // Easter egg face (holiday secret)
   'spooky',     // Halloween face (holiday secret)
 ];
 
