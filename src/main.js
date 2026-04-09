@@ -2401,11 +2401,18 @@ class Game {
             ctx.fillRect(ox, oy, ow, oh);
           }
         }
-        // Player death hitbox (hazard rect)
+        // Player hazard hitbox (spikes/saws kill zone) — red
         const hr = this.player.getHazardRect();
-        ctx.fillStyle = '#FFFF00';
-        ctx.globalAlpha = 0.4;
-        ctx.fillRect(hr.x - camX + PLAYER_X_OFFSET, hr.y, hr.w, hr.h);
+        ctx.strokeStyle = '#FF2222';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.7;
+        ctx.strokeRect(hr.x - camX + PLAYER_X_OFFSET, hr.y, hr.w, hr.h);
+        // Player platform hitbox (side-hit kill zone) — blue
+        const pr = this.player.getPlatformRect();
+        ctx.strokeStyle = '#4488FF';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.7;
+        ctx.strokeRect(pr.x - camX + PLAYER_X_OFFSET, pr.y, pr.w, pr.h);
         ctx.restore();
       }
 
