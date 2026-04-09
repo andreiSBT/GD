@@ -950,6 +950,7 @@ class Game {
     } else if (action.startsWith('friends_accept_trade_')) {
       const idx = parseInt(action.replace('friends_accept_trade_', ''));
       const msg = fd.messages[idx];
+      console.log('[Trade] accept idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
       if (msg && !msg.mine && msg.type === 'trade') {
         acceptDiamondTrade(msg.id).then(res => {
           if (res.error) {
@@ -966,6 +967,7 @@ class Game {
     } else if (action.startsWith('friends_decline_trade_')) {
       const idx = parseInt(action.replace('friends_decline_trade_', ''));
       const msg = fd.messages[idx];
+      console.log('[Trade] decline idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
       if (msg && !msg.mine && msg.type === 'trade') {
         declineDiamondTrade(msg.id).then(res => {
           if (res.error) {
