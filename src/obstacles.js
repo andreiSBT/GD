@@ -2,6 +2,7 @@
 
 import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH, THEMES } from './settings.js';
 import { lighten, darken } from './player.js';
+import { getBeatIntensity } from './sound.js';
 
 // AABB collision check
 function rectsOverlap(a, b) {
@@ -658,7 +659,8 @@ export class JumpOrb {
     const sy = this.y;
 
     this.pulseTimer += 0.05;
-    const pulse = 1 + Math.sin(this.pulseTimer) * 0.1;
+    const beat = getBeatIntensity();
+    const pulse = 1 + beat * 0.25 + Math.sin(this.pulseTimer) * 0.05;
     const radius = (this.w / 2) * pulse;
     const cx = sx + this.w / 2;
     const cy = sy + this.h / 2;
@@ -674,18 +676,19 @@ export class JumpOrb {
     ctx.save();
     ctx.globalAlpha = this.activated ? 0.2 : 1;
 
-    // Outer glow ring
-    drawNeonGlow(ctx, color, 15);
+    // Outer glow ring — expands on beat
+    const glowSize = 15 + beat * 12;
+    drawNeonGlow(ctx, color, glowSize);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2 + beat * 2;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius + 4 + beat * 4, 0, Math.PI * 2);
     ctx.stroke();
 
     // Main orb
     const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, radius);
     grad.addColorStop(0, '#FFF');
-    grad.addColorStop(0.4, color);
+    grad.addColorStop(0.3 + beat * 0.1, color);
     grad.addColorStop(1, darken(color, 40));
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -693,7 +696,7 @@ export class JumpOrb {
     ctx.fill();
 
     // Specular highlight
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = `rgba(255,255,255,${0.4 + beat * 0.3})`;
     ctx.beginPath();
     ctx.arc(cx - 2, cy - 3, radius * 0.35, 0, Math.PI * 2);
     ctx.fill();
