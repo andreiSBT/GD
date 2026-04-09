@@ -1940,16 +1940,20 @@ class Game {
             const wasAboveInv = wasHorizInside && this.player.gravityMult < 0 && prevTop < piece.y + 4;
             // Skip death if player is rising near a slope in this group (just jumped off)
             const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
-            // Hitting from below = bump head (unless near a slope)
-            if (wasBelow && !risingNearSlope) {
+            // Hitting from below while rising = bump head (unless near a slope)
+            if (wasBelow && !risingNearSlope && this.player.vy < 0) {
               this.player.y = piece.y + piece.h - miniOffset;
               this.player.vy = 0;
               continue;
             }
-            if (wasAboveInv && !risingNearSlope) {
+            if (wasAboveInv && !risingNearSlope && this.player.vy > 0) {
               this.player.y = piece.y - PLAYER_SIZE + miniOffset;
               this.player.vy = 0;
               continue;
+            }
+            // Not rising = side hit from below, die
+            if ((wasBelow || wasAboveInv) && !risingNearSlope) {
+              this._die(); return;
             }
             if (wasOnTop || wasOnBottom || risingNearSlope) {
               continue;
@@ -2017,16 +2021,20 @@ class Game {
             const wasBelow = wasHorizontallyInside && this.player.gravityMult > 0 && prevBottom > platBottom - 4;
             const wasOnBottom = wasHorizontallyInside && this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
             const wasAboveInv = wasHorizontallyInside && this.player.gravityMult < 0 && prevTop < platTop + 4;
-            // Hitting platform from below = bump head (block, don't die)
-            if (wasBelow) {
+            // Hitting platform from below while rising = bump head
+            // If not rising (vy >= 0), it's a side hit = death
+            if (wasBelow && this.player.vy < 0) {
               this.player.y = platBottom - miniOffset;
               this.player.vy = 0;
               continue;
             }
-            if (wasAboveInv) {
+            if (wasAboveInv && this.player.vy > 0) {
               this.player.y = platTop - PLAYER_SIZE + miniOffset;
               this.player.vy = 0;
               continue;
+            }
+            if (wasBelow || wasAboveInv) {
+              this._die(); return;
             }
             if (wasOnTop || wasOnBottom) {
               continue;
