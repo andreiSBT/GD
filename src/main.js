@@ -1466,7 +1466,9 @@ class Game {
     this._replayGhost = loadReplay(levelId);
     // Generate bot ghost fresh each time
     if (this.level) {
+      console.log('[Bot] Generating for level', levelId, 'obstacles:', this.level.obstacles.length, 'endX:', this.level.endX);
       const botData = generateBotReplay(this.level);
+      console.log('[Bot] Result:', botData ? 'OK' : 'FAILED', botData ? JSON.parse(botData).length + ' frames' : '');
       if (botData) {
         this._botGhost = new ReplayGhost(botData);
       }
