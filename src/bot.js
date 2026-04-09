@@ -6,12 +6,17 @@ const MAX_FRAMES = 60 * 120;
 const RECORD_INTERVAL = 1;
 const LOOKAHEAD = 30; // simulate full jump arc ahead
 
-function checkDeath(x, y, obstacles) {
+function checkDeath(x, y, prevY, obstacles) {
   const inset = 4;
   const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
   for (const obs of obstacles) {
     if ((obs.type === 'spike' || obs.type === 'saw') && obs.checkCollision) {
       if (obs.checkCollision(pr) === 'death') return true;
+    }
+    // PlatformGroups can contain spikes — check them too
+    if (obs.type === 'platform_group' && obs.checkCollision) {
+      const result = obs.checkCollision(pr, prevY, 1);
+      if (result && result.type === 'death') return true;
     }
   }
   return false;
@@ -27,6 +32,7 @@ function miniSim(startX, startY, startVy, startGrounded, speed, obstacles, doJum
   }
 
   for (let f = 0; f < frames; f++) {
+    const prevY = y;
     if (!grounded) vy += GRAVITY;
     y += vy;
 
@@ -40,7 +46,7 @@ function miniSim(startX, startY, startVy, startGrounded, speed, obstacles, doJum
     const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
     for (const obs of obstacles) {
       if ((obs.type === 'platform' || obs.type === 'platform_group') && obs.checkCollision) {
-        const result = obs.checkCollision(pr, y - vy, 1);
+        const result = obs.checkCollision(pr, prevY, 1);
         if (result) {
           if (result.type === 'land') { y = result.y - PLAYER_SIZE; vy = 0; grounded = true; }
           else if (result.type === 'death') return false;
@@ -49,7 +55,7 @@ function miniSim(startX, startY, startVy, startGrounded, speed, obstacles, doJum
     }
 
     // Death check
-    if (checkDeath(x, y, obstacles)) return false;
+    if (checkDeath(x, y, prevY, obstacles)) return false;
 
     x += speed;
   }
@@ -126,7 +132,7 @@ export function generateBotReplay(level) {
     }
 
     // Death
-    if (checkDeath(x, y, obstacles)) {
+    if (checkDeath(x, y, prevY, obstacles)) {
       console.log('[Bot] Died at x:', Math.round(x), 'y:', Math.round(y), 'frame:', frame, 'from hazard');
       break;
     }
