@@ -2408,7 +2408,26 @@ class Game {
             ctx.fill();
           } else if (t === 'platform' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
             ctx.fillStyle = '#4488FF';
-            ctx.fillRect(ox, oy, ow, oh);
+            if (t === 'platform_group') {
+              // Draw each piece's real collision rect
+              for (const p of obs.pieces) {
+                const px = p.x - camX + PLAYER_X_OFFSET;
+                const py = p.y;
+                const pw = p.w || GRID;
+                const ph = p.h || GRID;
+                const forg = Math.round(GRID * 0.1);
+                if (p.type === 'slope') {
+                  ctx.fillRect(px, py, pw, ph);
+                } else {
+                  ctx.fillRect(px + forg, py - 10, pw - forg * 2, ph + 10);
+                }
+              }
+            } else if (t === 'slope') {
+              ctx.fillRect(ox, oy, ow, oh);
+            } else {
+              const forg = Math.round(GRID * 0.1);
+              ctx.fillRect(ox + forg, oy - 10, ow - forg * 2, oh + 10);
+            }
           } else if (t === 'orb' || t === 'pad' || t === 'portal' || t === 'coin' || t === 'checkpoint') {
             ctx.fillStyle = '#00FF64';
             ctx.fillRect(ox, oy, ow, oh);
