@@ -2677,7 +2677,7 @@ class Game {
 
     // Fade transition overlay
     if (this._fadeAlpha > 0) {
-      this._fadeAlpha += 0.06;
+      this._fadeAlpha += 0.15;
       ctx.fillStyle = '#000';
       if (this._fadeAlpha < 1) {
         ctx.globalAlpha = this._fadeAlpha;
