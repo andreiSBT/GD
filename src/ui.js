@@ -1051,17 +1051,19 @@ export class UI {
     ctx.fillStyle = 'rgba(0,0,0,0.65)';
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-    // Settings gear button (top-right) — no background
+    // Settings gear button (top-right) — hidden when settings panel is open
     const gearS = S(36);
     const gearX = SCREEN_WIDTH - gearS - S(16);
     const gearY = S(16);
-    ctx.fillStyle = this._showSettings ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)';
-    ctx.font = `${S(24)}px monospace`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\u2699', gearX + gearS / 2, gearY + gearS / 2 + 1);
-    ctx.textBaseline = 'alphabetic';
-    this.buttons.push({ id: 'pause_settings', x: gearX, y: gearY, w: gearS, h: gearS });
+    if (!this._showSettings) {
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = `${S(24)}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('\u2699', gearX + gearS / 2, gearY + gearS / 2 + 1);
+      ctx.textBaseline = 'alphabetic';
+      this.buttons.push({ id: 'pause_settings', x: gearX, y: gearY, w: gearS, h: gearS });
+    }
 
     if (this._showSettings) {
       // Settings panel
