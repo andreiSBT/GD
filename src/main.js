@@ -2410,33 +2410,50 @@ class Game {
             ctx.fillStyle = 'rgba(68,136,255,0.5)';
             ctx.strokeStyle = '#66AAFF';
             ctx.lineWidth = 4;
+            const forg = Math.round(GRID * 0.1); // matches checkCollision forgiveness
+            const ext = 10; // matches checkCollision extension
+            const gm = this.player.gravityMult;
             if (t === 'platform_group') {
               for (const p of obs.pieces) {
                 const px = p.x - camX + PLAYER_X_OFFSET;
                 const pw = p.w || GRID, ph = p.h || GRID;
-                ctx.fillRect(px, p.y, pw, ph);
-                ctx.strokeRect(px, p.y, pw, ph);
+                if (p.type === 'slope') {
+                  ctx.fillRect(px, p.y, pw, ph);
+                  ctx.strokeRect(px, p.y, pw, ph);
+                } else {
+                  const sy = gm === -1 ? p.y : p.y - ext;
+                  ctx.fillRect(px + forg, sy, pw - forg * 2, ph + ext);
+                  ctx.strokeRect(px + forg, sy, pw - forg * 2, ph + ext);
+                }
               }
-            } else {
+            } else if (t === 'slope') {
               ctx.fillRect(ox, oy, ow, oh);
               ctx.strokeRect(ox, oy, ow, oh);
+            } else {
+              const sy = gm === -1 ? oy : oy - ext;
+              ctx.fillRect(ox + forg, sy, ow - forg * 2, oh + ext);
+              ctx.strokeRect(ox + forg, sy, ow - forg * 2, oh + ext);
             }
           } else if (t === 'orb' || t === 'pad' || t === 'portal' || t === 'coin' || t === 'checkpoint') {
             ctx.fillStyle = '#00FF64';
             ctx.fillRect(ox, oy, ow, oh);
           }
         }
+        // Player landing hitbox (used in checkCollision calls) — yellow
+        const lr = this.player.getLandingRect();
+        ctx.strokeStyle = '#FFD700';
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.7;
+        ctx.strokeRect(lr.x - camX + PLAYER_X_OFFSET, lr.y, lr.w, lr.h);
         // Player hazard hitbox (spikes/saws kill zone) — red
         const hr = this.player.getHazardRect();
         ctx.strokeStyle = '#FF2222';
         ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.7;
         ctx.strokeRect(hr.x - camX + PLAYER_X_OFFSET, hr.y, hr.w, hr.h);
-        // Player platform hitbox (side-hit kill zone) — blue
+        // Player platform death hitbox (side-hit kill zone) — blue
         const pr = this.player.getPlatformRect();
         ctx.strokeStyle = '#4488FF';
         ctx.lineWidth = 2;
-        ctx.globalAlpha = 0.7;
         ctx.strokeRect(pr.x - camX + PLAYER_X_OFFSET, pr.y, pr.w, pr.h);
         ctx.restore();
       }
