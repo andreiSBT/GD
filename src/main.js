@@ -166,6 +166,10 @@ class Game {
         for (const [id, data] of Object.entries(cloudLevels)) {
           LEVEL_DATA[id] = data;
         }
+        // Rebuild level cache with cloud data
+        for (let i = 1; i <= getLevelCount(); i++) {
+          this._levelCache[i] = new Level(i);
+        }
         console.log('[Admin] Loaded official levels from cloud:', Object.keys(cloudLevels));
       }
       // Subscribe to realtime sync channel
@@ -1399,6 +1403,11 @@ class Game {
     this.editorLevelData = null;
     this.editorStartCheckpoint = null;
     this._checkpointTrail = [];
+    // Rebuild cache if LEVEL_DATA was updated (e.g. saved as official)
+    const cached = this._levelCache[levelId];
+    if (cached && cached.data !== LEVEL_DATA[levelId]) {
+      this._levelCache[levelId] = new Level(levelId);
+    }
     this.level = this._levelCache[levelId] || new Level(levelId);
     this.level.reset();
     this.theme = THEMES[levelId] || THEMES[1];
