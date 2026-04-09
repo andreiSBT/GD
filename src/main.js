@@ -517,15 +517,15 @@ class Game {
         return;
       }
       // Scrollable screens: process tap only if user didn't scroll and state didn't change
-      if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state) && this.state === this._touchStartState && !this.ui.isScrollDragging) {
-        const action = this.ui.handleClick(this._scrollTouchX, this._scrollTouchY);
-        if (action) {
-          Sound.playSelect();
-          this._handleAction(action);
-        }
-        return;
-      }
       if ([FRIENDS, COMMUNITY, LEADERBOARD, STATS].includes(this.state)) {
+        if (this.state === this._touchStartState && !this.ui.isScrollDragging) {
+          const action = this.ui.handleClick(this._scrollTouchX, this._scrollTouchY);
+          if (action) {
+            Sound.playSelect();
+            this._handleAction(action);
+          }
+        }
+        this.ui.isScrollDragging = false;
         return;
       }
       // Only forward to editor if the touch STARTED in editor state
