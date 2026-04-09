@@ -324,6 +324,7 @@ class Game {
 
     this.canvas.addEventListener('mousedown', (e) => {
       Sound.resumeAudio();
+      Sound.decodePendingMusic();
       const rect = this.canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (SCREEN_WIDTH / rect.width);
       const y = (e.clientY - rect.top) * (SCREEN_HEIGHT / rect.height);
@@ -423,6 +424,7 @@ class Game {
     this.canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       Sound.resumeAudio();
+      Sound.decodePendingMusic();
 
       const rect = this.canvas.getBoundingClientRect();
       const touch = e.touches[0];

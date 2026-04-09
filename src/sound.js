@@ -323,7 +323,7 @@ export async function loadCustomMusicFromDB() {
 }
 
 // Decode any pending raw audio (call after user interaction when AudioContext is active)
-async function _decodePendingMusic() {
+export async function decodePendingMusic() {
   const keys = Object.keys(_pendingMusicRaw);
   if (keys.length === 0) return;
   const c = getCtx();
@@ -402,7 +402,7 @@ export async function playMusic(levelId, offset = 0) {
 
   // Decode any pending music from IndexedDB first
   if (_pendingMusicRaw[levelId] && !customMusicBuffers[levelId]) {
-    await _decodePendingMusic();
+    await decodePendingMusic();
   }
 
   // Use custom music if available
