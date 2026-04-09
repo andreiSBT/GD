@@ -1086,24 +1086,31 @@ export class UI {
       sliderY += S(14);
 
       // Toggle switches in 2 columns
-      const colL = panelX + panelW * 0.27;
-      const colR = panelX + panelW * 0.73;
+      const colGap = S(16);
+      const colW = (panelW - S(40) - colGap) / 2;
+      const colLX = panelX + S(20);
+      const colRX = colLX + colW + colGap;
       const rowH = S(34);
 
-      const toggles = [
-        { x: colL, label: 'HITBOXES', on: showHitboxes, id: 'toggle_hitboxes' },
-        { x: colR, label: 'SHAKE', on: !localStorage.getItem('gd_no_shake'), id: 'toggle_shake' },
-        { x: colL, label: 'PARTICLES', on: !localStorage.getItem('gd_no_particles'), id: 'toggle_particles' },
-        { x: colR, label: 'LOW DETAIL', on: !!localStorage.getItem('gd_low_detail'), id: 'toggle_low_detail' },
-        { x: colL, label: 'AUTO RETRY', on: !!localStorage.getItem('gd_auto_retry'), id: 'toggle_auto_retry' },
-        { x: colR, label: 'BAR BOTTOM', on: !!localStorage.getItem('gd_bar_bottom'), id: 'toggle_bar_bottom' },
-        { x: colL, label: 'GHOST', on: !localStorage.getItem('gd_no_ghost'), id: 'toggle_ghost' },
+      const togglesL = [
+        { label: 'HITBOXES', on: showHitboxes, id: 'toggle_hitboxes' },
+        { label: 'PARTICLES', on: !localStorage.getItem('gd_no_particles'), id: 'toggle_particles' },
+        { label: 'AUTO RETRY', on: !!localStorage.getItem('gd_auto_retry'), id: 'toggle_auto_retry' },
+        { label: 'GHOST', on: !localStorage.getItem('gd_no_ghost'), id: 'toggle_ghost' },
+      ];
+      const togglesR = [
+        { label: 'SHAKE', on: !localStorage.getItem('gd_no_shake'), id: 'toggle_shake' },
+        { label: 'LOW DETAIL', on: !!localStorage.getItem('gd_low_detail'), id: 'toggle_low_detail' },
+        { label: 'BAR BOTTOM', on: !!localStorage.getItem('gd_bar_bottom'), id: 'toggle_bar_bottom' },
       ];
 
-      for (let i = 0; i < toggles.length; i++) {
-        const t = toggles[i];
-        const ty = sliderY + Math.floor(i / 2) * rowH;
-        this._drawToggleSwitch(ctx, t.x, ty, t.label, t.on, t.id);
+      for (let i = 0; i < togglesL.length; i++) {
+        const t = togglesL[i];
+        this._drawToggleSwitch(ctx, colLX + colW / 2, sliderY + i * rowH, t.label, t.on, t.id);
+      }
+      for (let i = 0; i < togglesR.length; i++) {
+        const t = togglesR[i];
+        this._drawToggleSwitch(ctx, colRX + colW / 2, sliderY + i * rowH, t.label, t.on, t.id);
       }
 
       // Close button
