@@ -2966,6 +2966,9 @@ export class UI {
   }
 
   _drawFriendChat(ctx, messages, chatFriend, startY, htmlInputActive) {
+    // Chat doesn't use page scroll
+    this.maxScrollY = 0;
+
     // Chat header with avatar
     const chatName = chatFriend ? chatFriend.name : 'Chat';
     ctx.font = 'bold 20px monospace';
