@@ -203,6 +203,19 @@ class Game {
       }
     }, 30000);
     this._startLoop();
+    // Pre-compute bot ghosts for all levels in background
+    this._botGhostCache = {};
+    setTimeout(() => {
+      for (let id = 1; id <= getLevelCount(); id++) {
+        if (LEVEL_DATA[id]) {
+          try {
+            const lvl = createLevelFromData(LEVEL_DATA[id]);
+            const botData = generateBotReplay(lvl);
+            if (botData) this._botGhostCache[id] = botData;
+          } catch {}
+        }
+      }
+    }, 2000); // delay to not block startup
   }
 
   _bindEvents() {
@@ -1461,10 +1474,16 @@ class Game {
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
-    // Generate bot ghost (used in practice mode)
-    if (this.level) {
+    // Use cached bot ghost or generate new one
+    if (!this._botGhostCache) this._botGhostCache = {};
+    if (this._botGhostCache[levelId]) {
+      this._botGhost = new ReplayGhost(this._botGhostCache[levelId]);
+    } else if (this.level) {
       const botData = generateBotReplay(this.level);
-      if (botData) this._botGhost = new ReplayGhost(botData);
+      if (botData) {
+        this._botGhostCache[levelId] = botData;
+        this._botGhost = new ReplayGhost(botData);
+      }
     }
     this._levelStartTime = performance.now();
     this._restart();
@@ -2531,7 +2550,7 @@ class Game {
       // Draw ghost (bot in practice mode)
       const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
-        const ghostPos = ghost.getPosition(this._replayFrame);
+        const ghostPos = ghost.getPosition(this._replayFrame + 30);
         if (ghostPos) {
           const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
           const gy = ghostPos.y;
