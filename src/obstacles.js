@@ -308,17 +308,6 @@ export class PlatformGroup {
     ctx.fillStyle = grad;
     ctx.fillRect(sx, this.y, this.w, this.h);
 
-    // Cover antialiasing seams between slopes and blocks
-    ctx.fillStyle = theme.platform;
-    for (const p of this.pieces) {
-      if (p.type !== 'slope') continue;
-      const he = p.hiddenEdges || new Set();
-      const px = p.x - cameraX + PLAYER_X_OFFSET;
-      if (he.has('bottom')) ctx.fillRect(px, p.y + p.h - 1, p.w, 2);
-      if (he.has('right')) ctx.fillRect(px + p.w - 1, p.y, 2, p.h);
-      if (he.has('left')) ctx.fillRect(px - 1, p.y, 2, p.h);
-    }
-
     // Neon top edge on exposed platform tops
     drawNeonGlow(ctx, theme.accent, 8);
     ctx.fillStyle = theme.accent;
@@ -335,6 +324,17 @@ export class PlatformGroup {
     clearGlow(ctx);
 
     ctx.restore();
+
+    // Cover antialiasing seams between slopes and blocks (outside clip)
+    ctx.fillStyle = theme.platform;
+    for (const p of this.pieces) {
+      if (p.type !== 'slope') continue;
+      const he = p.hiddenEdges || new Set();
+      const px = p.x - cameraX + PLAYER_X_OFFSET;
+      if (he.has('bottom')) ctx.fillRect(px, p.y + p.h - 1, p.w, 2);
+      if (he.has('right')) ctx.fillRect(px + p.w - 1, p.y, 2, p.h);
+      if (he.has('left')) ctx.fillRect(px - 1, p.y, 2, p.h);
+    }
 
     // Slope diagonal glow (drawn outside clip)
     for (const p of this.pieces) {
