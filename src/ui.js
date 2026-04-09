@@ -728,9 +728,9 @@ export class UI {
     // Coins counter
     if (coins && coins.total > 0) {
       ctx.fillStyle = '#FFD700';
-      ctx.font = 'bold 14px monospace';
+      ctx.font = `bold ${S(14)}px monospace`;
       ctx.textAlign = 'left';
-      ctx.fillText(`★ ${coins.collected}/${coins.total}`, 16, 46);
+      ctx.fillText(`★ ${coins.collected}/${coins.total}`, 16, S(44));
     }
 
     // Practice mode indicator + checkpoint buttons
@@ -745,8 +745,8 @@ export class UI {
       ctx.restore();
 
       // Checkpoint button (place manual checkpoint)
-      const cpBtnS = 36;
-      const cpX = 16, cpY = 52;
+      const cpBtnS = S(36);
+      const cpX = 16, cpY = S(48);
       this._roundRect(ctx, cpX, cpY, cpBtnS, cpBtnS, 6);
       ctx.fillStyle = 'rgba(0,200,100,0.2)';
       ctx.fill();
@@ -1154,7 +1154,7 @@ export class UI {
     ctx.fillRect(SCREEN_WIDTH / 2 - 100, infoBottom + 10, 200, 1);
     ctx.globalAlpha = 1;
 
-    const pbw = S(240), pbh = S(52), pgap = S(64);
+    const pbw = S(240), pbh = S(48), pgap = IS_MOBILE ? S(50) : S(60);
     let btnY = infoBottom + 24;
     this._drawButton(ctx, SCREEN_WIDTH / 2 - pbw / 2, btnY, pbw, pbh, 'RESUME', 'resume', '#00C864');
     btnY += pgap;
@@ -1240,6 +1240,14 @@ export class UI {
     const trackY = y;
     const trackR = trackH / 2;
 
+    // Animate disc position
+    const key = '_toggle_' + id;
+    const target = active ? 1 : 0;
+    if (this[key] == null) this[key] = target;
+    this[key] += (target - this[key]) * 0.2; // smooth lerp
+    if (Math.abs(this[key] - target) < 0.01) this[key] = target;
+    const t = this[key]; // 0 = off (left), 1 = on (right)
+
     // Label
     ctx.fillStyle = 'rgba(255,255,255,0.55)';
     ctx.font = `bold ${S(13)}px monospace`;
@@ -1247,14 +1255,31 @@ export class UI {
     ctx.textBaseline = 'middle';
     ctx.fillText(label, trackX - S(12), trackY + trackH / 2);
 
-    // Track background
+    // Track background — interpolate color
     ctx.beginPath();
     ctx.roundRect(trackX, trackY, trackW, trackH, trackR);
-    ctx.fillStyle = active ? '#00C864' : 'rgba(255,255,255,0.15)';
+    const r = Math.round(255 * (1 - t) * 0.15 + 0 * t);
+    const g = Math.round(255 * (1 - t) * 0.15 + 200 * t);
+    const b = Math.round(255 * (1 - t) * 0.15 + 100 * t);
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fill();
 
+    // ON/OFF text on the empty side
+    ctx.font = `bold ${S(9)}px monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'center';
+    if (t > 0.5) {
+      // Disc on right → show "ON" on left side
+      ctx.fillText('ON', trackX + discR + 3, trackY + trackH / 2);
+    } else {
+      // Disc on left → show "OFF" on right side
+      ctx.fillText('OFF', trackX + trackW - discR - 3, trackY + trackH / 2);
+    }
+
     // Disc
-    const discX = active ? trackX + trackW - discR - 3 : trackX + discR + 3;
+    const offX = trackX + discR + 3;
+    const onX = trackX + trackW - discR - 3;
+    const discX = offX + (onX - offX) * t;
     const discY = trackY + trackH / 2;
     ctx.beginPath();
     ctx.arc(discX, discY, discR, 0, Math.PI * 2);
