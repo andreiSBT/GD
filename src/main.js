@@ -1979,9 +1979,12 @@ class Game {
           if (result.type === 'death') {
             // Slopes are safe surfaces, except wall hits (flat vertical side)
             if (piece.type === 'slope' && !result.wall) continue;
-            const prevBottom = this.player.prevY + PLAYER_SIZE;
-            const prevTop = this.player.prevY;
-            const prevRight = this.player.prevX + PLAYER_SIZE;
+            // Use platform death hitbox bounds for side-hit detection
+            const pdi = 11; // platform death inset
+            const pdOff = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+            const prevBottom = this.player.prevY + PLAYER_SIZE - pdi - pdOff;
+            const prevTop = this.player.prevY + pdi + pdOff;
+            const prevRight = this.player.prevX + PLAYER_SIZE - pdi - pdOff;
             const pieceLeft = piece.x;
             const wasHorizInside = prevRight > pieceLeft + 4;
             const wasOnTop = wasHorizInside && this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < 8;
@@ -2000,7 +2003,7 @@ class Game {
             this._die(); return;
           } else if (result.type === 'land') {
             // If player was approaching from the left (side hit), die instead of landing
-            const prevRight = this.player.prevX + PLAYER_SIZE;
+            const prevRight = this.player.prevX + PLAYER_SIZE - 11 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
             const landPiece = result._piece || piece;
             if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
               this._die(); return;
@@ -2041,17 +2044,16 @@ class Game {
         const result = obs.checkCollision(landingRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
-            // Check if player was vertically aligned with the platform last frame
-            // (on top, below, or above) vs approaching from the side (side hit = death)
-            const prevBottom = this.player.prevY + PLAYER_SIZE;
-            const prevTop = this.player.prevY;
+            // Use platform death hitbox bounds for side-hit detection
+            const pdi = 11; // platform death inset
+            const pdOff = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
+            const prevBottom = this.player.prevY + PLAYER_SIZE - pdi - pdOff;
+            const prevTop = this.player.prevY + pdi + pdOff;
             const platTop = obs.y;
             const platBottom = obs.y + obs.h;
-            // Check if player was horizontally overlapping with platform last frame
-            const prevRight = this.player.prevX + PLAYER_SIZE;
+            const prevRight = this.player.prevX + PLAYER_SIZE - pdi - pdOff;
             const platLeft = obs.x;
             const wasHorizontallyInside = prevRight > platLeft + 4;
-            // Was on top of platform, below it, or above it (not approaching from side)
             const wasOnTop = wasHorizontallyInside && this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < 8;
             const wasBelow = wasHorizontallyInside && this.player.gravityMult > 0 && prevBottom > platBottom - 4;
             const wasOnBottom = wasHorizontallyInside && this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
@@ -2068,7 +2070,7 @@ class Game {
             return;
           } else if (result.type === 'land') {
             // If player was approaching from the left (side hit), die instead of landing
-            const prevRight = this.player.prevX + PLAYER_SIZE;
+            const prevRight = this.player.prevX + PLAYER_SIZE - 11 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
             if (prevRight <= obs.x + 4) {
               this._die(); return;
             }
