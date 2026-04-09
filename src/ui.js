@@ -2672,31 +2672,37 @@ export class UI {
       ctx.font = '13px monospace';
       ctx.fillText('Send to ' + (tp.friend?.name || '?'), SCREEN_WIDTH / 2, dlgY + 60);
 
-      // Amount selector: [ - ]  amount  [ + ]
+      // Amount selector: [ - ]  amount  [ + ] [ +5 ]
       const selY = dlgY + 85;
       const btnS = IS_MOBILE ? 52 : 44;
       const numW = 80;
-      const totalSelW = btnS * 2 + numW + 16;
+      const btn5W = btnS + 8;
+      const gap = 8;
+      const totalSelW = btnS + gap + numW + gap + btnS + gap + btn5W;
       const selX = (SCREEN_WIDTH - totalSelW) / 2;
+      let bx = selX;
 
-      this._drawButton(ctx, selX, selY, btnS, btnS, '-', 'trade_minus', '#664488', 24);
+      this._drawButton(ctx, bx, selY, btnS, btnS, '-', 'trade_minus', '#664488', 24);
+      bx += btnS + gap;
 
-      // Amount display (clickable)
-      const numX = selX + btnS + 8;
-      this._roundRect(ctx, numX, selY, numW, btnS, 8);
+      // Amount display
+      this._roundRect(ctx, bx, selY, numW, btnS, 8);
       ctx.fillStyle = 'rgba(100,60,160,0.25)';
       ctx.fill();
-      this._roundRect(ctx, numX, selY, numW, btnS, 8);
+      this._roundRect(ctx, bx, selY, numW, btnS, 8);
       ctx.strokeStyle = 'rgba(170,100,255,0.35)';
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillStyle = '#FFF';
       ctx.font = 'bold 32px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(String(tp.amount), numX + numW / 2, selY + btnS / 2 + 11);
-      this.buttons.push({ id: 'trade_type_amount', x: numX, y: selY, w: numW, h: btnS });
+      ctx.fillText(String(tp.amount), bx + numW / 2, selY + btnS / 2 + 11);
+      bx += numW + gap;
 
-      this._drawButton(ctx, selX + btnS + numW + 16, selY, btnS, btnS, '+', 'trade_plus', '#664488', 24);
+      this._drawButton(ctx, bx, selY, btnS, btnS, '+', 'trade_plus', '#664488', 24);
+      bx += btnS + gap;
+
+      this._drawButton(ctx, bx, selY, btn5W, btnS, '+5', 'trade_plus5', '#553388', 20);
 
       // Cost info
       const cost = tp.amount * 2;
