@@ -14,6 +14,7 @@ import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js'
 import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud, sendDiamondTrade, acceptDiamondTrade, declineDiamondTrade } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
+import { generateBotReplay } from './bot.js';
 import { customConfirm } from './dialogs.js';
 
 function _lerpColor(hex1, hex2, t) {
@@ -1458,6 +1459,11 @@ class Game {
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
+    // Generate bot ghost if no replay exists
+    if (!this._replayGhost && this.level) {
+      const botData = generateBotReplay(this.level);
+      if (botData) this._replayGhost = new ReplayGhost(botData);
+    }
     this._levelStartTime = performance.now();
     this._restart();
   }
