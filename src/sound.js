@@ -59,6 +59,10 @@ export async function resumeAudio() {
   if (c.state === 'suspended') await c.resume();
 }
 
+export function suspendAudio() {
+  if (ctx && ctx.state === 'running') ctx.suspend();
+}
+
 function playTone(freq, duration, type = 'sine', volume = 0.3, freqEnd = null) {
   const c = getCtx();
   const osc = c.createOscillator();
