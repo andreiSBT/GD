@@ -1986,16 +1986,17 @@ class Game {
             // Slopes are safe surfaces, except wall hits (flat vertical side)
             if (piece.type === 'slope' && !result.wall) continue;
             // Use platform death hitbox bounds for side-hit detection
-            const pdi = 6; // platform death inset
+            const pdi = 19; // platform death inset
             const pdOff = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
             const prevBottom = this.player.prevY + PLAYER_SIZE - pdi - pdOff;
             const prevTop = this.player.prevY + pdi + pdOff;
             const prevRight = this.player.prevX + PLAYER_SIZE - pdi - pdOff;
             const pieceLeft = piece.x;
             const wasHorizInside = prevRight > pieceLeft + 4;
-            const wasOnTop = wasHorizInside && this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < 8;
+            const pdTol = pdi + 2; // tolerance must cover the inset so junctions don't kill
+            const wasOnTop = wasHorizInside && this.player.gravityMult > 0 && Math.abs(prevBottom - piece.y) < pdTol;
             const wasBelow = wasHorizInside && this.player.gravityMult > 0 && prevBottom > piece.y + piece.h - 4;
-            const wasOnBottom = wasHorizInside && this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < 8;
+            const wasOnBottom = wasHorizInside && this.player.gravityMult < 0 && Math.abs(prevTop - (piece.y + piece.h)) < pdTol;
             const wasAboveInv = wasHorizInside && this.player.gravityMult < 0 && prevTop < piece.y + 4;
             // Skip death if player is rising near a slope in this group (just jumped off)
             const risingNearSlope = this.player.vy * this.player.gravityMult < 0 && obs.pieces.some(p => p.type === 'slope');
@@ -2009,7 +2010,7 @@ class Game {
             this._die(); return;
           } else if (result.type === 'land') {
             // If player was approaching from the left (side hit), die instead of landing
-            const prevRight = this.player.prevX + PLAYER_SIZE - 6 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
+            const prevRight = this.player.prevX + PLAYER_SIZE - 19 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
             const landPiece = result._piece || piece;
             if (prevRight <= landPiece.x + 4 && !result.slopeRatio) {
               this._die(); return;
@@ -2051,7 +2052,7 @@ class Game {
         if (result) {
           if (result.type === 'death') {
             // Use platform death hitbox bounds for side-hit detection
-            const pdi = 6; // platform death inset
+            const pdi = 19; // platform death inset
             const pdOff = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
             const prevBottom = this.player.prevY + PLAYER_SIZE - pdi - pdOff;
             const prevTop = this.player.prevY + pdi + pdOff;
@@ -2060,9 +2061,10 @@ class Game {
             const prevRight = this.player.prevX + PLAYER_SIZE - pdi - pdOff;
             const platLeft = obs.x;
             const wasHorizontallyInside = prevRight > platLeft + 4;
-            const wasOnTop = wasHorizontallyInside && this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < 8;
+            const pdTol = pdi + 2; // tolerance must cover the inset so junctions don't kill
+            const wasOnTop = wasHorizontallyInside && this.player.gravityMult > 0 && Math.abs(prevBottom - platTop) < pdTol;
             const wasBelow = wasHorizontallyInside && this.player.gravityMult > 0 && prevBottom > platBottom - 4;
-            const wasOnBottom = wasHorizontallyInside && this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < 8;
+            const wasOnBottom = wasHorizontallyInside && this.player.gravityMult < 0 && Math.abs(prevTop - platBottom) < pdTol;
             const wasAboveInv = wasHorizontallyInside && this.player.gravityMult < 0 && prevTop < platTop + 4;
             // Hitting platform from below = death
             if (wasBelow || wasAboveInv) {
@@ -2076,7 +2078,7 @@ class Game {
             return;
           } else if (result.type === 'land') {
             // If player was approaching from the left (side hit), die instead of landing
-            const prevRight = this.player.prevX + PLAYER_SIZE - 6 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
+            const prevRight = this.player.prevX + PLAYER_SIZE - 19 - (this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0);
             if (prevRight <= obs.x + 4) {
               this._die(); return;
             }
