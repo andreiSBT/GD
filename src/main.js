@@ -865,6 +865,38 @@ class Game {
           }
         });
       }
+    } else if (action.startsWith('friends_accept_trade_')) {
+      const idx = parseInt(action.replace('friends_accept_trade_', ''));
+      const msg = fd.messages[idx];
+      console.log('[Trade] accept idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
+      if (msg && !msg.mine && msg.type === 'trade') {
+        acceptDiamondTrade(msg.id).then(res => {
+          if (res.error) {
+            fd.notification = { text: res.error, type: 'error' };
+          } else {
+            this._diamonds = res.newTotal;
+            localStorage.setItem('gd_diamonds', String(this._diamonds));
+            msg.accepted = true;
+            fd.notification = { text: `Received ${res.received} diamonds!`, type: 'success' };
+          }
+          fd.notificationTimer = 3;
+        });
+      }
+    } else if (action.startsWith('friends_decline_trade_')) {
+      const idx = parseInt(action.replace('friends_decline_trade_', ''));
+      const msg = fd.messages[idx];
+      console.log('[Trade] decline idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
+      if (msg && !msg.mine && msg.type === 'trade') {
+        declineDiamondTrade(msg.id).then(res => {
+          if (res.error) {
+            fd.notification = { text: res.error, type: 'error' };
+          } else {
+            fd.messages.splice(idx, 1);
+            fd.notification = { text: `Declined. ${res.refunded} diamonds refunded.`, type: 'success' };
+          }
+          fd.notificationTimer = 3;
+        });
+      }
     } else if (action.startsWith('friends_accept_')) {
       const idx = parseInt(action.split('_')[2]);
       const req = fd.requests[idx];
@@ -947,38 +979,6 @@ class Game {
         fd.notification = { text: `Sent ${amount} diamonds (cost: ${cost})!`, type: 'success' };
         fd.notificationTimer = 3;
         fd.tradePopup = null;
-      }
-    } else if (action.startsWith('friends_accept_trade_')) {
-      const idx = parseInt(action.replace('friends_accept_trade_', ''));
-      const msg = fd.messages[idx];
-      console.log('[Trade] accept idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
-      if (msg && !msg.mine && msg.type === 'trade') {
-        acceptDiamondTrade(msg.id).then(res => {
-          if (res.error) {
-            fd.notification = { text: res.error, type: 'error' };
-          } else {
-            this._diamonds = res.newTotal;
-            localStorage.setItem('gd_diamonds', String(this._diamonds));
-            msg.accepted = true;
-            fd.notification = { text: `Received ${res.received} diamonds!`, type: 'success' };
-          }
-          fd.notificationTimer = 3;
-        });
-      }
-    } else if (action.startsWith('friends_decline_trade_')) {
-      const idx = parseInt(action.replace('friends_decline_trade_', ''));
-      const msg = fd.messages[idx];
-      console.log('[Trade] decline idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
-      if (msg && !msg.mine && msg.type === 'trade') {
-        declineDiamondTrade(msg.id).then(res => {
-          if (res.error) {
-            fd.notification = { text: res.error, type: 'error' };
-          } else {
-            fd.messages.splice(idx, 1);
-            fd.notification = { text: `Declined. ${res.refunded} diamonds refunded.`, type: 'success' };
-          }
-          fd.notificationTimer = 3;
-        });
       }
     } else if (action === 'friends_share_level') {
       if (fd.chatFriend) {
