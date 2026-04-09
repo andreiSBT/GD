@@ -683,7 +683,7 @@ export class JumpOrb {
     ctx.strokeStyle = color;
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(cx, cy, radius + 4 + beat * 4, 0, Math.PI * 2);
+    ctx.arc(cx, cy, radius + 6 + beat * 4, 0, Math.PI * 2);
     ctx.stroke();
 
     // Main orb
