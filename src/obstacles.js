@@ -64,7 +64,7 @@ export class Spike {
 
   checkCollision(playerRect) {
     const inset = 10;
-    const topInset = Math.round(GRID * 0.1); // forgiveness at spike tip
+    const topInset = Math.round(GRID * 0.1);
     const spikeRect = {
       x: this.x + inset,
       y: this.y + topInset,

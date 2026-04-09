@@ -1884,7 +1884,9 @@ class Game {
     }
 
     // Collision detection (before player.update so moving platform flag is set in time)
-    const playerRect = this.player.getRect();
+    const playerRect = this.player.getRect(); // default hitbox
+    const hazardRect = this.player.getHazardRect(); // full size for hazards
+    const platformRect = this.player.getPlatformRect(); // smaller for platforms
     const miniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
     const visible = this.level.getVisible(this.camera.x);
     const wasOnPlatform = this.player.onPlatform;
@@ -1892,12 +1894,12 @@ class Game {
 
     for (const obs of visible) {
       if (obs.type === 'spike') {
-        if (obs.checkCollision(playerRect) === 'death') {
+        if (obs.checkCollision(hazardRect) === 'death') {
           this._die();
           return;
         }
       } else if (obs.type === 'saw') {
-        if (obs.checkCollision(playerRect) === 'death') {
+        if (obs.checkCollision(hazardRect) === 'death') {
           this._die();
           return;
         }
@@ -1920,7 +1922,7 @@ class Game {
           }
         }
       } else if (obs.type === 'platform_group') {
-        const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
+        const result = obs.checkCollision(platformRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           // Use the exact sub-piece bounds, not the group bounding box
           const piece = result._piece || obs;
@@ -1986,7 +1988,7 @@ class Game {
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
-        const result = obs.checkCollision(playerRect, this.player.prevY + miniOffset, this.player.gravityMult);
+        const result = obs.checkCollision(platformRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
             // Check if player was vertically aligned with the platform last frame
@@ -2353,10 +2355,14 @@ class Game {
             ctx.fillRect(ox, oy, ow, oh);
           }
         }
-        // Player hitbox (actual collision rect with 4px inset)
-        const pr = this.player.getRect();
-        ctx.fillStyle = '#FFFF00';
-        ctx.globalAlpha = 0.4;
+        // Player hitboxes
+        const hr = this.player.getHazardRect();
+        ctx.fillStyle = '#FF6600';
+        ctx.globalAlpha = 0.25;
+        ctx.fillRect(hr.x - camX + PLAYER_X_OFFSET, hr.y, hr.w, hr.h);
+        const pr = this.player.getPlatformRect();
+        ctx.fillStyle = '#4488FF';
+        ctx.globalAlpha = 0.35;
         ctx.fillRect(pr.x - camX + PLAYER_X_OFFSET, pr.y, pr.w, pr.h);
         ctx.restore();
       }

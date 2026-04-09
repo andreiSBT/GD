@@ -407,6 +407,31 @@ export class Player {
     };
   }
 
+  // Full-size hitbox for hazard collision (no inset — visual shape)
+  getHazardRect() {
+    const s = this.getSize();
+    const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
+    return {
+      x: this.x + offset,
+      y: this.y + offset,
+      w: s,
+      h: s,
+    };
+  }
+
+  // Smaller hitbox for platform collision (more forgiveness)
+  getPlatformRect() {
+    const inset = 8;
+    const s = this.getSize();
+    const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
+    return {
+      x: this.x + inset + offset,
+      y: this.y + inset + offset,
+      w: s - inset * 2,
+      h: s - inset * 2,
+    };
+  }
+
   draw(ctx, cameraX, theme, alpha) {
     // Interpolate position for smooth rendering between physics steps
     const interpX = alpha != null ? this.prevX + (this.x - this.prevX) * alpha : this.x;
@@ -697,19 +722,21 @@ export class Player {
         break;
       }
       case 'egg': {
-        // Cracked egg bottom half + chick head poking out
-        const s = hs * 1.1;
-        // Egg bottom (cracked shell)
-        ctx.moveTo(-s * 0.7, -s * 0.1);
-        ctx.lineTo(-s * 0.5, -s * 0.4);
-        ctx.lineTo(-s * 0.2, -s * 0.15);
-        ctx.lineTo(0, -s * 0.45);
-        ctx.lineTo(s * 0.25, -s * 0.1);
-        ctx.lineTo(s * 0.5, -s * 0.35);
-        ctx.lineTo(s * 0.7, -s * 0.05);
-        ctx.quadraticCurveTo(s * 0.85, s * 0.5, s * 0.5, s * 0.85);
-        ctx.quadraticCurveTo(0, s * 1.05, -s * 0.5, s * 0.85);
-        ctx.quadraticCurveTo(-s * 0.85, s * 0.5, -s * 0.7, -s * 0.1);
+        // Round egg shell bottom with zigzag crack top
+        const s = hs * 1.15;
+        // Start from left of zigzag, go right along crack, then curve around bottom
+        ctx.moveTo(-s * 0.75, -s * 0.15);
+        // Zigzag crack (3 peaks like the image)
+        ctx.lineTo(-s * 0.45, -s * 0.45);
+        ctx.lineTo(-s * 0.15, -s * 0.1);
+        ctx.lineTo(s * 0.15, -s * 0.5);
+        ctx.lineTo(s * 0.45, -s * 0.1);
+        ctx.lineTo(s * 0.7, -s * 0.4);
+        ctx.lineTo(s * 0.8, -s * 0.1);
+        // Smooth round bottom
+        ctx.quadraticCurveTo(s * 0.95, s * 0.4, s * 0.6, s * 0.85);
+        ctx.quadraticCurveTo(0, s * 1.1, -s * 0.6, s * 0.85);
+        ctx.quadraticCurveTo(-s * 0.95, s * 0.4, -s * 0.75, -s * 0.15);
         ctx.closePath();
         break;
       }
