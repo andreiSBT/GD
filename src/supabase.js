@@ -361,6 +361,36 @@ export async function acceptDiamondTrade(messageId) {
   }
 }
 
+export async function declineDiamondTrade(messageId) {
+  const client = getClient();
+  if (!client || !currentAuthUser) return { error: 'Not logged in' };
+  try {
+    const { data: msg, error: fetchErr } = await client.from('friend_messages')
+      .select('*').eq('id', messageId).single();
+    if (fetchErr || !msg) return { error: 'Trade not found' };
+    if (msg.receiver_id !== currentAuthUser.id) return { error: 'Not your trade' };
+    if (msg.message_type !== 'trade') return { error: 'Not a trade' };
+    if (msg.read) return { error: 'Already processed' };
+
+    const amount = parseInt(msg.content) || 0;
+    if (amount <= 0) return { error: 'Invalid amount' };
+
+    // Refund sender (they paid 2x)
+    const refund = amount * 2;
+    const { data: senderProfile } = await client.from('profiles')
+      .select('diamonds').eq('user_id', msg.sender_id).single();
+    const senderDiamonds = (senderProfile?.diamonds || 0) + refund;
+    await client.from('profiles').update({ diamonds: senderDiamonds }).eq('user_id', msg.sender_id);
+
+    // Delete the trade message
+    await client.from('friend_messages').delete().eq('id', messageId);
+
+    return { refunded: refund };
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
 export async function resetProgressInCloud() {
   const client = getClient();
   if (!client) return;

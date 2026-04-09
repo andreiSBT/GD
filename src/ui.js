@@ -3098,13 +3098,15 @@ export class UI {
             ctx.fillText(`\u25C7 Sent ${tradeAmount * 2} diamonds (${tradeAmount} for them)`, bubbleX + 10, my + bubbleH / 2 + 4);
           } else {
             ctx.fillText(`\u25C7 ${chatFriend?.name || '?'} sent you ${tradeAmount} diamonds!`, bubbleX + 10, my + bubbleH / 2 + 4);
-            // Accept button if not yet accepted
             if (!m.accepted) {
-              const accBtnW = IS_MOBILE ? 120 : 100;
+              const accBtnW = IS_MOBILE ? 100 : 80;
+              const decBtnW = IS_MOBILE ? 100 : 80;
               const accBtnH = IS_MOBILE ? 36 : 26;
-              const accBtnX = bubbleX + bubbleW - accBtnW - 8;
-              const accBtnY = my + Math.floor((bubbleH - accBtnH) / 2);
-              this._drawButton(ctx, accBtnX, accBtnY, accBtnW, accBtnH, 'ACCEPT', `friends_accept_trade_${realIdx}`, '#AA44FF', IS_MOBILE ? 15 : 12);
+              const decBtnX = bubbleX + bubbleW - decBtnW - 8;
+              const accBtnX = decBtnX - accBtnW - 6;
+              const btnY = my + Math.floor((bubbleH - accBtnH) / 2);
+              this._drawButton(ctx, accBtnX, btnY, accBtnW, accBtnH, 'ACCEPT', `friends_accept_trade_${realIdx}`, '#AA44FF', IS_MOBILE ? 14 : 12);
+              this._drawButton(ctx, decBtnX, btnY, decBtnW, accBtnH, 'DECLINE', `friends_decline_trade_${realIdx}`, '#663333', IS_MOBILE ? 14 : 12);
             } else {
               ctx.fillStyle = '#667788';
               ctx.font = `${IS_MOBILE ? 14 : 12}px monospace`;

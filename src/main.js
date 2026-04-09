@@ -10,7 +10,7 @@ import { UI } from './ui.js';
 import { loadProgress, updateLevelProgress, incrementAttempt, initProgress } from './progress.js';
 import * as Sound from './sound.js';
 import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js';
-import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud, sendDiamondTrade, acceptDiamondTrade } from './supabase.js';
+import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud, sendDiamondTrade, acceptDiamondTrade, declineDiamondTrade } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
 import { customConfirm } from './dialogs.js';
@@ -959,6 +959,20 @@ class Game {
             localStorage.setItem('gd_diamonds', String(this._diamonds));
             msg.accepted = true;
             fd.notification = { text: `Received ${res.received} diamonds!`, type: 'success' };
+          }
+          fd.notificationTimer = 3;
+        });
+      }
+    } else if (action.startsWith('friends_decline_trade_')) {
+      const idx = parseInt(action.replace('friends_decline_trade_', ''));
+      const msg = fd.messages[idx];
+      if (msg && !msg.mine && msg.type === 'trade') {
+        declineDiamondTrade(msg.id).then(res => {
+          if (res.error) {
+            fd.notification = { text: res.error, type: 'error' };
+          } else {
+            fd.messages.splice(idx, 1);
+            fd.notification = { text: `Declined. ${res.refunded} diamonds refunded.`, type: 'success' };
           }
           fd.notificationTimer = 3;
         });
