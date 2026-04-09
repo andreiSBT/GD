@@ -1629,8 +1629,14 @@ class Game {
       if (this._replayGhost) this._replayGhost.reset();
       if (this._botGhost) this._botGhost.reset();
       this._ghostTrail = [];
+    } else {
+      // Practice checkpoint — reset ghost frame to match checkpoint position
+      const spd = SCROLL_SPEED * (this.level?.speedMult || 1);
+      const cpX = this.lastCheckpoint ? this.lastCheckpoint.x : 0;
+      this._replayFrame = Math.round(cpX / spd);
+      if (this._botGhost) this._botGhost.reset();
+      this._ghostTrail = [];
     }
-    // else: practice checkpoint — ghost continues from where it was
     this._levelStartTime = performance.now();
     // Reset theme and re-apply any color triggers before spawn point
     this._colorTransition = null;
