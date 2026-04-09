@@ -20,28 +20,28 @@ export function generateBotReplay(level) {
   const endX = endMarker.x;
   const speed = SCROLL_SPEED * (level.speedMult || 1);
 
-  // Collect hazards and platforms from live obstacles
+  // Collect all hazards and platforms (including from PlatformGroups)
   const hazards = [];
   const platforms = [];
-  for (const obs of obstacles) {
+  const _extract = (obs) => {
+    if (!obs) return;
     if (obs.type === 'spike' || obs.type === 'saw') {
       hazards.push({ x: obs.x, y: obs.y, w: obs.w || GRID, h: obs.h || GRID });
-    }
-    if (obs.type === 'platform') {
+    } else if (obs.type === 'platform') {
+      platforms.push({ x: obs.x, y: obs.y, w: obs.w || GRID, h: obs.h || GRID });
+    } else if (obs.type === 'platform_group') {
+      // Use bounding box as platform
+      platforms.push({ x: obs.x, y: obs.y, w: obs.w, h: obs.h });
+      // Also extract individual pieces
+      if (obs.pieces) {
+        for (const p of obs.pieces) _extract(p);
+      }
+    } else if (obs.type === 'slope') {
+      // Treat slopes as platforms (simplified)
       platforms.push({ x: obs.x, y: obs.y, w: obs.w || GRID, h: obs.h || GRID });
     }
-    // PlatformGroup pieces
-    if (obs.type === 'platform_group' && obs.pieces) {
-      for (const p of obs.pieces) {
-        if (p.type === 'platform') {
-          platforms.push({ x: p.x, y: p.y, w: p.w || GRID, h: p.h || GRID });
-        }
-        if (p.type === 'spike') {
-          hazards.push({ x: p.x, y: p.y, w: p.w || GRID, h: p.h || GRID });
-        }
-      }
-    }
-  }
+  };
+  for (const obs of obstacles) _extract(obs);
 
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
   let grounded = true, rotation = 0, alive = true;
