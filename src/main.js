@@ -339,7 +339,6 @@ class Game {
       if (this.state === MENU || this.state === LEVEL_SELECT || this.state === CUSTOMIZE || this.state === STATS || this.state === PAUSED || this.state === COMPLETE || this.state === FRIENDS || this.state === COMMUNITY || this.state === LEADERBOARD || this.state === SECRETS) {
         const action = this.ui.handleClick(x, y);
         if (action) {
-          console.log('[Click] action:', action, 'state:', this.state);
           // Volume slider interaction
           if (action === 'volume_music' || action === 'volume_sfx') {
             this._draggingSlider = action;
@@ -868,7 +867,6 @@ class Game {
     } else if (action.startsWith('friends_accept_trade_')) {
       const idx = parseInt(action.replace('friends_accept_trade_', ''));
       const msg = fd.messages[idx];
-      console.log('[Trade] accept idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
       if (msg && !msg.mine && msg.type === 'trade') {
         acceptDiamondTrade(msg.id).then(res => {
           if (res.error) {
@@ -885,7 +883,6 @@ class Game {
     } else if (action.startsWith('friends_decline_trade_')) {
       const idx = parseInt(action.replace('friends_decline_trade_', ''));
       const msg = fd.messages[idx];
-      console.log('[Trade] decline idx:', idx, 'msg:', msg ? { mine: msg.mine, type: msg.type, accepted: msg.accepted, id: msg.id } : 'NOT FOUND');
       if (msg && !msg.mine && msg.type === 'trade') {
         declineDiamondTrade(msg.id).then(res => {
           if (res.error) {
