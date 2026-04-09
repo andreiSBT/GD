@@ -325,15 +325,26 @@ export class PlatformGroup {
 
     ctx.restore();
 
-    // Cover antialiasing seams between slopes and blocks (outside clip)
-    ctx.fillStyle = theme.platform;
+    // Redraw slopes as filled triangles outside clip to cover antialiasing seams
+    const seamGrad = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
+    seamGrad.addColorStop(0, lighten(theme.platform, 20));
+    seamGrad.addColorStop(1, theme.platform);
     for (const p of this.pieces) {
       if (p.type !== 'slope') continue;
-      const he = p.hiddenEdges || new Set();
       const px = p.x - cameraX + PLAYER_X_OFFSET;
-      if (he.has('bottom')) ctx.fillRect(px, p.y + p.h - 1, p.w, 2);
-      if (he.has('right')) ctx.fillRect(px + p.w - 1, p.y, 2, p.h);
-      if (he.has('left')) ctx.fillRect(px - 1, p.y, 2, p.h);
+      ctx.fillStyle = seamGrad;
+      ctx.beginPath();
+      if (p.direction === 'up') {
+        ctx.moveTo(px, p.y + p.h);
+        ctx.lineTo(px + p.w, p.y + p.h);
+        ctx.lineTo(px + p.w, p.y);
+      } else {
+        ctx.moveTo(px, p.y);
+        ctx.lineTo(px, p.y + p.h);
+        ctx.lineTo(px + p.w, p.y + p.h);
+      }
+      ctx.closePath();
+      ctx.fill();
     }
 
     // Slope diagonal glow (drawn outside clip)
