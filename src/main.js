@@ -2401,15 +2401,11 @@ class Game {
             ctx.fillRect(ox, oy, ow, oh);
           }
         }
-        // Player hitboxes
+        // Player death hitbox (hazard rect)
         const hr = this.player.getHazardRect();
-        ctx.fillStyle = '#FF6600';
-        ctx.globalAlpha = 0.25;
+        ctx.fillStyle = '#FFFF00';
+        ctx.globalAlpha = 0.4;
         ctx.fillRect(hr.x - camX + PLAYER_X_OFFSET, hr.y, hr.w, hr.h);
-        const pr = this.player.getPlatformRect();
-        ctx.fillStyle = '#4488FF';
-        ctx.globalAlpha = 0.35;
-        ctx.fillRect(pr.x - camX + PLAYER_X_OFFSET, pr.y, pr.w, pr.h);
         ctx.restore();
       }
 
