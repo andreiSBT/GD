@@ -2407,9 +2407,9 @@ class Game {
             ctx.arc(ox + ow / 2, oy + oh / 2, sawR, 0, Math.PI * 2);
             ctx.fill();
           } else if (t === 'platform' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
-            ctx.fillStyle = 'rgba(68,136,255,0.25)';
-            ctx.strokeStyle = '#4488FF';
-            ctx.lineWidth = 2;
+            ctx.fillStyle = 'rgba(68,136,255,0.5)';
+            ctx.strokeStyle = '#66AAFF';
+            ctx.lineWidth = 4;
             if (t === 'platform_group') {
               for (const p of obs.pieces) {
                 const px = p.x - camX + PLAYER_X_OFFSET;
