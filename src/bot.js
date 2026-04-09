@@ -36,18 +36,24 @@ function runSimulation(obstacles, endX, speed, forceJumpZones) {
       }
     }
 
-    // Look-ahead for hazards
+    // Look-ahead for hazards (check at ground level AND current Y)
     if (!wantJump) {
       const lookX = x + speed * LOOK_AHEAD_FRAMES;
-      const futureRect = { x: x + inset, y: y + inset, w: lookX - x + PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
-      for (const obs of obstacles) {
-        if (obs.type !== 'spike' && obs.type !== 'saw') continue;
-        const hr = { x: obs.x + 10, y: obs.y + 10, w: (obs.w || GRID) - 20, h: (obs.h || GRID) - 20 };
-        if (futureRect.x < hr.x + hr.w && futureRect.x + futureRect.w > hr.x &&
-            futureRect.y < hr.y + hr.h && futureRect.y + futureRect.h > hr.y) {
-          wantJump = true;
-          break;
+      const groundY = GROUND_Y - PLAYER_SIZE;
+      // Check both current Y and ground Y for hazards
+      const checkYs = [y, groundY];
+      for (const checkY of checkYs) {
+        const futureRect = { x: x + inset, y: checkY + inset, w: lookX - x + PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+        for (const obs of obstacles) {
+          if (obs.type !== 'spike' && obs.type !== 'saw') continue;
+          const hr = { x: obs.x + 10, y: obs.y + 10, w: (obs.w || GRID) - 20, h: (obs.h || GRID) - 20 };
+          if (futureRect.x < hr.x + hr.w && futureRect.x + futureRect.w > hr.x &&
+              futureRect.y < hr.y + hr.h && futureRect.y + futureRect.h > hr.y) {
+            wantJump = true;
+            break;
+          }
         }
+        if (wantJump) break;
       }
     }
 
