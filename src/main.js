@@ -2558,21 +2558,28 @@ class Game {
       // Draw ghost (bot in practice mode)
       const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
       if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
-        const ghostPos = ghost.getPosition(this._replayFrame + 30);
-        if (ghostPos) {
-          const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
-          const gy = ghostPos.y;
-          const sz = PLAYER_SIZE;
-          ctx.save();
-          ctx.globalAlpha = 0.2;
-          ctx.translate(gx + sz / 2, gy + sz / 2);
-          ctx.rotate(ghostPos.rotation);
-          ctx.fillStyle = 'rgba(255,255,255,0.25)';
-          ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
-          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(-sz / 2, -sz / 2, sz, sz);
-          ctx.restore();
+        const ghostFrame = this._replayFrame + 30;
+        // Don't show if past end of replay
+        if (ghostFrame <= ghost.totalFrames) {
+          const ghostPos = ghost.getPosition(ghostFrame);
+          if (ghostPos) {
+            const gx = ghostPos.x - camX + PLAYER_X_OFFSET;
+            // Only draw if on screen
+            if (gx > -PLAYER_SIZE && gx < SCREEN_WIDTH + PLAYER_SIZE) {
+              const gy = ghostPos.y;
+              const sz = PLAYER_SIZE;
+              ctx.save();
+              ctx.globalAlpha = 0.25;
+              ctx.translate(gx + sz / 2, gy + sz / 2);
+              ctx.rotate(ghostPos.rotation);
+              ctx.fillStyle = 'rgba(255,255,255,0.3)';
+              ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
+              ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(-sz / 2, -sz / 2, sz, sz);
+              ctx.restore();
+            }
+          }
         }
       }
 
