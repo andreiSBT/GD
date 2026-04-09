@@ -2369,8 +2369,8 @@ class Game {
     }
     if (this.player.alive) this._replayFrame++;
 
-    // Update ghost trail (store positions like player trail — even when dead)
-    if (this._botGhost && this.practiceMode) {
+    // Update ghost trail (freeze when player dead)
+    if (this._botGhost && this.practiceMode && this.player.alive) {
       const gf = Math.min(this._replayFrame + 30, this._botGhost.totalFrames);
       const gp = this._botGhost.getPosition(gf);
       if (gp) {
