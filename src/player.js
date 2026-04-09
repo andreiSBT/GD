@@ -3,7 +3,7 @@
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
-  PLAYER_COLORS, CUBE_SHAPES
+  PLAYER_COLORS, CUBE_SHAPES, isLowDetail
 } from './settings.js';
 import { getAuthUser } from './supabase.js';
 
@@ -496,8 +496,10 @@ export class Player {
       trailColor = `hsl(${hue}, 100%, 60%)`;
     }
     ctx.save();
-    ctx.shadowColor = trailColor;
-    ctx.shadowBlur = 8;
+    if (!isLowDetail()) {
+      ctx.shadowColor = trailColor;
+      ctx.shadowBlur = 8;
+    }
     ctx.fillStyle = trailColor;
     const dashed = this.trailStyle === 'dotted';
     if (dashed) {
@@ -1158,6 +1160,7 @@ export class Player {
   }
 
   _drawGlow(ctx, size, color) {
+    if (isLowDetail()) return;
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
     ctx.save();

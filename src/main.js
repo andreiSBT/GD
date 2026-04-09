@@ -3,6 +3,7 @@
 import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, SCROLL_SPEED, FPS } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
+import { clearSpriteCache } from './obstacles.js';
 import { Editor } from './editor.js';
 import { ParticleSystem } from './particles.js';
 import { Renderer } from './renderer.js';
@@ -702,6 +703,7 @@ class Game {
     } else if (action === 'toggle_low_detail') {
       if (localStorage.getItem('gd_low_detail')) localStorage.removeItem('gd_low_detail');
       else localStorage.setItem('gd_low_detail', '1');
+      clearSpriteCache();
     } else if (action === 'toggle_auto_retry') {
       if (localStorage.getItem('gd_auto_retry')) localStorage.removeItem('gd_auto_retry');
       else localStorage.setItem('gd_auto_retry', '1');

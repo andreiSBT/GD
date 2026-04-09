@@ -1,6 +1,6 @@
 /** Background, parallax, ground rendering with neon glow effects */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, GROUND_Y, GROUND_H, GRID } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, GROUND_Y, GROUND_H, GRID, isLowDetail } from './settings.js';
 
 export class Renderer {
   constructor() {
@@ -59,7 +59,7 @@ export class Renderer {
         }
 
         // Subtle glow on larger particles
-        if (obj.size > 3) {
+        if (obj.size > 3 && !isLowDetail()) {
           ctx.globalAlpha = alpha * 0.3;
           ctx.shadowColor = theme.accent;
           ctx.shadowBlur = 6 + pulseIntensity * 4;
@@ -83,8 +83,10 @@ export class Renderer {
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, GROUND_H);
 
     // Neon top line with glow
-    ctx.shadowColor = theme.groundLine;
-    ctx.shadowBlur = 12 + pulseIntensity * 8;
+    if (!isLowDetail()) {
+      ctx.shadowColor = theme.groundLine;
+      ctx.shadowBlur = 12 + pulseIntensity * 8;
+    }
     ctx.fillStyle = theme.groundLine;
     ctx.globalAlpha = Math.min(1, 1 + pulseIntensity * 0.3);
     ctx.fillRect(0, GROUND_Y, SCREEN_WIDTH, 3);

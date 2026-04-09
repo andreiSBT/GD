@@ -7,6 +7,7 @@ export const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userA
 export const UI_SCALE = IS_MOBILE ? 1.25 : 1;
 
 export function setScreenWidth(w) { SCREEN_WIDTH = w; }
+export function isLowDetail() { return !!localStorage.getItem('gd_low_detail'); }
 export const FPS = 60;
 
 // Grid
