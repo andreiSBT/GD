@@ -681,7 +681,7 @@ export class JumpOrb {
     const glowSize = 15 + beat * 12;
     drawNeonGlow(ctx, color, glowSize);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2 + beat * 2;
+    ctx.lineWidth = 3 + beat * 1.5;
     ctx.beginPath();
     ctx.arc(cx, cy, radius + 4 + beat * 4, 0, Math.PI * 2);
     ctx.stroke();
