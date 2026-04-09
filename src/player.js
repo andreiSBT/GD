@@ -407,15 +407,16 @@ export class Player {
     };
   }
 
-  // Full-size hitbox for hazard collision (no inset — visual shape)
+  // Hazard hitbox (2px inset per side)
   getHazardRect() {
+    const inset = 2;
     const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
-      x: this.x + offset,
-      y: this.y + offset,
-      w: s,
-      h: s,
+      x: this.x + inset + offset,
+      y: this.y + inset + offset,
+      w: s - inset * 2,
+      h: s - inset * 2,
     };
   }
 
