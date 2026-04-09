@@ -1932,8 +1932,9 @@ class Game {
 
     // Collision detection (before player.update so moving platform flag is set in time)
     const playerRect = this.player.getRect(); // default hitbox
-    const hazardRect = this.player.getHazardRect(); // full size for hazards
-    const platformRect = this.player.getPlatformRect(); // smaller for platforms
+    const hazardRect = this.player.getHazardRect(); // for spike/saw death
+    const platformRect = this.player.getPlatformRect(); // small square for platform death
+    const landingRect = this.player.getLandingRect(); // larger for landing detection
     const miniOffset = this.player.mini ? (PLAYER_SIZE - this.player.getSize()) / 2 : 0;
     const visible = this.level.getVisible(this.camera.x);
     const wasOnPlatform = this.player.onPlatform;
@@ -1969,7 +1970,7 @@ class Game {
           }
         }
       } else if (obs.type === 'platform_group') {
-        const result = obs.checkCollision(platformRect, this.player.prevY + miniOffset, this.player.gravityMult);
+        const result = obs.checkCollision(landingRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           // Use the exact sub-piece bounds, not the group bounding box
           const piece = result._piece || obs;
@@ -2035,7 +2036,7 @@ class Game {
       } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
-        const result = obs.checkCollision(platformRect, this.player.prevY + miniOffset, this.player.gravityMult);
+        const result = obs.checkCollision(landingRect, this.player.prevY + miniOffset, this.player.gravityMult);
         if (result) {
           if (result.type === 'death') {
             // Check if player was vertically aligned with the platform last frame

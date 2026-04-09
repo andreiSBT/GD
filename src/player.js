@@ -420,17 +420,29 @@ export class Player {
     };
   }
 
-  // Smaller hitbox for platform collision — narrow on X for side forgiveness, near-full Y for stable landing
+  // Platform death hitbox — square, centered, small (for side-hit death detection)
   getPlatformRect() {
-    const xInset = 11;
-    const yInset = 2;
+    const inset = 11;
     const s = this.getSize();
     const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
     return {
-      x: this.x + xInset + offset,
-      y: this.y + yInset + offset,
-      w: s - xInset * 2,
-      h: s - yInset * 2,
+      x: this.x + inset + offset,
+      y: this.y + inset + offset,
+      w: s - inset * 2,
+      h: s - inset * 2,
+    };
+  }
+
+  // Landing hitbox — wide for stable ground detection (used for collision checks, not death)
+  getLandingRect() {
+    const inset = 4;
+    const s = this.getSize();
+    const offset = this.mini ? (PLAYER_SIZE - s) / 2 : 0;
+    return {
+      x: this.x + inset + offset,
+      y: this.y + inset + offset,
+      w: s - inset * 2,
+      h: s - inset * 2,
     };
   }
 
