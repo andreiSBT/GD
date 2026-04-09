@@ -203,20 +203,6 @@ class Game {
       }
     }, 30000);
     this._startLoop();
-    // Pre-compute bot ghosts one at a time to not block UI
-    this._botGhostCache = {};
-    const _computeBot = (id) => {
-      if (id > getLevelCount()) return;
-      if (LEVEL_DATA[id]) {
-        try {
-          const lvl = createLevelFromData(LEVEL_DATA[id]);
-          const botData = generateBotReplay(lvl);
-          if (botData) this._botGhostCache[id] = botData;
-        } catch {}
-      }
-      setTimeout(() => _computeBot(id + 1), 100);
-    };
-    setTimeout(() => _computeBot(1), 3000);
   }
 
   _bindEvents() {
@@ -1478,14 +1464,10 @@ class Game {
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
-    // Use cached bot ghost or generate new one
-    if (!this._botGhostCache) this._botGhostCache = {};
-    if (this._botGhostCache[levelId]) {
-      this._botGhost = new ReplayGhost(this._botGhostCache[levelId]);
-    } else if (this.level) {
+    // Generate bot ghost fresh each time
+    if (this.level) {
       const botData = generateBotReplay(this.level);
       if (botData) {
-        this._botGhostCache[levelId] = botData;
         this._botGhost = new ReplayGhost(botData);
       }
     }

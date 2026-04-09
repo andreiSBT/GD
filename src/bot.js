@@ -4,7 +4,7 @@ import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './
 
 const MAX_FRAMES = 60 * 120;
 const RECORD_INTERVAL = 1;
-const LOOKAHEAD = 15; // simulate 15 frames ahead
+const LOOKAHEAD = 30; // simulate full jump arc ahead
 
 function checkDeath(x, y, obstacles) {
   const inset = 4;
