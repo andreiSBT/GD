@@ -274,24 +274,33 @@ export class PlatformGroup {
 
     ctx.save();
 
-    // Build clip path from all pieces (rects for platforms, triangles for slopes)
+    // Build clip path from all pieces, extending hidden edges by 1px to prevent seams
     ctx.beginPath();
     for (const p of this.pieces) {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
       if (p.type === 'slope') {
+        const he = p.hiddenEdges || new Set();
+        const eb = he.has('bottom') ? 1 : 0;
+        const er = he.has('right') ? 1 : 0;
+        const el = he.has('left') ? 1 : 0;
         if (p.direction === 'up') {
-          ctx.moveTo(px, p.y + p.h);
-          ctx.lineTo(px + p.w, p.y + p.h);
-          ctx.lineTo(px + p.w, p.y);
+          ctx.moveTo(px - el, p.y + p.h + eb);
+          ctx.lineTo(px + p.w + er, p.y + p.h + eb);
+          ctx.lineTo(px + p.w + er, p.y);
           ctx.closePath();
         } else {
-          ctx.moveTo(px, p.y);
-          ctx.lineTo(px, p.y + p.h);
-          ctx.lineTo(px + p.w, p.y + p.h);
+          ctx.moveTo(px - el, p.y);
+          ctx.lineTo(px - el, p.y + p.h + eb);
+          ctx.lineTo(px + p.w + er, p.y + p.h + eb);
           ctx.closePath();
         }
       } else {
-        ctx.rect(px, p.y, p.w, p.h);
+        const he = p.hiddenEdges || new Set();
+        const el = he.has('left') ? 1 : 0;
+        const er = he.has('right') ? 1 : 0;
+        const et = he.has('top') ? 1 : 0;
+        const eb = he.has('bottom') ? 1 : 0;
+        ctx.rect(px - el, p.y - et, p.w + el + er, p.h + et + eb);
       }
     }
     ctx.clip();
