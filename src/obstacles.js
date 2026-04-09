@@ -279,13 +279,24 @@ export class PlatformGroup {
     for (const p of this.pieces) {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
       if (p.type === 'slope') {
-        // Use full bounding rect for slopes in clip to prevent seams with adjacent blocks
+        // Extend slope triangle on hidden edges to cover seams with adjacent blocks
         const he = p.hiddenEdges || new Set();
-        const el = he.has('left') ? 1 : 0;
-        const er = he.has('right') ? 1 : 0;
-        const et = he.has('top') ? 1 : 0;
-        const eb = he.has('bottom') ? 1 : 0;
-        ctx.rect(px - el, p.y - et, p.w + el + er, p.h + et + eb);
+        const eb = he.has('bottom') ? 3 : 0;
+        const er = he.has('right') ? 3 : 0;
+        const el = he.has('left') ? 3 : 0;
+        if (p.direction === 'up') {
+          // Triangle: bottom-left → bottom-right → top-right
+          ctx.moveTo(px - el, p.y + p.h + eb);
+          ctx.lineTo(px + p.w + er, p.y + p.h + eb);
+          ctx.lineTo(px + p.w + er, p.y);
+          ctx.closePath();
+        } else {
+          // Triangle: top-left → bottom-left → bottom-right
+          ctx.moveTo(px - el, p.y);
+          ctx.lineTo(px - el, p.y + p.h + eb);
+          ctx.lineTo(px + p.w + er, p.y + p.h + eb);
+          ctx.closePath();
+        }
       } else {
         const he = p.hiddenEdges || new Set();
         const el = he.has('left') ? 1 : 0;
