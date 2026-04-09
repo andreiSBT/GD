@@ -2369,8 +2369,8 @@ class Game {
     }
     if (this.player.alive) this._replayFrame++;
 
-    // Update ghost trail (store positions like player trail)
-    if (this._botGhost && this.practiceMode && this.player.alive) {
+    // Update ghost trail (store positions like player trail — even when dead)
+    if (this._botGhost && this.practiceMode) {
       const gf = Math.min(this._replayFrame + 30, this._botGhost.totalFrames);
       const gp = this._botGhost.getPosition(gf);
       if (gp) {
@@ -2569,7 +2569,7 @@ class Game {
 
       // Draw ghost (bot in practice mode) with green trail
       const ghost = this.practiceMode ? this._botGhost : this._replayGhost;
-      if (ghost && this.player.alive && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
+      if (ghost && !localStorage.getItem('gd_no_ghost') && this.practiceMode) {
         // Find ghost frame that is exactly 30 frames ahead of player's current frame
         const ghostFrame = Math.min(this._replayFrame + 30, ghost.totalFrames);
         if (this._replayFrame <= ghost.totalFrames) {
