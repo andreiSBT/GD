@@ -752,22 +752,35 @@ export class JumpPad {
 
     ctx.save();
 
-    // Base
+    const cx = sx + GRID / 2;
+    const baseY = sy + this.h;
+    const padR = GRID * 0.42;
+
+    // Rounded pad body — semicircle on top, flat bottom
     drawNeonGlow(ctx, color, flash ? 20 : 8);
     ctx.fillStyle = flash ? '#FFF' : color;
     ctx.beginPath();
-    ctx.moveTo(sx + 5, sy + this.h);
-    ctx.lineTo(sx + GRID / 2, sy);
-    ctx.lineTo(sx + GRID - 5, sy + this.h);
+    ctx.arc(cx, baseY - padR * 0.3, padR, Math.PI, 0);
+    ctx.lineTo(cx + padR, baseY);
+    ctx.lineTo(cx - padR, baseY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Inner highlight
+    ctx.fillStyle = flash ? 'rgba(255,255,255,0.6)' : lighten(color, 50);
+    ctx.beginPath();
+    ctx.arc(cx, baseY - padR * 0.3, padR * 0.6, Math.PI, 0);
+    ctx.lineTo(cx + padR * 0.6, baseY - 2);
+    ctx.lineTo(cx - padR * 0.6, baseY - 2);
     ctx.closePath();
     ctx.fill();
 
     // Arrow up indicator
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.beginPath();
-    ctx.moveTo(sx + GRID / 2 - 5, sy + this.h - 4);
-    ctx.lineTo(sx + GRID / 2, sy + 6);
-    ctx.lineTo(sx + GRID / 2 + 5, sy + this.h - 4);
+    ctx.moveTo(cx, baseY - padR * 0.8);
+    ctx.lineTo(cx - 4, baseY - padR * 0.4);
+    ctx.lineTo(cx + 4, baseY - padR * 0.4);
     ctx.closePath();
     ctx.fill();
 
