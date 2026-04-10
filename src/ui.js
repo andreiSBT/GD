@@ -1098,7 +1098,6 @@ export class UI {
       const togglesL = [
         { label: 'HITBOXES', on: showHitboxes, id: 'toggle_hitboxes' },
         { label: 'PARTICLES', on: !localStorage.getItem('gd_no_particles'), id: 'toggle_particles' },
-        { label: 'LDM', on: !!localStorage.getItem('gd_low_detail'), id: 'toggle_low_detail' },
         { label: 'AUTO RETRY', on: !!localStorage.getItem('gd_auto_retry'), id: 'toggle_auto_retry' },
         { label: 'GHOST', on: !localStorage.getItem('gd_no_ghost'), id: 'toggle_ghost' },
       ];
