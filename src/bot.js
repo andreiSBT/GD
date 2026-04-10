@@ -90,15 +90,19 @@ export function generateBotReplay(level) {
 
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
-    // Decision: jump if it helps survive longer
+    // Decision: jump ONLY if jump survives all frames and no-jump doesn't
     if (grounded) {
       const noJumpFrames = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
-      const jumpFrames = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-      // Jump if: jump survives longer, or jump survives all and no-jump doesn't
-      if (jumpFrames > noJumpFrames) {
-        vy = JUMP_VEL;
-        grounded = false;
-        rotation -= 90;
+      if (noJumpFrames < LOOKAHEAD) {
+        // We'll die if we don't jump. Does jumping save us fully?
+        const jumpFrames = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
+        if (jumpFrames >= LOOKAHEAD) {
+          // Jump saves us!
+          vy = JUMP_VEL;
+          grounded = false;
+          rotation -= 90;
+        }
+        // If jump also dies, don't jump — wait for better timing
       }
     }
 
