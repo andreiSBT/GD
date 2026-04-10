@@ -2049,7 +2049,7 @@ class Game {
     this.player.onPlatform = false;
 
     for (const obs of visible) {
-      if (obs.type === 'spike') {
+      if (obs.type === 'spike' || obs.type === 'mini_spike') {
         if (obs.checkCollision(hazardRect) === 'death') {
           this._die();
           return;

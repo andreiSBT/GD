@@ -15,6 +15,7 @@ const NAV_BAR_PAD = 8;
 const TOOL_CATEGORIES = [
   { id: 'hazards', label: 'HAZARDS', color: '#FF4444', tools: [
     { id: 'spike', label: 'Spike', color: '#FF4444' },
+    { id: 'mini_spike', label: 'Mini', color: '#FF8866' },
     { id: 'saw:1', label: 'Saw S', color: '#FF6666', toolType: 'saw', subType: '1' },
     { id: 'saw:2', label: 'Saw M', color: '#FF4444', toolType: 'saw', subType: '2' },
     { id: 'saw:3', label: 'Saw L', color: '#FF2222', toolType: 'saw', subType: '3' },
@@ -973,7 +974,7 @@ export class Editor {
     if (this.selectedTool === 'move') { this.touchPaintPending = false; return; }
 
     // In paint swipe mode, swiping places/erases objects instead of scrolling
-    const paintableTools = ['spike', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
+    const paintableTools = ['spike', 'mini_spike', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
     const paintSwipe = this.swipeMode === 'paint' && paintableTools.includes(this.selectedTool);
     if (touchCount === 1 && y > TOOLBAR_H && (paintSwipe || eraseSwipe)) {
@@ -1429,10 +1430,9 @@ export class Editor {
 
     const obj = { type: this.selectedTool, x: gx, y: gy };
 
-    if (this.selectedTool === 'spike') {
+    if (this.selectedTool === 'spike' || this.selectedTool === 'mini_spike') {
       if (this.rotation !== 0) obj.rot = this.rotation;
       if (this.rotation === 180) {
-        // Spike class uses top-down gy for rot=180, convert from ground-relative
         obj.y = Math.floor(GROUND_Y / GRID) - gy - 1;
       }
     }
@@ -2048,7 +2048,7 @@ export class Editor {
     ctx.stroke();
 
     // Draw object dots on the minimap (skip hazards, orbs, pads)
-    const navHidden = new Set(['spike', 'saw', 'orb', 'pad', 'platform', 'slope', 'moving', 'transport']);
+    const navHidden = new Set(['spike', 'mini_spike', 'saw', 'orb', 'pad', 'platform', 'slope', 'moving', 'transport']);
     for (const o of this.objects) {
       if (navHidden.has(o.type)) continue;
       const ox = o.x * GRID;
@@ -2188,6 +2188,19 @@ export class Editor {
       ctx.moveTo(0, -GRID / 2 + 2);
       ctx.lineTo(-GRID / 2 + 4, GRID / 2 - 2);
       ctx.lineTo(GRID / 2 - 4, GRID / 2 - 2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    } else if (this.selectedTool === 'mini_spike') {
+      ctx.fillStyle = '#FF8866';
+      ctx.save();
+      const mh = GRID * 0.5;
+      ctx.translate(sx + GRID / 2, sy + GRID - mh / 2);
+      ctx.rotate((this.rotation * Math.PI) / 180);
+      ctx.beginPath();
+      ctx.moveTo(0, -mh / 2 + 2);
+      ctx.lineTo(-GRID / 2 + 6, mh / 2 - 1);
+      ctx.lineTo(GRID / 2 - 6, mh / 2 - 1);
       ctx.closePath();
       ctx.fill();
       ctx.restore();
@@ -2815,7 +2828,7 @@ export class Editor {
     drawRow('Total Objects', String(info.objectCount), '#FFF');
 
     // Categories
-    const hazards = (c.spike || 0) + (c.saw || 0);
+    const hazards = (c.spike || 0) + (c.mini_spike || 0) + (c.saw || 0);
     const blocks = (c.platform || 0) + (c.slope || 0) + (c.moving || 0) + (c.transport || 0);
     const orbs = (c.orb || 0);
     const pads = (c.pad || 0);

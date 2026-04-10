@@ -123,6 +123,89 @@ export class Spike {
 }
 
 // ============================================================
+// MINI SPIKE - half-height triangle hazard
+// ============================================================
+export class MiniSpike {
+  constructor(gx, gy, rot = 0) {
+    this.type = 'mini_spike';
+    this.gx = gx;
+    this.gy = gy;
+    this.rot = rot;
+    this.x = gx * GRID;
+    this.w = GRID;
+    this.h = GRID * 0.5;
+    this._updateY();
+  }
+
+  _updateY() {
+    if (this.rot === 180) {
+      this.y = this.gy * GRID;
+    } else {
+      this.y = GROUND_Y - this.gy * GRID - this.h;
+    }
+  }
+
+  checkCollision(playerRect) {
+    const inset = 12;
+    const topInset = 6;
+    const spikeRect = {
+      x: this.x + inset,
+      y: this.y + topInset,
+      w: this.w - inset * 2,
+      h: this.h - topInset,
+    };
+    if (rectsOverlap(playerRect, spikeRect)) return 'death';
+    return null;
+  }
+
+  draw(ctx, cameraX, theme) {
+    const sx = this.x - cameraX + PLAYER_X_OFFSET;
+    if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
+    const sy = this.y;
+
+    const key = `minispike_${this.rot}_${theme.spike}_${theme.accent}`;
+    const spriteH = this.h;
+    const sprite = getCachedSprite(key, GRID, spriteH, (c) => {
+      const halfW = GRID / 2;
+      const halfH = spriteH / 2;
+      c.translate(halfW, halfH);
+      c.rotate((this.rot * Math.PI) / 180);
+
+      drawNeonGlow(c, theme.accent, 8);
+      const grad = c.createLinearGradient(0, -halfH, 0, halfH);
+      grad.addColorStop(0, theme.spike);
+      grad.addColorStop(1, theme.accent);
+      c.fillStyle = grad;
+      c.beginPath();
+      c.moveTo(0, -halfH + 2);
+      c.lineTo(-halfW + 6, halfH - 1);
+      c.lineTo(halfW - 6, halfH - 1);
+      c.closePath();
+      c.fill();
+
+      c.fillStyle = 'rgba(255,255,255,0.15)';
+      c.beginPath();
+      c.moveTo(0, -halfH + 8);
+      c.lineTo(-halfW + 14, halfH - 3);
+      c.lineTo(halfW - 14, halfH - 3);
+      c.closePath();
+      c.fill();
+
+      clearGlow(c);
+      c.strokeStyle = theme.accent;
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(0, -halfH + 2);
+      c.lineTo(-halfW + 6, halfH - 1);
+      c.lineTo(halfW - 6, halfH - 1);
+      c.closePath();
+      c.stroke();
+    });
+    ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
+  }
+}
+
+// ============================================================
 // PLATFORM - with grid texture + glow edges
 // ============================================================
 export class Platform {
@@ -1627,6 +1710,8 @@ export function createObstacle(obj) {
   switch (obj.type) {
     case 'spike':
       obs = new Spike(obj.x, obj.y || 0, obj.rot || 0); break;
+    case 'mini_spike':
+      obs = new MiniSpike(obj.x, obj.y || 0, obj.rot || 0); break;
     case 'platform':
       obs = new Platform(obj.x, obj.y, obj.w || 1, obj.h || 1); break;
     case 'moving':
