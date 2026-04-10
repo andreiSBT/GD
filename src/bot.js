@@ -18,7 +18,26 @@ function checkAll(x, y, prevY, obstacles) {
     } else if (obs.type === 'platform' || obs.type === 'platform_group') {
       const r = obs.checkCollision(pr, prevY, 1);
       if (r) {
-        if (r.type === 'death') return { dead: true };
+        // Platform side-hit: only die if we're clearly hitting the side (moving into it)
+        // Ignore side-death if we're falling or already near platform top
+        if (r.type === 'death') {
+          // Check if it's a spike inside the group (real death) vs side hit (can survive)
+          if (obs.type === 'platform_group' && obs.pieces) {
+            // Check if any spike in group kills us
+            let spikeKill = false;
+            for (const p of obs.pieces) {
+              if ((p.type === 'spike' || p.type === 'slope') && p.checkCollision) {
+                const sr = p.checkCollision(pr);
+                if (sr === 'death') { spikeKill = true; break; }
+              }
+            }
+            if (spikeKill) return { dead: true };
+            // Side hit on platform — treat as landing on top instead
+            if (r.y != null) { landed = true; landY = r.y; }
+          } else {
+            return { dead: true };
+          }
+        }
         if (r.type === 'land' && !landed) { landed = true; landY = r.y; }
       }
     }
