@@ -2581,12 +2581,15 @@ class Game {
         // Find ghost frame that is exactly 30 frames ahead of player's current frame
         const ghostFrame = Math.min(this._replayFrame + 30, ghost.totalFrames);
         if (this._replayFrame <= ghost.totalFrames) {
-          // Draw continuous green line trail
+          // Draw glowing continuous green line trail
           const ghostTrail = this._ghostTrail || [];
           if (ghostTrail.length > 1) {
             ctx.save();
+            // Outer glow
+            ctx.shadowColor = '#00FF88';
+            ctx.shadowBlur = 12;
             ctx.strokeStyle = '#00FF88';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.lineJoin = 'round';
             ctx.lineCap = 'round';
             ctx.beginPath();
@@ -2598,8 +2601,13 @@ class Game {
               if (!started) { ctx.moveTo(sx, t.y); started = true; }
               else ctx.lineTo(sx, t.y);
             }
-            // Fade: draw with gradient alpha
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.4;
+            ctx.stroke();
+            // Inner bright line
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#AAFFCC';
+            ctx.globalAlpha = 0.6;
             ctx.stroke();
             ctx.globalAlpha = 1;
             ctx.restore();
