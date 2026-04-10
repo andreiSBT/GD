@@ -1613,6 +1613,7 @@ class Game {
       if (this._replayGhost) this._replayGhost.reset();
       if (this._botGhost) this._botGhost.reset();
       this._ghostTrail = [];
+      this._ghostFinished = false;
     } else {
       // Practice checkpoint — reset ghost frame to match checkpoint position
       const spd = SCROLL_SPEED * (this.level?.speedMult || 1);
@@ -1620,6 +1621,7 @@ class Game {
       this._replayFrame = Math.round(cpX / spd);
       if (this._botGhost) this._botGhost.reset();
       this._ghostTrail = [];
+      this._ghostFinished = false;
     }
     this._levelStartTime = performance.now();
     // Reset theme and re-apply any color triggers before spawn point
@@ -2359,20 +2361,30 @@ class Game {
     }
     if (this.player.alive) this._replayFrame++;
 
-    // Update ghost trail (freeze when player dead)
+    // Update ghost trail (freeze when player dead or ghost finished)
     if (this._botGhost && this.practiceMode && this.player.alive) {
       const gf = Math.min(this._replayFrame + 30, this._botGhost.totalFrames);
-      if (gf <= this._botGhost.totalFrames) {
-        const gp = this._botGhost.getPosition(gf);
-        if (gp) {
-          if (!this._ghostTrail) this._ghostTrail = [];
-          // Store ghost Y but use fixed X offset from player
-          const ghostX = this.player.x + SCROLL_SPEED * (this.level?.speedMult || 1) * 30;
-          this._ghostTrail.push({ x: ghostX, y: gp.y + PLAYER_SIZE / 2 });
-          if (this._ghostTrail.length > 45) this._ghostTrail.shift();
-          // Store current ghost Y for drawing
-          this._ghostY = gp.y;
+      const gp = this._botGhost.getPosition(gf);
+      if (gp) {
+        if (!this._ghostTrail) this._ghostTrail = [];
+        const ghostSpd = SCROLL_SPEED * (this.level?.speedMult || 1);
+        const ghostX = this.player.x + ghostSpd * 30;
+
+        // If ghost reached end (last frame), freeze position
+        if (!this._ghostFinished && gf >= this._botGhost.totalFrames) {
+          this._ghostFinished = true;
+          this._ghostFinalX = ghostX;
+          this._ghostFinalY = gp.y;
         }
+
+        const finalX = this._ghostFinished ? this._ghostFinalX : ghostX;
+        const finalY = this._ghostFinished ? this._ghostFinalY : gp.y;
+
+        this._ghostTrail.push({ x: finalX, y: finalY + PLAYER_SIZE / 2 });
+        // Keep long trail (fills screen)
+        if (this._ghostTrail.length > 200) this._ghostTrail.shift();
+        this._ghostY = finalY;
+        this._ghostX = finalX;
       }
     }
 
@@ -2569,54 +2581,35 @@ class Game {
         // Find ghost frame that is exactly 30 frames ahead of player's current frame
         const ghostFrame = Math.min(this._replayFrame + 30, ghost.totalFrames);
         if (this._replayFrame <= ghost.totalFrames) {
-          // Draw green dashed trail from stored ghost positions (like player trail)
+          // Draw continuous green trail
           const ghostTrail = this._ghostTrail || [];
           if (ghostTrail.length > 1) {
             ctx.save();
             ctx.fillStyle = '#00FF88';
-            const dashLen = 10, gapLen = 12, h = 6;
-            let drawing = true, segLeft = dashLen;
+            const h = 5;
             for (let i = 1; i < ghostTrail.length; i++) {
               const prev = ghostTrail[i - 1];
               const cur = ghostTrail[i];
               const px = prev.x - camX + PLAYER_X_OFFSET;
               const cx = cur.x - camX + PLAYER_X_OFFSET;
+              // Skip if off screen
+              if (px > SCREEN_WIDTH + 10 && cx > SCREEN_WIDTH + 10) continue;
+              if (px < -10 && cx < -10) continue;
               const py = prev.y, cy = cur.y;
-              const dx = cx - px, dy = cy - py;
-              const segDist = Math.sqrt(dx * dx + dy * dy);
-              if (segDist < 0.5) continue;
-
-              let consumed = 0;
-              while (consumed < segDist) {
-                const step = Math.min(segLeft, segDist - consumed);
-                if (drawing) {
-                  const t0 = consumed / segDist;
-                  const t1 = (consumed + step) / segDist;
-                  const x0 = px + dx * t0, y0 = py + dy * t0;
-                  const x1 = px + dx * t1, y1 = py + dy * t1;
-                  const progress = i / ghostTrail.length;
-                  ctx.globalAlpha = 0.15 + progress * 0.5;
-                  ctx.fillRect(Math.min(x0, x1), Math.min(y0, y1) - h / 2,
-                    Math.abs(x1 - x0) + 2, Math.abs(y1 - y0) + h);
-                }
-                consumed += step;
-                segLeft -= step;
-                if (segLeft <= 0) {
-                  drawing = !drawing;
-                  segLeft = drawing ? dashLen : gapLen;
-                }
-              }
+              const w = Math.abs(cx - px) + 1;
+              const progress = i / ghostTrail.length;
+              ctx.globalAlpha = 0.1 + progress * 0.4;
+              ctx.fillRect(Math.min(px, cx), Math.min(py, cy) - h / 2, w, Math.abs(cy - py) + h);
             }
             ctx.globalAlpha = 1;
             ctx.restore();
           }
 
-          // Draw ghost cube — fixed distance ahead of player
-          const ghostSpd = SCROLL_SPEED * (this.level?.speedMult || 1);
-          const fixedOffset = ghostSpd * 30; // exactly 30 frames ahead
+          // Draw ghost cube
           const ghostY = this._ghostY != null ? this._ghostY : GROUND_Y - PLAYER_SIZE;
+          const ghostX = this._ghostX != null ? this._ghostX : this.player.x;
           {
-            let gx = this.player.x + fixedOffset - camX + PLAYER_X_OFFSET;
+            let gx = ghostX - camX + PLAYER_X_OFFSET;
             if (gx > -PLAYER_SIZE && gx < SCREEN_WIDTH + PLAYER_SIZE) {
               const gy = ghostY;
               const sz = PLAYER_SIZE;
