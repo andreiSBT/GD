@@ -2381,8 +2381,8 @@ class Game {
         const finalY = this._ghostFinished ? this._ghostFinalY : gp.y;
 
         this._ghostTrail.push({ x: finalX, y: finalY + PLAYER_SIZE / 2 });
-        // Keep long trail (fills screen)
-        if (this._ghostTrail.length > 200) this._ghostTrail.shift();
+        // Keep very long trail (extends off screen)
+        if (this._ghostTrail.length > 800) this._ghostTrail.shift();
         this._ghostY = finalY;
         this._ghostX = finalX;
       }
@@ -2581,26 +2581,26 @@ class Game {
         // Find ghost frame that is exactly 30 frames ahead of player's current frame
         const ghostFrame = Math.min(this._replayFrame + 30, ghost.totalFrames);
         if (this._replayFrame <= ghost.totalFrames) {
-          // Draw continuous green trail
+          // Draw continuous green line trail
           const ghostTrail = this._ghostTrail || [];
           if (ghostTrail.length > 1) {
             ctx.save();
-            ctx.fillStyle = '#00FF88';
-            const h = 5;
-            for (let i = 1; i < ghostTrail.length; i++) {
-              const prev = ghostTrail[i - 1];
-              const cur = ghostTrail[i];
-              const px = prev.x - camX + PLAYER_X_OFFSET;
-              const cx = cur.x - camX + PLAYER_X_OFFSET;
-              // Skip if off screen
-              if (px > SCREEN_WIDTH + 10 && cx > SCREEN_WIDTH + 10) continue;
-              if (px < -10 && cx < -10) continue;
-              const py = prev.y, cy = cur.y;
-              const w = Math.abs(cx - px) + 1;
-              const progress = i / ghostTrail.length;
-              ctx.globalAlpha = 0.1 + progress * 0.4;
-              ctx.fillRect(Math.min(px, cx), Math.min(py, cy) - h / 2, w, Math.abs(cy - py) + h);
+            ctx.strokeStyle = '#00FF88';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            let started = false;
+            for (let i = 0; i < ghostTrail.length; i++) {
+              const t = ghostTrail[i];
+              const sx = t.x - camX + PLAYER_X_OFFSET;
+              if (sx < -50 || sx > SCREEN_WIDTH + 50) { started = false; continue; }
+              if (!started) { ctx.moveTo(sx, t.y); started = true; }
+              else ctx.lineTo(sx, t.y);
             }
+            // Fade: draw with gradient alpha
+            ctx.globalAlpha = 0.5;
+            ctx.stroke();
             ctx.globalAlpha = 1;
             ctx.restore();
           }
