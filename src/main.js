@@ -2625,7 +2625,9 @@ class Game {
               ctx.globalAlpha = 0.3;
               ctx.translate(gx + sz / 2, gy + sz / 2);
               const gRot = ghost.getPosition(ghostFrame);
-              ctx.rotate(gRot ? gRot.rotation : 0);
+              const rawDeg = gRot ? gRot.rotation : 0;
+              const snapped = Math.round(rawDeg / 90) * 90;
+              ctx.rotate(snapped * Math.PI / 180);
               // Green tinted ghost
               ctx.fillStyle = 'rgba(0,255,136,0.35)';
               ctx.fillRect(-sz / 2, -sz / 2, sz, sz);
