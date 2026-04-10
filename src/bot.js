@@ -32,6 +32,7 @@ function checkAll(x, y, prevY, obstacles) {
   return { dead: false, landed, landY };
 }
 
+// Returns number of frames survived (numFrames = survived all)
 function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJump, numFrames) {
   let x = startX, y = startY, vy = startVy, grounded = startGrounded;
 
@@ -52,7 +53,7 @@ function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJ
     }
 
     const result = checkAll(x, y, prevY, obstacles);
-    if (result.dead) return false;
+    if (result.dead) return f;
     if (result.landed) {
       y = result.landY - PLAYER_SIZE;
       vy = 0;
@@ -67,7 +68,7 @@ function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJ
 
     x += speed;
   }
-  return true;
+  return numFrames; // survived all
 }
 
 export function generateBotReplay(level) {
@@ -89,17 +90,15 @@ export function generateBotReplay(level) {
 
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
-    // Decision: jump only if it helps survive
+    // Decision: jump if it helps survive longer
     if (grounded) {
-      const dieNoJump = !simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
-      if (dieNoJump) {
-        const surviveJump = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-        if (surviveJump) {
-          vy = JUMP_VEL;
-          grounded = false;
-          rotation -= 90;
-        }
-        // If both die, DON'T jump — maybe ground is safer
+      const noJumpFrames = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
+      const jumpFrames = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
+      // Jump if: jump survives longer, or jump survives all and no-jump doesn't
+      if (jumpFrames > noJumpFrames) {
+        vy = JUMP_VEL;
+        grounded = false;
+        rotation -= 90;
       }
     }
 
