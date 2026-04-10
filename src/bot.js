@@ -92,7 +92,21 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
 
     // Collision
     const result = checkAll(x, y, prevY, obstacles);
-    if (result.dead) return { frames, deathFrame: frame, deathX: x, completed: false };
+    if (result.dead) {
+      // Log what killed us
+      const inset = 4;
+      const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+      for (const obs of obstacles) {
+        if (!obs.checkCollision) continue;
+        if (obs.type === 'spike' || obs.type === 'saw') {
+          if (obs.checkCollision(pr) === 'death') { console.log('[Bot] Killed by', obs.type, 'at', obs.x, obs.y, 'rot:', obs.rot, 'player at', Math.round(x), Math.round(y)); break; }
+        } else if (obs.type === 'platform' || obs.type === 'platform_group') {
+          const r = obs.checkCollision(pr, prevY, 1);
+          if (r && r.type === 'death') { console.log('[Bot] Killed by', obs.type, 'side at', obs.x, obs.y, obs.w, 'x', obs.h, 'player at', Math.round(x), Math.round(y)); break; }
+        }
+      }
+      return { frames, deathFrame: frame, deathX: x, completed: false };
+    }
     if (result.landed) { y = result.landY - PLAYER_SIZE; vy = 0; grounded = true; }
 
     // Edge detection
