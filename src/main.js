@@ -2134,7 +2134,7 @@ class Game {
             this.player._snapRotation();
           }
         }
-      } else if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
+      } else if (obs.type === 'platform' || obs.type === 'mini_block' || obs.type === 'moving' || obs.type === 'transport') {
         // Skip collision with transport that just arrived (grace period so player flies off cleanly)
         if (obs.type === 'transport' && obs.arrived && obs.arrivedFrames < 12) continue;
         const result = obs.checkCollision(landingRect, this.player.prevY + miniOffset, this.player.gravityMult);
@@ -2507,7 +2507,7 @@ class Game {
             ctx.beginPath();
             ctx.arc(ox + ow / 2, oy + oh / 2, sawR, 0, Math.PI * 2);
             ctx.fill();
-          } else if (t === 'platform' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
+          } else if (t === 'platform' || t === 'mini_block' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
             ctx.fillStyle = 'rgba(68,136,255,0.5)';
             ctx.strokeStyle = '#66AAFF';
             ctx.lineWidth = 4;

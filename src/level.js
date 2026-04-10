@@ -73,7 +73,7 @@ export class Level {
 
   _mergePlatforms() {
     // Group touching platforms AND slopes into PlatformGroups
-    const solids = this.obstacles.filter(o => o.type === 'platform' || o.type === 'slope');
+    const solids = this.obstacles.filter(o => o.type === 'platform' || o.type === 'mini_block' || o.type === 'slope');
     if (solids.length < 2) {
       this._computeAdjacentEdges();
       return;
@@ -126,7 +126,7 @@ export class Level {
   _computeAdjacentEdges() {
     // For each slope, check which of its edges touch a platform or another slope
     // hidden edges: 'bottom', 'left', 'right' (slope diagonal edge is never hidden)
-    const solids = this.obstacles.filter(o => o.type === 'platform' || o.type === 'slope');
+    const solids = this.obstacles.filter(o => o.type === 'platform' || o.type === 'mini_block' || o.type === 'slope');
     for (const obs of solids) {
       obs.hiddenEdges = obs.hiddenEdges || new Set();
     }

@@ -22,6 +22,7 @@ const TOOL_CATEGORIES = [
   ]},
   { id: 'platforms', label: 'BLOCKS', color: '#4488FF', tools: [
     { id: 'platform', label: 'Platform', color: '#4488FF' },
+    { id: 'mini_block', label: 'Mini B', color: '#6699FF' },
     { id: 'slope:up', label: 'Slope ↗', color: '#88CCFF', toolType: 'slope', subType: 'up' },
     { id: 'slope:down', label: 'Slope ↘', color: '#88CCFF', toolType: 'slope', subType: 'down' },
     { id: 'moving', label: 'Moving', color: '#44AAFF' },
@@ -974,7 +975,7 @@ export class Editor {
     if (this.selectedTool === 'move') { this.touchPaintPending = false; return; }
 
     // In paint swipe mode, swiping places/erases objects instead of scrolling
-    const paintableTools = ['spike', 'mini_spike', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
+    const paintableTools = ['spike', 'mini_spike', 'mini_block', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
     const paintSwipe = this.swipeMode === 'paint' && paintableTools.includes(this.selectedTool);
     if (touchCount === 1 && y > TOOLBAR_H && (paintSwipe || eraseSwipe)) {
@@ -2048,7 +2049,7 @@ export class Editor {
     ctx.stroke();
 
     // Draw object dots on the minimap (skip hazards, orbs, pads)
-    const navHidden = new Set(['spike', 'mini_spike', 'saw', 'orb', 'pad', 'platform', 'slope', 'moving', 'transport']);
+    const navHidden = new Set(['spike', 'mini_spike', 'saw', 'orb', 'pad', 'platform', 'mini_block', 'slope', 'moving', 'transport']);
     for (const o of this.objects) {
       if (navHidden.has(o.type)) continue;
       const ox = o.x * GRID;
@@ -2204,6 +2205,9 @@ export class Editor {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+    } else if (this.selectedTool === 'mini_block') {
+      ctx.fillStyle = '#6699FF';
+      ctx.fillRect(sx, sy + GRID * 0.5, GRID, GRID * 0.5);
     } else if (this.selectedTool === 'platform') {
       ctx.fillStyle = '#4488FF';
       ctx.fillRect(sx, sy, GRID, GRID);
@@ -2829,7 +2833,7 @@ export class Editor {
 
     // Categories
     const hazards = (c.spike || 0) + (c.mini_spike || 0) + (c.saw || 0);
-    const blocks = (c.platform || 0) + (c.slope || 0) + (c.moving || 0) + (c.transport || 0);
+    const blocks = (c.platform || 0) + (c.mini_block || 0) + (c.slope || 0) + (c.moving || 0) + (c.transport || 0);
     const orbs = (c.orb || 0);
     const pads = (c.pad || 0);
     const coins = (c.coin || 0);
