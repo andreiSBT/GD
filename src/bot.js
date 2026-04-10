@@ -71,11 +71,15 @@ function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJ
 // Run one full attempt with a set of forced jump frames
 function runAttempt(obstacles, endX, speed, jumpSet) {
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
-  let grounded = true, rotation = 0;
+  let grounded = true, rotation = 0, targetRotation = 0;
   const frames = [];
 
   for (let frame = 0; frame < MAX_FRAMES; frame++) {
     if (x >= endX) break;
+
+    // Smooth rotation lerp (like player)
+    rotation += (targetRotation - rotation) * 0.25;
+    if (Math.abs(targetRotation - rotation) < 0.5) rotation = targetRotation;
 
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10,
       r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
@@ -100,7 +104,7 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
     if (doJump && grounded) {
       vy = JUMP_VEL;
       grounded = false;
-      rotation -= 90;
+      targetRotation -= 90;
     }
 
     // Physics
