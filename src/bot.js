@@ -97,6 +97,7 @@ export function generateBotReplay(level) {
       vy = JUMP_VEL;
       grounded = false;
       rotation -= 90;
+      if (frame < 200) console.log('[Bot] JUMP at frame:', frame, 'x:', Math.round(x), 'y:', Math.round(y));
     }
 
     // Physics
