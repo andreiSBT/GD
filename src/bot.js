@@ -3,9 +3,9 @@
 import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './settings.js';
 
 const MAX_FRAMES = 60 * 120;
-const LOOKAHEAD = 50;
-const MAX_ATTEMPTS = 10;
-const SIM_LOOKAHEAD = 20; // inner sim lookahead (shorter to keep fast)
+const LOOKAHEAD = 30;
+const MAX_ATTEMPTS = 8;
+const SIM_LOOKAHEAD = 12;
 
 function checkAll(x, y, prevY, obstacles) {
   const inset = 4;
@@ -46,28 +46,11 @@ function checkAll(x, y, prevY, obstacles) {
   return { dead: false, landed, landY };
 }
 
-// Simulate with smart auto-jump (bot keeps playing during sim)
-function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJumpNow, numFrames) {
+function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJump, numFrames) {
   let x = startX, y = startY, vy = startVy, grounded = startGrounded;
-  if (doJumpNow && grounded) { vy = JUMP_VEL; grounded = false; }
+  if (doJump && grounded) { vy = JUMP_VEL; grounded = false; }
 
   for (let f = 0; f < numFrames; f++) {
-    // Auto-jump: if grounded and danger ahead, jump
-    if (grounded && f > 0) {
-      let dieSoon = false;
-      let sx = x, sy = y, svy = 0;
-      for (let s = 0; s < SIM_LOOKAHEAD; s++) {
-        const sprev = sy;
-        sy += svy;
-        if (sy >= GROUND_Y - PLAYER_SIZE) { sy = GROUND_Y - PLAYER_SIZE; svy = 0; }
-        const sr = checkAll(sx, sy, sprev, obstacles);
-        if (sr.dead) { dieSoon = true; break; }
-        if (sr.landed) { sy = sr.landY - PLAYER_SIZE; svy = 0; }
-        sx += speed;
-      }
-      if (dieSoon) { vy = JUMP_VEL; grounded = false; }
-    }
-
     const prevY = y;
     if (!grounded) vy += GRAVITY;
     y += vy;
@@ -102,26 +85,20 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10,
       r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
-    // Jump decision — wait for optimal timing
+    // Jump decision: not too early, not too late
     let doJump = false;
     if (grounded) {
       const noJumpSurvival = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
 
       if (jumpSet.has(frame)) {
-        // Forced jump from learning
         const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
         if (jumpSurvival > noJumpSurvival) doJump = true;
-      } else if (noJumpSurvival < LOOKAHEAD) {
-        // We'll die soon — but wait for best timing
-        // Only jump if: jump survives full lookahead, OR we die in < 5 frames (urgent)
+      } else if (noJumpSurvival < 10) {
+        // Danger within 10 frames — check if jump helps
         const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-        if (jumpSurvival >= LOOKAHEAD) {
+        if (jumpSurvival >= LOOKAHEAD || jumpSurvival > noJumpSurvival + 5) {
           doJump = true;
-        } else if (noJumpSurvival < 5) {
-          // Emergency: about to die, jump if it helps at all
-          if (jumpSurvival > noJumpSurvival) doJump = true;
         }
-        // Otherwise wait — maybe next frame has better timing
       }
     }
 
