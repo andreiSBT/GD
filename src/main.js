@@ -1430,16 +1430,26 @@ class Game {
     let bestY = GROUND_Y - PLAYER_SIZE; // default: ground level
     if (!this.level) return bestY;
 
-    for (const obs of this.level.obstacles) {
-      if (obs.type !== 'platform') continue;
+    const checkPlatform = (obs) => {
       // Platform must overlap horizontally with the player
-      if (pixelX + PLAYER_SIZE <= obs.x || pixelX >= obs.x + obs.w) continue;
+      if (pixelX + PLAYER_SIZE <= obs.x || pixelX >= obs.x + obs.w) return;
       // Platform top must be at or below the spawn point
       const platTop = obs.y;
-      if (platTop < pixelY) continue;
-      // Pick the closest one below
+      if (platTop < pixelY) return;
+      // Pick the closest one below (highest platTop that's still below spawn)
       const landY = platTop - PLAYER_SIZE;
       if (landY < bestY) bestY = landY;
+    };
+
+    for (const obs of this.level.obstacles) {
+      if (obs.type === 'platform' || obs.type === 'moving' || obs.type === 'transport') {
+        checkPlatform(obs);
+      } else if (obs.type === 'platform_group') {
+        for (const p of obs.pieces) {
+          if (p.type === 'slope') continue;
+          checkPlatform(p);
+        }
+      }
     }
     return bestY;
   }
