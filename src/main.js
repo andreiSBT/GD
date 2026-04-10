@@ -2069,7 +2069,7 @@ class Game {
           this._die();
           return;
         }
-      } else if (obs.type === 'slope') {
+      } else if (obs.type === 'slope' || obs.type === 'mini_slope') {
         const result = obs.checkCollision(playerRect, this.player.prevY, this.player.gravityMult);
         if (result && result.type === 'land') {
           // Allow jumping off slope — don't land if vy is strongly upward
@@ -2517,7 +2517,7 @@ class Game {
             ctx.beginPath();
             ctx.arc(ox + ow / 2, oy + oh / 2, sawR, 0, Math.PI * 2);
             ctx.fill();
-          } else if (t === 'platform' || t === 'mini_block' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope') {
+          } else if (t === 'platform' || t === 'mini_block' || t === 'platform_group' || t === 'moving' || t === 'transport' || t === 'slope' || t === 'mini_slope') {
             ctx.fillStyle = 'rgba(68,136,255,0.5)';
             ctx.strokeStyle = '#66AAFF';
             ctx.lineWidth = 4;

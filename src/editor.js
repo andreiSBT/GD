@@ -25,6 +25,8 @@ const TOOL_CATEGORIES = [
     { id: 'mini_block', label: 'Mini B', color: '#6699FF' },
     { id: 'slope:up', label: 'Slope ↗', color: '#88CCFF', toolType: 'slope', subType: 'up' },
     { id: 'slope:down', label: 'Slope ↘', color: '#88CCFF', toolType: 'slope', subType: 'down' },
+    { id: 'mini_slope:up', label: 'M.Slp ↗', color: '#AADDFF', toolType: 'mini_slope', subType: 'up' },
+    { id: 'mini_slope:down', label: 'M.Slp ↘', color: '#AADDFF', toolType: 'mini_slope', subType: 'down' },
     { id: 'moving', label: 'Moving', color: '#44AAFF' },
     { id: 'transport', label: 'Transport', color: '#44FF88' },
   ]},
@@ -975,7 +977,7 @@ export class Editor {
     if (this.selectedTool === 'move') { this.touchPaintPending = false; return; }
 
     // In paint swipe mode, swiping places/erases objects instead of scrolling
-    const paintableTools = ['spike', 'mini_spike', 'mini_block', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
+    const paintableTools = ['spike', 'mini_spike', 'mini_block', 'mini_slope', 'saw', 'orb', 'pad', 'checkpoint', 'end', 'coin', 'color_trigger'];
     const eraseSwipe = this.swipeMode === 'paint' && this.selectedTool === 'erase';
     const paintSwipe = this.swipeMode === 'paint' && paintableTools.includes(this.selectedTool);
     if (touchCount === 1 && y > TOOLBAR_H && (paintSwipe || eraseSwipe)) {
@@ -1431,8 +1433,8 @@ export class Editor {
 
     const obj = { type: this.selectedTool, x: gx, y: gy };
 
-    // Mini block: detect top/bottom half of grid cell
-    if (this.selectedTool === 'mini_block') {
+    // Mini block/slope: detect top/bottom half of grid cell
+    if (this.selectedTool === 'mini_block' || this.selectedTool === 'mini_slope') {
       const cellTopY = GROUND_Y - (gy + 1) * GRID;
       const mouseInCell = this.mouseY - cellTopY;
       if (mouseInCell < GRID / 2) {
@@ -1445,6 +1447,10 @@ export class Editor {
       if (this.rotation === 180) {
         obj.y = Math.floor(GROUND_Y / GRID) - gy - 1;
       }
+    }
+
+    if (this.selectedTool === 'mini_slope') {
+      obj.direction = this.subType || 'up';
     }
 
     if (this.selectedTool === 'orb') {
@@ -2058,7 +2064,7 @@ export class Editor {
     ctx.stroke();
 
     // Draw object dots on the minimap (skip hazards, orbs, pads)
-    const navHidden = new Set(['spike', 'mini_spike', 'saw', 'orb', 'pad', 'platform', 'mini_block', 'slope', 'moving', 'transport']);
+    const navHidden = new Set(['spike', 'mini_spike', 'saw', 'orb', 'pad', 'platform', 'mini_block', 'slope', 'mini_slope', 'moving', 'transport']);
     for (const o of this.objects) {
       if (navHidden.has(o.type)) continue;
       const ox = o.x * GRID;
@@ -2219,6 +2225,25 @@ export class Editor {
       const cellTopY = GROUND_Y - (this.hoverGy + 1) * GRID;
       const inTop = this.mouseY - cellTopY < GRID / 2;
       ctx.fillRect(sx, inTop ? sy : sy + GRID * 0.5, GRID, GRID * 0.5);
+    } else if (this.selectedTool === 'mini_slope') {
+      ctx.fillStyle = '#AADDFF';
+      const cellTopY2 = GROUND_Y - (this.hoverGy + 1) * GRID;
+      const inTop2 = this.mouseY - cellTopY2 < GRID / 2;
+      const msy = inTop2 ? sy : sy + GRID * 0.5;
+      const msh = GRID * 0.5;
+      const dir = this.subType || 'up';
+      ctx.beginPath();
+      if (dir === 'up') {
+        ctx.moveTo(sx, msy + msh);
+        ctx.lineTo(sx + GRID, msy + msh);
+        ctx.lineTo(sx + GRID, msy);
+      } else {
+        ctx.moveTo(sx, msy);
+        ctx.lineTo(sx, msy + msh);
+        ctx.lineTo(sx + GRID, msy + msh);
+      }
+      ctx.closePath();
+      ctx.fill();
     } else if (this.selectedTool === 'platform') {
       ctx.fillStyle = '#4488FF';
       ctx.fillRect(sx, sy, GRID, GRID);
@@ -2844,7 +2869,7 @@ export class Editor {
 
     // Categories
     const hazards = (c.spike || 0) + (c.mini_spike || 0) + (c.saw || 0);
-    const blocks = (c.platform || 0) + (c.mini_block || 0) + (c.slope || 0) + (c.moving || 0) + (c.transport || 0);
+    const blocks = (c.platform || 0) + (c.mini_block || 0) + (c.slope || 0) + (c.mini_slope || 0) + (c.moving || 0) + (c.transport || 0);
     const orbs = (c.orb || 0);
     const pads = (c.pad || 0);
     const coins = (c.coin || 0);

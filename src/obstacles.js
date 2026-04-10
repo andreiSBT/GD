@@ -1740,6 +1740,12 @@ export function createObstacle(obj) {
       obs = new ColorTrigger(obj.x, obj.y || 0, obj.colorType || 'blue', obj.customTheme || null, obj.duration || 0.6); break;
     case 'saw':
       obs = new SawBlade(obj.x, obj.y || 0, obj.radius || 1); break;
+    case 'mini_slope': {
+      const msy = obj.halfTop ? obj.y + 0.5 : obj.y;
+      obs = new Slope(obj.x, msy, 1, 0.5, obj.direction || 'up');
+      obs.type = 'mini_slope';
+      break;
+    }
     case 'slope':
       obs = new Slope(obj.x, obj.y || 0, obj.w || 2, obj.h || 2, obj.direction || 'up'); break;
     default:
