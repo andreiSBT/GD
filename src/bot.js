@@ -99,6 +99,7 @@ export function generateBotReplay(level) {
       rotation -= 90;
       if (frame < 200) console.log('[Bot] JUMP at frame:', frame, 'x:', Math.round(x), 'y:', Math.round(y));
     }
+    if (frame >= 80 && frame <= 95) console.log('[Bot] f:', frame, 'x:', Math.round(x), 'y:', Math.round(y), 'vy:', vy.toFixed(1), 'g:', grounded, 'willDie:', willDie, 'wJ:', wantJump);
 
     // Physics
     const prevY = y;
