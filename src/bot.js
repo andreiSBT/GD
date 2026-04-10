@@ -81,7 +81,7 @@ export function generateBotReplay(level) {
   const speed = SCROLL_SPEED * (level.speedMult || 1);
 
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
-  let grounded = true, rotation = 0;
+  let grounded = true, rotation = 0, wantJump = false;
   const frames = [];
 
   for (let frame = 0; frame < MAX_FRAMES; frame++) {
@@ -89,17 +89,14 @@ export function generateBotReplay(level) {
 
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
-    // Decision: jump or not?
-    if (grounded) {
-      const surviveNoJump = simFrames(x, y, vy, grounded, speed, obstacles, false, LOOKAHEAD);
-      if (!surviveNoJump) {
-        const surviveJump = simFrames(x, y, vy, grounded, speed, obstacles, true, LOOKAHEAD);
-        if (surviveJump || !surviveNoJump) {
-          vy = JUMP_VEL;
-          grounded = false;
-          rotation -= 90;
-        }
-      }
+    // Decision: always check if we'll die, even mid-air
+    const willDie = !simFrames(x, y, vy, grounded, speed, obstacles, false, LOOKAHEAD);
+    if (willDie) wantJump = true;
+    if (grounded && wantJump) {
+      wantJump = false;
+      vy = JUMP_VEL;
+      grounded = false;
+      rotation -= 90;
     }
 
     // Physics
