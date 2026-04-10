@@ -71,7 +71,7 @@ function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJ
 // Run one full attempt with a set of forced jump frames
 function runAttempt(obstacles, endX, speed, jumpSet) {
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
-  let grounded = true, rotation = 0, targetRotation = 0;
+  let grounded = true, rotation = 0;
   const frames = [];
 
   for (let frame = 0; frame < MAX_FRAMES; frame++) {
@@ -100,14 +100,8 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
     if (doJump && grounded) {
       vy = JUMP_VEL;
       grounded = false;
-      targetRotation -= 90;
+      rotation -= 90;
     }
-
-    // Smooth rotation toward target
-    rotation += (targetRotation - rotation) * 0.3;
-    if (Math.abs(targetRotation - rotation) < 1) rotation = targetRotation;
-    // Snap on landing
-    if (grounded) rotation = targetRotation;
 
     // Physics
     const prevY = y;
