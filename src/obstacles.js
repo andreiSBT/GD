@@ -1712,10 +1712,12 @@ export function createObstacle(obj) {
       obs = new Spike(obj.x, obj.y || 0, obj.rot || 0); break;
     case 'mini_spike':
       obs = new MiniSpike(obj.x, obj.y || 0, obj.rot || 0); break;
-    case 'mini_block':
-      obs = new Platform(obj.x, obj.y, obj.w || 1, 0.5);
+    case 'mini_block': {
+      const mby = obj.halfTop ? obj.y + 0.5 : obj.y;
+      obs = new Platform(obj.x, mby, obj.w || 1, 0.5);
       obs.type = 'mini_block';
       break;
+    }
     case 'platform':
       obs = new Platform(obj.x, obj.y, obj.w || 1, obj.h || 1); break;
     case 'moving':

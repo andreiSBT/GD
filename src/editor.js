@@ -1431,6 +1431,15 @@ export class Editor {
 
     const obj = { type: this.selectedTool, x: gx, y: gy };
 
+    // Mini block: detect top/bottom half of grid cell
+    if (this.selectedTool === 'mini_block') {
+      const cellTopY = GROUND_Y - (gy + 1) * GRID;
+      const mouseInCell = this.mouseY - cellTopY;
+      if (mouseInCell < GRID / 2) {
+        obj.halfTop = true;
+      }
+    }
+
     if (this.selectedTool === 'spike' || this.selectedTool === 'mini_spike') {
       if (this.rotation !== 0) obj.rot = this.rotation;
       if (this.rotation === 180) {
@@ -2207,7 +2216,9 @@ export class Editor {
       ctx.restore();
     } else if (this.selectedTool === 'mini_block') {
       ctx.fillStyle = '#6699FF';
-      ctx.fillRect(sx, sy + GRID * 0.5, GRID, GRID * 0.5);
+      const cellTopY = GROUND_Y - (this.hoverGy + 1) * GRID;
+      const inTop = this.mouseY - cellTopY < GRID / 2;
+      ctx.fillRect(sx, inTop ? sy : sy + GRID * 0.5, GRID, GRID * 0.5);
     } else if (this.selectedTool === 'platform') {
       ctx.fillStyle = '#4488FF';
       ctx.fillRect(sx, sy, GRID, GRID);
