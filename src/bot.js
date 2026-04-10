@@ -4,7 +4,7 @@ import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './
 
 const MAX_FRAMES = 60 * 120;
 const RECORD_INTERVAL = 1;
-const LOOKAHEAD = 30;
+const LOOKAHEAD = 60;
 
 // Check all obstacles — returns { dead, landed, landY }
 function checkAll(x, y, prevY, obstacles) {
