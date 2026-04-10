@@ -4,34 +4,43 @@ import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './
 
 const MAX_FRAMES = 60 * 120;
 const RECORD_INTERVAL = 1;
-const LOOKAHEAD = 30; // simulate full jump arc ahead
+const LOOKAHEAD = 30;
 
-function checkDeath(x, y, prevY, obstacles) {
+// Check all obstacles — returns { dead, landed, landY }
+function checkAll(x, y, prevY, obstacles) {
   const inset = 4;
   const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+  let landed = false, landY = y;
+
   for (const obs of obstacles) {
-    if ((obs.type === 'spike' || obs.type === 'saw') && obs.checkCollision) {
-      if (obs.checkCollision(pr) === 'death') return true;
-    }
-    // PlatformGroups can contain spikes — check them too
-    if (obs.type === 'platform_group' && obs.checkCollision) {
-      const result = obs.checkCollision(pr, prevY, 1);
-      if (result && result.type === 'death') return true;
+    if (!obs.checkCollision) continue;
+
+    if (obs.type === 'spike' || obs.type === 'saw') {
+      const r = obs.checkCollision(pr);
+      if (r === 'death') return { dead: true };
+    } else if (obs.type === 'platform' || obs.type === 'platform_group') {
+      const r = obs.checkCollision(pr, prevY, 1);
+      if (r) {
+        if (r.type === 'death') return { dead: true };
+        if (r.type === 'land' && !landed) {
+          landed = true;
+          landY = r.y;
+        }
+      }
     }
   }
-  return false;
+  return { dead: false, landed, landY };
 }
 
-function miniSim(startX, startY, startVy, startGrounded, speed, obstacles, doJump, frames) {
+function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJump, numFrames) {
   let x = startX, y = startY, vy = startVy, grounded = startGrounded;
-  const inset = 4;
 
   if (doJump && grounded) {
     vy = JUMP_VEL;
     grounded = false;
   }
 
-  for (let f = 0; f < frames; f++) {
+  for (let f = 0; f < numFrames; f++) {
     const prevY = y;
     if (!grounded) vy += GRAVITY;
     y += vy;
@@ -42,24 +51,23 @@ function miniSim(startX, startY, startVy, startGrounded, speed, obstacles, doJum
       grounded = true;
     }
 
-    // Platform landing
-    const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
-    for (const obs of obstacles) {
-      if ((obs.type === 'platform' || obs.type === 'platform_group') && obs.checkCollision) {
-        const result = obs.checkCollision(pr, prevY, 1);
-        if (result) {
-          if (result.type === 'land') { y = result.y - PLAYER_SIZE; vy = 0; grounded = true; }
-          else if (result.type === 'death') return false;
-        }
-      }
+    const result = checkAll(x, y, prevY, obstacles);
+    if (result.dead) return false;
+    if (result.landed) {
+      y = result.landY - PLAYER_SIZE;
+      vy = 0;
+      grounded = true;
     }
 
-    // Death check
-    if (checkDeath(x, y, prevY, obstacles)) return false;
+    // Edge detection
+    if (grounded && y < GROUND_Y - PLAYER_SIZE - 2) {
+      const edgeResult = checkAll(x, y, y, obstacles);
+      if (!edgeResult.landed) grounded = false;
+    }
 
     x += speed;
   }
-  return true; // survived
+  return true;
 }
 
 export function generateBotReplay(level) {
@@ -73,43 +81,29 @@ export function generateBotReplay(level) {
   const speed = SCROLL_SPEED * (level.speedMult || 1);
 
   let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
-  let prevY = y;
   let grounded = true, rotation = 0;
-  const inset = 4;
   const frames = [];
 
   for (let frame = 0; frame < MAX_FRAMES; frame++) {
     if (x >= endX) break;
 
-    if (frame % RECORD_INTERVAL === 0) {
-      frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
-    }
+    frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
     // Decision: jump or not?
-    let shouldJump = false;
     if (grounded) {
-      // Test: will I die if I DON'T jump in the next N frames?
-      const surviveNoJump = miniSim(x, y, vy, grounded, speed, obstacles, false, LOOKAHEAD);
+      const surviveNoJump = simFrames(x, y, vy, grounded, speed, obstacles, false, LOOKAHEAD);
       if (!surviveNoJump) {
-        // Will jumping save me?
-        const surviveJump = miniSim(x, y, vy, grounded, speed, obstacles, true, LOOKAHEAD);
-        if (surviveJump) {
-          shouldJump = true;
-        } else {
-          // Both die — jump anyway (might get further)
-          shouldJump = true;
+        const surviveJump = simFrames(x, y, vy, grounded, speed, obstacles, true, LOOKAHEAD);
+        if (surviveJump || !surviveNoJump) {
+          vy = JUMP_VEL;
+          grounded = false;
+          rotation -= 90;
         }
       }
     }
 
-    if (shouldJump && grounded) {
-      vy = JUMP_VEL;
-      grounded = false;
-      rotation -= 90;
-    }
-
     // Physics
-    prevY = y;
+    const prevY = y;
     if (!grounded) vy += GRAVITY;
     y += vy;
 
@@ -119,39 +113,24 @@ export function generateBotReplay(level) {
       grounded = true;
     }
 
-    // Platform collision
-    const playerRect = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
-    for (const obs of obstacles) {
-      if ((obs.type === 'platform' || obs.type === 'platform_group') && obs.checkCollision) {
-        const result = obs.checkCollision(playerRect, prevY, 1);
-        if (result) {
-          if (result.type === 'land') { y = result.y - PLAYER_SIZE; vy = 0; grounded = true; }
-          else if (result.type === 'death') { console.log('[Bot] Died at x:', Math.round(x), 'y:', Math.round(y), 'frame:', frame, 'from platform side'); return frames.length > 5 ? JSON.stringify(frames) : null; }
-        }
-      }
-    }
-
-    // Death
-    if (checkDeath(x, y, prevY, obstacles)) {
-      console.log('[Bot] Died at x:', Math.round(x), 'y:', Math.round(y), 'frame:', frame, 'from hazard');
-      break;
+    // Collision
+    const result = checkAll(x, y, prevY, obstacles);
+    if (result.dead) break;
+    if (result.landed) {
+      y = result.landY - PLAYER_SIZE;
+      vy = 0;
+      grounded = true;
     }
 
     // Edge detection
     if (grounded && y < GROUND_Y - PLAYER_SIZE - 2) {
-      let onSurface = false;
-      for (const obs of obstacles) {
-        if ((obs.type === 'platform' || obs.type === 'platform_group') && obs.checkCollision) {
-          const testRect = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
-          const result = obs.checkCollision(testRect, y, 1);
-          if (result && result.type === 'land') { onSurface = true; break; }
-        }
-      }
-      if (!onSurface) grounded = false;
+      const edgeResult = checkAll(x, y, y, obstacles);
+      if (!edgeResult.landed) grounded = false;
     }
 
     x += speed;
   }
 
+  console.log('[Bot] Generated', frames.length, 'frames, reached x:', Math.round(x), '/', endX);
   return frames.length > 5 ? JSON.stringify(frames) : null;
 }
