@@ -2493,10 +2493,13 @@ class Game {
           const oh = obs.h || GRID;
           const t = obs.type;
           if (t === 'spike') {
-            // Actual spike collision hitbox (with insets)
             ctx.fillStyle = '#FF2222';
             const inset = 10, topInset = Math.round(GRID * 0.1) + 4;
             ctx.fillRect(ox + inset, oy + topInset, ow - inset * 2, oh - inset - topInset);
+          } else if (t === 'mini_spike') {
+            ctx.fillStyle = '#FF2222';
+            const inset = 12, topInset = 6;
+            ctx.fillRect(ox + inset, oy + topInset, ow - inset * 2, oh - topInset);
           } else if (t === 'saw') {
             // Circular hitbox with forgiveness
             ctx.fillStyle = '#FF2222';
