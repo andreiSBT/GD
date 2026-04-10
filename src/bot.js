@@ -89,17 +89,19 @@ export function generateBotReplay(level) {
 
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
-    // Decision: always check if we'll die, even mid-air
-    const willDie = !simFrames(x, y, vy, grounded, speed, obstacles, false, LOOKAHEAD);
-    if (willDie) wantJump = true;
-    if (grounded && wantJump) {
-      wantJump = false;
-      vy = JUMP_VEL;
-      grounded = false;
-      rotation -= 90;
-      if (frame < 200) console.log('[Bot] JUMP at frame:', frame, 'x:', Math.round(x), 'y:', Math.round(y));
+    // Decision: jump only if it helps survive
+    if (grounded) {
+      const dieNoJump = !simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
+      if (dieNoJump) {
+        const surviveJump = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
+        if (surviveJump) {
+          vy = JUMP_VEL;
+          grounded = false;
+          rotation -= 90;
+        }
+        // If both die, DON'T jump — maybe ground is safer
+      }
     }
-    if (frame >= 80 && frame <= 95) console.log('[Bot] f:', frame, 'x:', Math.round(x), 'y:', Math.round(y), 'vy:', vy.toFixed(1), 'g:', grounded, 'willDie:', willDie, 'wJ:', wantJump);
 
     // Physics
     const prevY = y;
