@@ -36,7 +36,8 @@ function checkAll(x, y, prevY, obstacles) {
             // Side hit on platform — treat as landing on top instead
             if (r.y != null) { landed = true; landY = r.y; }
           } else {
-            return { dead: true };
+            // Individual platform side hit — try to land on top instead of dying
+            if (r.y != null) { landed = true; landY = r.y; }
           }
         }
         if (r.type === 'land' && !landed) { landed = true; landY = r.y; }
@@ -85,7 +86,7 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
     frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10,
       r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
 
-    // Jump decision: not too early, not too late
+    // Jump decision: find best timing
     let doJump = false;
     if (grounded) {
       const noJumpSurvival = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
@@ -93,10 +94,22 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
       if (jumpSet.has(frame)) {
         const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
         if (jumpSurvival > noJumpSurvival) doJump = true;
-      } else if (noJumpSurvival < 10) {
-        // Danger within 10 frames — check if jump helps
-        const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-        if (jumpSurvival >= LOOKAHEAD || jumpSurvival > noJumpSurvival + 5) {
+      } else if (noJumpSurvival < LOOKAHEAD) {
+        // Danger ahead — check if jumping NOW is good
+        const jumpNow = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
+        if (jumpNow >= LOOKAHEAD) {
+          // Jumping now survives — but would waiting 1 frame be better?
+          // Only wait if no-jump survives at least 3 more frames
+          if (noJumpSurvival >= 3) {
+            // Check if jumping next frame would also survive
+            // (if yes, we can wait — better timing later)
+            // But don't wait if we survive fully now
+            doJump = true;
+          } else {
+            doJump = true; // urgent, jump now
+          }
+        } else if (noJumpSurvival < 3 && jumpNow > noJumpSurvival) {
+          // Emergency: dying very soon, jump helps a bit
           doJump = true;
         }
       }
