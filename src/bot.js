@@ -1,12 +1,11 @@
-/** Bot with mini-simulation: tests jump vs no-jump each frame */
+/** Learning bot: runs level multiple times, remembers deaths, tries different jumps */
 
 import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './settings.js';
 
 const MAX_FRAMES = 60 * 120;
-const RECORD_INTERVAL = 1;
 const LOOKAHEAD = 60;
+const MAX_ATTEMPTS = 30;
 
-// Check all obstacles — returns { dead, landed, landY }
 function checkAll(x, y, prevY, obstacles) {
   const inset = 4;
   const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
@@ -14,51 +13,88 @@ function checkAll(x, y, prevY, obstacles) {
 
   for (const obs of obstacles) {
     if (!obs.checkCollision) continue;
-
     if (obs.type === 'spike' || obs.type === 'saw') {
-      const r = obs.checkCollision(pr);
-      if (r === 'death') return { dead: true };
+      if (obs.checkCollision(pr) === 'death') return { dead: true };
     } else if (obs.type === 'platform' || obs.type === 'platform_group') {
       const r = obs.checkCollision(pr, prevY, 1);
       if (r) {
         if (r.type === 'death') return { dead: true };
-        if (r.type === 'land' && !landed) {
-          landed = true;
-          landY = r.y;
-        }
+        if (r.type === 'land' && !landed) { landed = true; landY = r.y; }
       }
     }
   }
   return { dead: false, landed, landY };
 }
 
-// Returns number of frames survived (numFrames = survived all)
 function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJump, numFrames) {
   let x = startX, y = startY, vy = startVy, grounded = startGrounded;
-
-  if (doJump && grounded) {
-    vy = JUMP_VEL;
-    grounded = false;
-  }
+  if (doJump && grounded) { vy = JUMP_VEL; grounded = false; }
 
   for (let f = 0; f < numFrames; f++) {
     const prevY = y;
     if (!grounded) vy += GRAVITY;
     y += vy;
-
-    if (y >= GROUND_Y - PLAYER_SIZE) {
-      y = GROUND_Y - PLAYER_SIZE;
-      vy = 0;
-      grounded = true;
-    }
+    if (y >= GROUND_Y - PLAYER_SIZE) { y = GROUND_Y - PLAYER_SIZE; vy = 0; grounded = true; }
 
     const result = checkAll(x, y, prevY, obstacles);
     if (result.dead) return f;
-    if (result.landed) {
-      y = result.landY - PLAYER_SIZE;
-      vy = 0;
-      grounded = true;
+    if (result.landed) { y = result.landY - PLAYER_SIZE; vy = 0; grounded = true; }
+
+    if (grounded && y < GROUND_Y - PLAYER_SIZE - 2) {
+      const edgeResult = checkAll(x, y, y, obstacles);
+      if (!edgeResult.landed) grounded = false;
     }
+    x += speed;
+  }
+  return numFrames;
+}
+
+// Run one full attempt with a set of forced jump frames
+function runAttempt(obstacles, endX, speed, jumpSet) {
+  let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
+  let grounded = true, rotation = 0;
+  const frames = [];
+
+  for (let frame = 0; frame < MAX_FRAMES; frame++) {
+    if (x >= endX) break;
+
+    frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10,
+      r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
+
+    // Jump decision
+    let doJump = false;
+    if (grounded) {
+      // Forced jump from learning?
+      if (jumpSet.has(frame)) {
+        doJump = true;
+      } else {
+        // Smart check: jump only if it survives full lookahead
+        const noJumpSurvival = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
+        if (noJumpSurvival < LOOKAHEAD) {
+          const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
+          if (jumpSurvival >= LOOKAHEAD) {
+            doJump = true;
+          }
+        }
+      }
+    }
+
+    if (doJump && grounded) {
+      vy = JUMP_VEL;
+      grounded = false;
+      rotation -= 90;
+    }
+
+    // Physics
+    const prevY = y;
+    if (!grounded) vy += GRAVITY;
+    y += vy;
+    if (y >= GROUND_Y - PLAYER_SIZE) { y = GROUND_Y - PLAYER_SIZE; vy = 0; grounded = true; }
+
+    // Collision
+    const result = checkAll(x, y, prevY, obstacles);
+    if (result.dead) return { frames, deathFrame: frame, deathX: x, completed: false };
+    if (result.landed) { y = result.landY - PLAYER_SIZE; vy = 0; grounded = true; }
 
     // Edge detection
     if (grounded && y < GROUND_Y - PLAYER_SIZE - 2) {
@@ -68,7 +104,8 @@ function simFrames(startX, startY, startVy, startGrounded, speed, obstacles, doJ
 
     x += speed;
   }
-  return numFrames; // survived all
+
+  return { frames, deathFrame: -1, deathX: x, completed: x >= endX };
 }
 
 export function generateBotReplay(level) {
@@ -81,75 +118,70 @@ export function generateBotReplay(level) {
   const endX = endMarker.x;
   const speed = SCROLL_SPEED * (level.speedMult || 1);
 
-  let x = 0, y = GROUND_Y - PLAYER_SIZE, vy = 0;
-  let grounded = true, rotation = 0, wantJump = false;
-  const frames = [];
+  const jumpSet = new Set();
+  let bestResult = null;
+  let bestFrames = 0;
 
-  for (let frame = 0; frame < MAX_FRAMES; frame++) {
-    if (x >= endX) break;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const result = runAttempt(obstacles, endX, speed, jumpSet);
 
-    frames.push({ f: frame, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: Math.round(rotation * 100) / 100, m: 'cube', a: 1 });
-
-    // Decision: jump ONLY if jump survives all frames and no-jump doesn't
-    if (grounded) {
-      const noJumpFrames = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
-      if (noJumpFrames < LOOKAHEAD) {
-        // We'll die if we don't jump. Does jumping save us fully?
-        const jumpFrames = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-        if (jumpFrames >= LOOKAHEAD) {
-          // Jump saves us!
-          vy = JUMP_VEL;
-          grounded = false;
-          rotation -= 90;
-        }
-        // If jump also dies, don't jump — wait for better timing
-      }
+    if (result.frames.length > bestFrames) {
+      bestResult = result;
+      bestFrames = result.frames.length;
     }
 
-    // Physics
-    const prevY = y;
-    if (!grounded) vy += GRAVITY;
-    y += vy;
-
-    if (y >= GROUND_Y - PLAYER_SIZE) {
-      y = GROUND_Y - PLAYER_SIZE;
-      vy = 0;
-      grounded = true;
-    }
-
-    // Collision
-    const result = checkAll(x, y, prevY, obstacles);
-    if (result.dead) {
-      console.log('[Bot] DEAD at x:', Math.round(x), 'y:', Math.round(y), 'prevY:', Math.round(prevY), 'vy:', vy.toFixed(2), 'grounded:', grounded, 'frame:', frame);
-      // Log which obstacle killed us
-      const inset = 4;
-      const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
-      for (const obs of obstacles) {
-        if (!obs.checkCollision) continue;
-        if (obs.type === 'spike' || obs.type === 'saw') {
-          if (obs.checkCollision(pr) === 'death') console.log('[Bot] Killed by', obs.type, 'at obs.x:', obs.x, 'obs.y:', obs.y);
-        } else if (obs.type === 'platform' || obs.type === 'platform_group') {
-          const r = obs.checkCollision(pr, prevY, 1);
-          if (r && r.type === 'death') console.log('[Bot] Killed by', obs.type, 'at obs.x:', obs.x, 'obs.y:', obs.y, 'obs.w:', obs.w, 'obs.h:', obs.h);
-        }
-      }
+    if (result.completed) {
+      console.log('[Bot] COMPLETED on attempt', attempt + 1, 'with', jumpSet.size, 'learned jumps,', result.frames.length, 'frames');
       break;
     }
-    if (result.landed) {
-      y = result.landY - PLAYER_SIZE;
-      vy = 0;
-      grounded = true;
+
+    if (result.deathFrame < 0) break; // timed out
+
+    // Learn from death: try adding jumps at different timings before death
+    const df = result.deathFrame;
+    let improved = false;
+
+    // Try jumping at frames leading up to death (from 1 to 20 frames before)
+    for (let offset = 1; offset <= 25; offset++) {
+      const tryFrame = df - offset;
+      if (tryFrame < 0 || jumpSet.has(tryFrame)) continue;
+
+      // Test this jump
+      const testSet = new Set(jumpSet);
+      testSet.add(tryFrame);
+      const testResult = runAttempt(obstacles, endX, speed, testSet);
+
+      if (testResult.completed || testResult.frames.length > bestFrames + 5) {
+        // This jump helps significantly
+        jumpSet.add(tryFrame);
+        if (testResult.frames.length > bestFrames) {
+          bestResult = testResult;
+          bestFrames = testResult.frames.length;
+        }
+        improved = true;
+        break;
+      }
     }
 
-    // Edge detection
-    if (grounded && y < GROUND_Y - PLAYER_SIZE - 2) {
-      const edgeResult = checkAll(x, y, y, obstacles);
-      if (!edgeResult.landed) grounded = false;
+    // If no single jump helped, try removing the last added jump (maybe it was wrong)
+    if (!improved && jumpSet.size > 0) {
+      // Try a later jump
+      for (let offset = 1; offset <= 10; offset++) {
+        const tryFrame = df + offset;
+        if (jumpSet.has(tryFrame)) continue;
+        jumpSet.add(tryFrame);
+        improved = true;
+        break;
+      }
     }
 
-    x += speed;
+    if (!improved) {
+      console.log('[Bot] Stuck at frame', df, 'after', attempt + 1, 'attempts');
+      break;
+    }
   }
 
-  console.log('[Bot] Generated', frames.length, 'frames, reached x:', Math.round(x), '/', endX);
-  return frames.length > 5 ? JSON.stringify(frames) : null;
+  if (!bestResult || bestResult.frames.length < 5) return null;
+  console.log('[Bot] Best:', bestFrames, 'frames, reached x:', Math.round(bestResult.deathX), '/', endX, 'jumps:', jumpSet.size);
+  return JSON.stringify(bestResult.frames);
 }
