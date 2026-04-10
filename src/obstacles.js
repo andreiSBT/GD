@@ -720,6 +720,7 @@ export class JumpPad {
     this.h = GRID * 0.5;
     this.flashTimer = 0;
     this.activated = false;
+    this._particles = [];
   }
 
   reset() { this.activated = false; }
@@ -786,6 +787,37 @@ export class JumpPad {
     ctx.fill();
 
     clearGlow(ctx);
+
+    // Ambient particles
+    const noParticles = localStorage.getItem('gd_no_particles') || localStorage.getItem('gd_low_detail');
+    if (!noParticles) {
+      // Spawn new particles occasionally
+      if (Math.random() < 0.15) {
+        this._particles.push({
+          x: cx + (Math.random() - 0.5) * halfW * 1.5,
+          y: baseY - Math.random() * height * 0.5,
+          vy: -0.3 - Math.random() * 0.8,
+          vx: (Math.random() - 0.5) * 0.3,
+          life: 1,
+          size: 1.5 + Math.random() * 2,
+        });
+      }
+      // Update and draw particles
+      for (let i = this._particles.length - 1; i >= 0; i--) {
+        const p = this._particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.02;
+        if (p.life <= 0) { this._particles.splice(i, 1); continue; }
+        ctx.globalAlpha = p.life * 0.6;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (this._particles.length > 15) this._particles.splice(0, this._particles.length - 15);
+    }
+
     ctx.restore();
   }
 }
