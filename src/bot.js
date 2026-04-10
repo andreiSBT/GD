@@ -115,7 +115,22 @@ export function generateBotReplay(level) {
 
     // Collision
     const result = checkAll(x, y, prevY, obstacles);
-    if (result.dead) break;
+    if (result.dead) {
+      console.log('[Bot] DEAD at x:', Math.round(x), 'y:', Math.round(y), 'prevY:', Math.round(prevY), 'vy:', vy.toFixed(2), 'grounded:', grounded, 'frame:', frame);
+      // Log which obstacle killed us
+      const inset = 4;
+      const pr = { x: x + inset, y: y + inset, w: PLAYER_SIZE - inset * 2, h: PLAYER_SIZE - inset * 2 };
+      for (const obs of obstacles) {
+        if (!obs.checkCollision) continue;
+        if (obs.type === 'spike' || obs.type === 'saw') {
+          if (obs.checkCollision(pr) === 'death') console.log('[Bot] Killed by', obs.type, 'at obs.x:', obs.x, 'obs.y:', obs.y);
+        } else if (obs.type === 'platform' || obs.type === 'platform_group') {
+          const r = obs.checkCollision(pr, prevY, 1);
+          if (r && r.type === 'death') console.log('[Bot] Killed by', obs.type, 'at obs.x:', obs.x, 'obs.y:', obs.y, 'obs.w:', obs.w, 'obs.h:', obs.h);
+        }
+      }
+      break;
+    }
     if (result.landed) {
       y = result.landY - PLAYER_SIZE;
       vy = 0;
