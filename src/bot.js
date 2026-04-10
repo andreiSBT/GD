@@ -64,17 +64,16 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
     // Jump decision
     let doJump = false;
     if (grounded) {
-      // Forced jump from learning?
+      const noJumpSurvival = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
+      const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
+
       if (jumpSet.has(frame)) {
-        doJump = true;
+        // Forced jump from learning — but only if jumping doesn't kill us faster
+        if (jumpSurvival > noJumpSurvival) doJump = true;
       } else {
-        // Smart check: jump only if it survives full lookahead
-        const noJumpSurvival = simFrames(x, y, vy, true, speed, obstacles, false, LOOKAHEAD);
-        if (noJumpSurvival < LOOKAHEAD) {
-          const jumpSurvival = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-          if (jumpSurvival >= LOOKAHEAD) {
-            doJump = true;
-          }
+        // Smart check: jump only if it survives full lookahead and no-jump doesn't
+        if (noJumpSurvival < LOOKAHEAD && jumpSurvival >= LOOKAHEAD) {
+          doJump = true;
         }
       }
     }
