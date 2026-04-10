@@ -3,8 +3,8 @@
 import { PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL, GROUND_Y, GRID } from './settings.js';
 
 const MAX_FRAMES = 60 * 120;
-const LOOKAHEAD = 60;
-const MAX_ATTEMPTS = 30;
+const LOOKAHEAD = 40;
+const MAX_ATTEMPTS = 10;
 
 function checkAll(x, y, prevY, obstacles) {
   const inset = 4;
@@ -137,41 +137,28 @@ export function generateBotReplay(level) {
 
     if (result.deathFrame < 0) break; // timed out
 
-    // Learn from death: try adding jumps at different timings before death
+    // Learn from death: try a few jump timings before death
     const df = result.deathFrame;
     let improved = false;
 
-    // Try jumping at frames leading up to death (from 1 to 20 frames before)
-    for (let offset = 1; offset <= 25; offset++) {
+    // Try 5 offsets quickly (don't test all 25)
+    const offsets = [3, 6, 10, 15, 20];
+    for (const offset of offsets) {
       const tryFrame = df - offset;
       if (tryFrame < 0 || jumpSet.has(tryFrame)) continue;
 
-      // Test this jump
-      const testSet = new Set(jumpSet);
-      testSet.add(tryFrame);
-      const testResult = runAttempt(obstacles, endX, speed, testSet);
+      jumpSet.add(tryFrame);
+      const testResult = runAttempt(obstacles, endX, speed, jumpSet);
 
-      if (testResult.completed || testResult.frames.length > bestFrames + 5) {
-        // This jump helps significantly
-        jumpSet.add(tryFrame);
-        if (testResult.frames.length > bestFrames) {
-          bestResult = testResult;
-          bestFrames = testResult.frames.length;
-        }
+      if (testResult.frames.length > bestFrames) {
+        // This jump helps
+        bestResult = testResult;
+        bestFrames = testResult.frames.length;
         improved = true;
         break;
-      }
-    }
-
-    // If no single jump helped, try removing the last added jump (maybe it was wrong)
-    if (!improved && jumpSet.size > 0) {
-      // Try a later jump
-      for (let offset = 1; offset <= 10; offset++) {
-        const tryFrame = df + offset;
-        if (jumpSet.has(tryFrame)) continue;
-        jumpSet.add(tryFrame);
-        improved = true;
-        break;
+      } else {
+        // Didn't help, remove it
+        jumpSet.delete(tryFrame);
       }
     }
 
