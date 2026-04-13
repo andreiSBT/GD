@@ -341,12 +341,12 @@ export class PlatformGroup {
     // Check slopes first (they return land, never death), then platforms
     // This prevents a platform returning death when the player is actually on a slope
     for (const p of this.pieces) {
-      if (p.type !== 'slope') continue;
+      if (p.type !== 'slope' && p.type !== 'mini_slope') continue;
       const result = p.checkCollision(playerRect, prevPlayerY, gravityMult);
       if (result) { result._piece = p; return result; }
     }
     for (const p of this.pieces) {
-      if (p.type === 'slope') continue;
+      if (p.type === 'slope' || p.type === 'mini_slope') continue;
       const result = p.checkCollision(playerRect, prevPlayerY, gravityMult);
       if (result) { result._piece = p; return result; }
     }
@@ -363,7 +363,7 @@ export class PlatformGroup {
     ctx.beginPath();
     for (const p of this.pieces) {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
-      if (p.type === 'slope') {
+      if (p.type === 'slope' || p.type === 'mini_slope') {
         if (p.direction === 'up') {
           ctx.moveTo(px, p.y + p.h);
           ctx.lineTo(px + p.w, p.y + p.h);
@@ -397,7 +397,7 @@ export class PlatformGroup {
     drawNeonGlow(ctx, theme.accent, 8);
     ctx.fillStyle = theme.accent;
     for (const p of this.pieces) {
-      if (p.type === 'slope') continue; // slopes get diagonal glow below
+      if (p.type === 'slope' || p.type === 'mini_slope') continue; // slopes get diagonal glow below
       const hasAbove = this.pieces.some(q =>
         q !== p && Math.abs(q.y + q.h - p.y) < 2 && q.x < p.x + p.w && q.x + q.w > p.x
       );
@@ -456,7 +456,7 @@ export class PlatformGroup {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
       const he = p.hiddenEdges || new Set();
       ctx.beginPath();
-      if (p.type === 'slope') {
+      if (p.type === 'slope' || p.type === 'mini_slope') {
         if (p.direction === 'up') {
           if (!he.has('bottom')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y + p.h); }
           if (!he.has('right')) { ctx.moveTo(px + p.w, p.y + p.h); ctx.lineTo(px + p.w, p.y); }
