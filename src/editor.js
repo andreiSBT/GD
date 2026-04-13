@@ -1451,6 +1451,7 @@ export class Editor {
 
     if (this.selectedTool === 'slope' || this.selectedTool === 'mini_slope') {
       if (this.rotation !== 0) obj.rot = this.rotation;
+      console.log('[Slope] placing with rot:', this.rotation, 'obj:', JSON.stringify(obj));
     }
 
     if (this.selectedTool === 'mini_slope') {
