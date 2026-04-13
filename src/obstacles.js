@@ -1221,7 +1221,7 @@ export class Coin {
       // Fade starts at 40% through animation, smooth to 0
       const fadeT = Math.max(0, (t - 0.3) / 0.7);
       collectAlpha = 1 - fadeT * fadeT;
-      collectScale = 1 + ease * 0.3; // grow slightly
+      collectScale = 1; // no scale change
       if (t >= 1) { this._collectDone = true; return; }
     }
 
