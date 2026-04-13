@@ -1213,7 +1213,7 @@ export class Coin {
     let collectAlpha = 1;
     let collectScale = 1;
     if (this.collected) {
-      this._collectTimer += 0.04;
+      this._collectTimer += 0.07;
       const t = Math.min(this._collectTimer, 1);
       // Ease-out curve for smooth deceleration
       const ease = 1 - (1 - t) * (1 - t);
