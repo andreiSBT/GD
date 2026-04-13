@@ -2247,6 +2247,7 @@ class Game {
           this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700');
         }
       } else if (obs.type === 'coin') {
+        if (this.practiceMode) continue;
         if (obs.checkCollision(playerRect) === 'coin') {
           if ((this.coinsCollected || 0) >= 3) continue; // max 3 coins per level
           this.coinsCollected = (this.coinsCollected || 0) + 1;
@@ -2748,7 +2749,8 @@ class Game {
         if (lp.completed) lvlDiamondsEarned += lvlDiamondTotal - pPool;
       }
       this.ui._showHitboxes = this._showHitboxes && this.practiceMode;
-      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, totalCoins > 0 ? { collected: this.coinsCollected || 0, total: totalCoins } : null, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal);
+      const hudCoins = (!this.practiceMode && totalCoins > 0) ? { collected: this.coinsCollected || 0, total: totalCoins } : null;
+      this.ui.drawHUD(ctx, progress, this.attempts, this.practiceMode, this.level.name, showNewBest, hudCoins, showNewBest ? this.newBestValue : 0, this._diamondsEarned, this._diamonds, lvlDiamondsEarned, lvlDiamondTotal);
 
       if (this.state === PAUSED) {
         const bestProg = (this.level && this.progress[this.level.id]) ? this.progress[this.level.id].bestProgress : 0;
