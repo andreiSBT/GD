@@ -793,9 +793,9 @@ export class Editor {
       const h = Math.abs(this.hoverGy - this.dragStart.gy) + 1;
       this._pushHistory();
       if (this.selectedTool === 'slope') {
-        this.objects.push({
-          type: 'slope', x: minGx, y: minGy, w, h, direction: this.subType || 'up',
-        });
+        const sObj = { type: 'slope', x: minGx, y: minGy, w, h, direction: this.subType || 'up' };
+        if (this.rotation !== 0) sObj.rot = this.rotation;
+        this.objects.push(sObj);
       } else {
         this.objects.push({
           type: 'platform', x: minGx, y: minGy, w, h,
@@ -1123,9 +1123,9 @@ export class Editor {
       const h = this.dragHeight || 1;
       this._pushHistory();
       if (this.selectedTool === 'slope') {
-        this.objects.push({
-          type: 'slope', x: minGx, y: minGy, w, h, direction: this.subType || 'up',
-        });
+        const sObj = { type: 'slope', x: minGx, y: minGy, w, h, direction: this.subType || 'up' };
+        if (this.rotation !== 0) sObj.rot = this.rotation;
+        this.objects.push(sObj);
       } else {
         this.objects.push({
           type: 'platform', x: minGx, y: minGy, w, h,
@@ -1447,6 +1447,10 @@ export class Editor {
       if (this.rotation === 180) {
         obj.y = Math.floor(GROUND_Y / GRID) - gy - 1;
       }
+    }
+
+    if (this.selectedTool === 'slope' || this.selectedTool === 'mini_slope') {
+      if (this.rotation !== 0) obj.rot = this.rotation;
     }
 
     if (this.selectedTool === 'mini_slope') {
