@@ -1178,6 +1178,8 @@ export class Coin {
     this.h = GRID;
     this.collected = false;
     this.animTimer = Math.random() * Math.PI * 2;
+    this._collectTimer = 0; // 0 = not collecting, >0 = animating
+    this._collectDone = false;
   }
 
   checkCollision(playerRect) {
@@ -1196,15 +1198,31 @@ export class Coin {
     return null;
   }
 
-  reset() { this.collected = false; }
+  reset() { this.collected = false; this._collectTimer = 0; this._collectDone = false; }
 
   draw(ctx, cameraX) {
-    if (this.collected) return;
+    if (this._collectDone) return;
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
     this.animTimer += 0.05;
+
+    // Collect animation: float up + fade out
+    let collectOffset = 0;
+    let collectAlpha = 1;
+    let collectScale = 1;
+    if (this.collected) {
+      this._collectTimer += 0.04;
+      const t = Math.min(this._collectTimer, 1);
+      // Ease-out curve for smooth deceleration
+      const ease = 1 - (1 - t) * (1 - t);
+      collectOffset = -ease * 40; // float up 40px
+      collectAlpha = 1 - ease;
+      collectScale = 1 + ease * 0.3; // grow slightly
+      if (t >= 1) { this._collectDone = true; return; }
+    }
+
     const spin = Math.cos(this.animTimer);
     const scale = Math.abs(spin);
     const isFront = spin >= 0;
@@ -1214,11 +1232,12 @@ export class Coin {
     const r = GRID * 0.36;
 
     // Floating bob
-    const bob = Math.sin(this.animTimer * 0.6) * 2.5;
+    const bob = this.collected ? 0 : Math.sin(this.animTimer * 0.6) * 2.5;
 
     ctx.save();
-    ctx.translate(cx, cy + bob);
-    ctx.scale(Math.max(0.08, scale), 1);
+    ctx.globalAlpha = collectAlpha;
+    ctx.translate(cx, cy + bob + collectOffset);
+    ctx.scale(Math.max(0.08, scale) * collectScale, collectScale);
 
     // Outer glow pulse
     const glowPulse = 0.4 + Math.sin(this.animTimer * 1.5) * 0.15;
