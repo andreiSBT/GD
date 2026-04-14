@@ -1050,9 +1050,9 @@ export class Checkpoint {
   constructor(gx, gy) {
     this.type = 'checkpoint';
     this.x = gx * GRID;
-    this.y = GROUND_Y - (gy + 2) * GRID;
+    this.y = GROUND_Y - (gy + 4) * GRID;
     this.w = GRID * 0.5;
-    this.h = GRID * 2;
+    this.h = GRID * 4;
     this.activated = false;
   }
 
@@ -1092,14 +1092,6 @@ export class Checkpoint {
     ctx.lineTo(sx + 4, sy + 28);
     ctx.closePath();
     ctx.fill();
-
-    // Check mark if activated
-    if (this.activated) {
-      ctx.fillStyle = '#FFF';
-      ctx.font = 'bold 14px monospace';
-      ctx.textAlign = 'center';
-      ctx.fillText('✓', sx + 16, sy + 17);
-    }
 
     clearGlow(ctx);
     ctx.restore();
