@@ -1611,12 +1611,13 @@ class Game {
       } catch {}
     }
     // Mark already-collected coins as ghost (dashed outline)
+    // In practice mode, ALL coins show as ghost
     if (this.level && !this.editorLevelData) {
       const lp = this.progress[this.level.id];
       const best = lp ? (lp.bestCoins || 0) : 0;
       for (const obs of this.level.obstacles) {
         if (obs.type === 'coin') {
-          obs.alreadyCollected = obs.coinIndex < best;
+          obs.alreadyCollected = this.practiceMode || obs.coinIndex < best;
         }
       }
     }
@@ -2257,7 +2258,7 @@ class Game {
           this.particles.emitJump(this.player.x, this.player.y + PLAYER_SIZE / 2, '#FFD700');
         }
       } else if (obs.type === 'coin') {
-        if (this.practiceMode) continue;
+        if (this.practiceMode) continue; // no collection, but still drawn
         if (obs.checkCollision(playerRect) === 'coin') {
           if ((this.coinsCollected || 0) >= 3) continue; // max 3 coins per level
           this.coinsCollected = (this.coinsCollected || 0) + 1;
