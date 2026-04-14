@@ -1241,9 +1241,9 @@ export class Coin {
     ctx.translate(cx, cy + bob + collectOffset);
     ctx.scale(Math.max(0.08, scale) * collectScale, collectScale);
 
-    // Ghost mode: already collected coin — dashed circles, solid faint star
+    // Ghost mode: already collected coin — dashed circle + checkmark
     if (this.alreadyCollected && !this.collected) {
-      ctx.globalAlpha = 0.25;
+      ctx.globalAlpha = 0.3;
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1.5;
@@ -1251,31 +1251,16 @@ export class Coin {
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
       ctx.stroke();
-      // Inner ring
-      ctx.beginPath();
-      ctx.arc(0, 0, r * 0.68, 0, Math.PI * 2);
-      ctx.stroke();
       ctx.setLineDash([]);
-      // Star — solid fill, very faint
-      if (isFront) {
-        const sr = r * 0.38;
-        const ir = sr * 0.42;
-        ctx.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const outerAngle = -Math.PI / 2 + (i * Math.PI * 2) / 5;
-          const innerAngle = outerAngle + Math.PI / 5;
-          const ox = Math.cos(outerAngle) * sr;
-          const oy = Math.sin(outerAngle) * sr;
-          const ix = Math.cos(innerAngle) * ir;
-          const iy = Math.sin(innerAngle) * ir;
-          if (i === 0) ctx.moveTo(ox, oy);
-          else ctx.lineTo(ox, oy);
-          ctx.lineTo(ix, iy);
-        }
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fill();
-      }
+      // Checkmark
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.3, 0);
+      ctx.lineTo(-r * 0.05, r * 0.25);
+      ctx.lineTo(r * 0.35, -r * 0.25);
+      ctx.stroke();
       ctx.restore();
       return;
     }
