@@ -1241,9 +1241,9 @@ export class Coin {
     ctx.translate(cx, cy + bob + collectOffset);
     ctx.scale(Math.max(0.08, scale) * collectScale, collectScale);
 
-    // Ghost mode: already collected coin — dashed white outline + star
+    // Ghost mode: already collected coin — dashed circles, solid faint star
     if (this.alreadyCollected && !this.collected) {
-      ctx.globalAlpha = 0.3;
+      ctx.globalAlpha = 0.25;
       ctx.setLineDash([4, 4]);
       ctx.strokeStyle = '#FFFFFF';
       ctx.lineWidth = 1.5;
@@ -1255,7 +1255,8 @@ export class Coin {
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.68, 0, Math.PI * 2);
       ctx.stroke();
-      // Star
+      ctx.setLineDash([]);
+      // Star — solid fill, very faint
       if (isFront) {
         const sr = r * 0.38;
         const ir = sr * 0.42;
@@ -1272,9 +1273,9 @@ export class Coin {
           ctx.lineTo(ix, iy);
         }
         ctx.closePath();
-        ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fill();
       }
-      ctx.setLineDash([]);
       ctx.restore();
       return;
     }
