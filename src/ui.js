@@ -393,15 +393,7 @@ export class UI {
         const coinY = y + 218, coinSpacing = 22;
         const coinStartX = x + cardW / 2 - ((totalCoins - 1) * coinSpacing) / 2;
         for (let c = 0; c < totalCoins; c++) {
-          const cx = coinStartX + c * coinSpacing;
-          const got = c < collected;
-          ctx.beginPath();
-          ctx.arc(cx, coinY, 8, 0, Math.PI * 2);
-          ctx.fillStyle = got ? '#FFD700' : 'rgba(255,215,0,0.15)';
-          ctx.fill();
-          ctx.strokeStyle = got ? '#FFA500' : 'rgba(255,215,0,0.3)';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
+          this._drawCoinIcon(ctx, coinStartX + c * coinSpacing, coinY, 8, c < collected);
         }
       }
 
@@ -986,27 +978,7 @@ export class UI {
       const coinSpacing = 24;
       const coinStartX = SCREEN_WIDTH / 2 - ((coins.total - 1) * coinSpacing) / 2;
       for (let c = 0; c < coins.total; c++) {
-        const cx = coinStartX + c * coinSpacing;
-        const got = c < coins.collected;
-        ctx.beginPath();
-        ctx.arc(cx, coinY, 9, 0, Math.PI * 2);
-        if (got) {
-          ctx.fillStyle = '#FFD700';
-          ctx.fill();
-          ctx.save();
-          ctx.shadowColor = '#FFD700';
-          ctx.shadowBlur = 8;
-          ctx.strokeStyle = '#FFA500';
-          ctx.lineWidth = 2;
-          ctx.stroke();
-          ctx.restore();
-        } else {
-          ctx.fillStyle = 'rgba(255,215,0,0.15)';
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(255,215,0,0.3)';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        }
+        this._drawCoinIcon(ctx, coinStartX + c * coinSpacing, coinY, 9, c < coins.collected);
       }
       infoBottom = 340;
     }
@@ -1149,21 +1121,7 @@ export class UI {
         const coinSpacing = 22;
         const coinStartX = SCREEN_WIDTH / 2 - ((coins.total - 1) * coinSpacing) / 2;
         for (let c = 0; c < coins.total; c++) {
-          const cx = coinStartX + c * coinSpacing;
-          const got = c < coins.best;
-          ctx.beginPath();
-          ctx.arc(cx, coinY, 8, 0, Math.PI * 2);
-          if (got) {
-            ctx.fillStyle = '#FFD700';
-            ctx.fill();
-            ctx.strokeStyle = '#FFA500';
-          } else {
-            ctx.fillStyle = 'rgba(255,215,0,0.15)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,215,0,0.3)';
-          }
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
+          this._drawCoinIcon(ctx, coinStartX + c * coinSpacing, coinY, 8, c < coins.best);
         }
         infoBottom = 296;
       }
@@ -2076,6 +2034,66 @@ export class UI {
         ctx.stroke();
         break;
     }
+  }
+
+  _drawCoinIcon(ctx, cx, cy, r, collected) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (collected) {
+      // Gold filled coin with star
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#B8860B';
+      ctx.fill();
+      // Face
+      const faceGrad = ctx.createRadialGradient(-r * 0.2, -r * 0.2, 0, 0, 0, r * 0.9);
+      faceGrad.addColorStop(0, '#FFF0A0');
+      faceGrad.addColorStop(0.4, '#FFD700');
+      faceGrad.addColorStop(1, '#B8860B');
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.85, 0, Math.PI * 2);
+      ctx.fillStyle = faceGrad;
+      ctx.fill();
+      // Star
+      const sr = r * 0.45;
+      const ir = sr * 0.42;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const oa = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+        const ia = oa + Math.PI / 5;
+        if (i === 0) ctx.moveTo(Math.cos(oa) * sr, Math.sin(oa) * sr);
+        else ctx.lineTo(Math.cos(oa) * sr, Math.sin(oa) * sr);
+        ctx.lineTo(Math.cos(ia) * ir, Math.sin(ia) * ir);
+      }
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(255,248,220,0.9)';
+      ctx.fill();
+    } else {
+      // Empty coin outline
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,215,0,0.1)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Faint star outline
+      const sr = r * 0.45;
+      const ir = sr * 0.42;
+      ctx.beginPath();
+      for (let i = 0; i < 5; i++) {
+        const oa = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+        const ia = oa + Math.PI / 5;
+        if (i === 0) ctx.moveTo(Math.cos(oa) * sr, Math.sin(oa) * sr);
+        else ctx.lineTo(Math.cos(oa) * sr, Math.sin(oa) * sr);
+        ctx.lineTo(Math.cos(ia) * ir, Math.sin(ia) * ir);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(255,215,0,0.25)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   _drawGem(ctx, cx, cy, size) {
