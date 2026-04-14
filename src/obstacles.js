@@ -1717,15 +1717,7 @@ export class Slope {
       }
       c.stroke();
     });
-    if (this.editorRot) {
-      ctx.save();
-      ctx.translate(sx + this.w / 2, sy + this.h / 2);
-      ctx.rotate(this.editorRot * Math.PI / 180);
-      ctx.drawImage(sprite.canvas, -this.w / 2 - sprite.pad, -this.h / 2 - sprite.pad);
-      ctx.restore();
-    } else {
-      ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
-    }
+    ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
 
   reset() {}
