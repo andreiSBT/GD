@@ -88,8 +88,8 @@ function runAttempt(obstacles, endX, speed, jumpSet) {
         if (jump > noJump) doJump = true;
       } else if (noJump < LOOKAHEAD) {
         const jump = simFrames(x, y, vy, true, speed, obstacles, true, LOOKAHEAD);
-        // Jump if it survives full lookahead
-        if (jump >= LOOKAHEAD) {
+        // Jump if it survives longer than not jumping
+        if (jump > noJump) {
           doJump = true;
         }
       }
