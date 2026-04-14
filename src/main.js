@@ -1610,6 +1610,16 @@ class Game {
         localStorage.setItem('gd_editor_attempts', String(cur + 1));
       } catch {}
     }
+    // Mark already-collected coins as ghost (dashed outline)
+    if (this.level && !this.editorLevelData) {
+      const lp = this.progress[this.level.id];
+      const best = lp ? (lp.bestCoins || 0) : 0;
+      for (const obs of this.level.obstacles) {
+        if (obs.type === 'coin') {
+          obs.alreadyCollected = obs.coinIndex < best;
+        }
+      }
+    }
     this.particles.clear();
     this.shakeIntensity = 0;
     this._portalFlash = null;

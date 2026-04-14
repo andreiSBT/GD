@@ -53,6 +53,7 @@ export class Level {
           this.endX = obstacle.x;
         }
         if (obstacle.type === 'coin') {
+          obstacle.coinIndex = this.totalCoins;
           this.totalCoins++;
         }
       }
