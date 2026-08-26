@@ -14,7 +14,7 @@ import { COLOR_TRIGGER_THEMES, COLOR_TRIGGER_FULL_THEMES } from './obstacles.js'
 import { syncCustomizationToCloud, syncProgressToCloud, syncEditorLevelToCloud, syncSecretsToCloud, loadSecretsFromCloud, loadCustomizationFromCloud, subscribeSyncChannel, broadcastSync, isConfigured, initAuth, signIn, signUp, signOut, getAuthUser, getUsername, ensureProfile, searchUsers, sendFriendRequest, acceptFriendRequest, removeFriend, getFriends, getFriendRequests, sendMessage, deleteMessage, getMessages, getUnreadCount, getMyEditorLevels, getSharedLevel, checkAdmin, isAdmin, loadOfficialLevels, saveOfficialLevel, listLevelMusic, downloadLevelMusic, downloadOfficialMusic, submitScore, getLeaderboard, getPublishedLevels, publishLevel, incrementPlays, deletePublishedLevel, resetProgressInCloud, toggleLike, getUserLikes, syncDiamondsToCloud, loadDiamondsFromCloud, sendDiamondTrade, acceptDiamondTrade, declineDiamondTrade } from './supabase.js';
 import { evaluateAchievements, loadUnlocked, getAchievements } from './achievements.js';
 import { ReplayRecorder, ReplayGhost, saveReplay, loadReplay } from './replay.js';
-import { generateBotReplay } from './bot.js';
+import { startBotSearch } from './bot.js';
 import { customConfirm } from './dialogs.js';
 
 function _lerpColor(hex1, hex2, t) {
@@ -1481,13 +1481,17 @@ class Game {
     this.previousBest = lp ? lp.bestProgress : 0;
     this.newBestTimer = 0;
     this._replayGhost = loadReplay(levelId);
-    // Generate bot ghost fresh each time
+    // Bot ghost: searched incrementally in the background so level load never
+    // stalls. It runs against its own Level instance — the search mutates
+    // obstacle state (portals, orbs, moving platforms) and must not touch the
+    // one being played.
+    this._botGhost = null;
+    this._botSearch = null;
     if (this.level) {
-      console.log('[Bot] Generating for level', levelId, 'obstacles:', this.level.obstacles.length, 'endX:', this.level.endX);
-      const botData = generateBotReplay(this.level);
-      console.log('[Bot] Result:', botData ? 'OK' : 'FAILED', botData ? JSON.parse(botData).length + ' frames' : '');
-      if (botData) {
-        this._botGhost = new ReplayGhost(botData);
+      try {
+        this._botSearch = startBotSearch(new Level(levelId));
+      } catch (e) {
+        console.warn('[Bot] could not start:', e.message);
       }
     }
     this._levelStartTime = performance.now();
@@ -1567,6 +1571,16 @@ class Game {
     this.shakeIntensity = 0;
     this.pendingOrbHit = null;
     this._playEditorMusic(musicOffset);
+  }
+
+  // Advance the bot search by a slice each frame; a few ms keeps it invisible
+  _pumpBotSearch() {
+    const search = this._botSearch;
+    if (!search || search.done) return;
+    if (search.pump(4)) {
+      if (search.replay) this._botGhost = new ReplayGhost(search.replay);
+      this._botSearch = null;
+    }
   }
 
   _applySliderValue(sliderId, screenX) {
@@ -1947,6 +1961,7 @@ class Game {
   _update(dt) {
     this.ui.update(dt);
     this._updateColorTransition(dt);
+    this._pumpBotSearch();
 
     // Advance achievement toasts
     for (const toast of this._achievementToasts) {
