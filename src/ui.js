@@ -108,13 +108,7 @@ export class UI {
   drawMainMenu(ctx, progress, diamonds = 0) {
     this.buttons = [];
 
-    // Background
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#000818');
-    grad.addColorStop(0.5, '#001030');
-    grad.addColorStop(1, '#002060');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#000818', '#001030', '#002060'], '#00C8FF');
 
     // Floating particles
     this._drawMenuParticles(ctx);
@@ -210,11 +204,7 @@ export class UI {
   drawLevelSelect(ctx, progress, page = 0, showScrollCoin = false, diamonds = 0) {
     this.buttons = [];
 
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#000818');
-    grad.addColorStop(1, '#001840');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#000818', '#001028', '#001840'], '#00C8FF');
 
     this._drawMenuParticles(ctx);
 
@@ -315,39 +305,82 @@ export class UI {
 
       this.buttons.push({ x, y, w: cardW, h: cardH, id: `normal_${i}` });
 
-      // Card shadow
-      ctx.save();
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 16;
-      ctx.shadowOffsetY = 4;
-      this._roundRect(ctx, x, y, cardW, cardH, r);
-      ctx.fillStyle = '#000';
-      ctx.fill();
-      ctx.restore();
+      if (isSimpleTextures()) {
+        // Flat plate in the level's own colours
+        this._roundRect(ctx, x, y, cardW, cardH, r);
+        ctx.fillStyle = theme.bgBot;
+        ctx.fill();
+        this._roundRect(ctx, x + 1, y + 1, cardW - 2, cardH - 2, r);
+        ctx.strokeStyle = theme.accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        this._roundRect(ctx, x, y, cardW, 5, r);
+        ctx.fillStyle = theme.accent;
+        ctx.fill();
+      } else {
+        // Card shadow
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.55)';
+        ctx.shadowBlur = 20;
+        ctx.shadowOffsetY = 6;
+        this._roundRect(ctx, x, y, cardW, cardH, r);
+        ctx.fillStyle = '#000';
+        ctx.fill();
+        ctx.restore();
 
-      // Card background gradient
-      const cgrad = ctx.createLinearGradient(x, y, x, y + cardH);
-      cgrad.addColorStop(0, theme.bgTop);
-      cgrad.addColorStop(1, theme.bgBot);
-      this._roundRect(ctx, x, y, cardW, cardH, r);
-      ctx.fillStyle = cgrad;
-      ctx.fill();
+        // Card background gradient
+        const cgrad = ctx.createLinearGradient(x, y, x, y + cardH);
+        cgrad.addColorStop(0, lightenColor(theme.bgTop, 12));
+        cgrad.addColorStop(0.55, theme.bgTop);
+        cgrad.addColorStop(1, theme.bgBot);
+        this._roundRect(ctx, x, y, cardW, cardH, r);
+        ctx.fillStyle = cgrad;
+        ctx.fill();
 
-      ctx.globalAlpha = 0.08;
-      this._roundRect(ctx, x, y, cardW, cardH / 2, r);
-      ctx.fillStyle = '#FFF';
-      ctx.fill();
-      ctx.globalAlpha = 1;
+        ctx.save();
+        this._roundRect(ctx, x, y, cardW, cardH, r);
+        ctx.clip();
 
-      // Neon border glow
-      ctx.save();
-      ctx.shadowColor = theme.accent;
-      ctx.shadowBlur = 10;
-      this._roundRect(ctx, x, y, cardW, cardH, r);
-      ctx.strokeStyle = theme.accent;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.restore();
+        // Accent light pooling behind the level number
+        const pool = ctx.createRadialGradient(
+          x + cardW / 2, y + 90, 10, x + cardW / 2, y + 90, cardW * 0.75
+        );
+        pool.addColorStop(0, hexAlpha(theme.accent, 0.22));
+        pool.addColorStop(1, hexAlpha(theme.accent, 0));
+        ctx.fillStyle = pool;
+        ctx.fillRect(x, y, cardW, cardH);
+
+        // Glass sheen across the upper half
+        const sheen = ctx.createLinearGradient(0, y, 0, y + cardH * 0.5);
+        sheen.addColorStop(0, 'rgba(255,255,255,0.16)');
+        sheen.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = sheen;
+        ctx.fillRect(x, y, cardW, cardH * 0.5);
+
+        // Faint scanlines for surface texture — one pattern fill, not ~57 rects
+        const scan = getScanlinePattern(ctx);
+        if (scan) {
+          ctx.fillStyle = scan;
+          ctx.fillRect(x, y, cardW, cardH);
+        }
+
+        // Lit top edge and accent header bar
+        ctx.fillStyle = hexAlpha(theme.accent, 0.9);
+        ctx.fillRect(x, y, cardW, 3);
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.fillRect(x, y, cardW, 1);
+        ctx.restore();
+
+        // Neon border glow
+        ctx.save();
+        ctx.shadowColor = theme.accent;
+        ctx.shadowBlur = 12;
+        this._roundRect(ctx, x + 1, y + 1, cardW - 2, cardH - 2, r);
+        ctx.strokeStyle = theme.accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
 
       // Level name
       ctx.fillStyle = theme.accent;
@@ -368,13 +401,36 @@ export class UI {
       // Progress bar
       const barX = x + 30, barY = y + 140, barW = cardW - 60, barH = 10, barR = 5;
       this._roundRect(ctx, barX, barY, barW, barH, barR);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
       ctx.fill();
       if (prog.bestProgress > 0) {
         const fillW = Math.max(barH, barW * prog.bestProgress);
-        this._roundRect(ctx, barX, barY, fillW, barH, barR);
-        ctx.fillStyle = prog.completed ? '#00FF64' : theme.accent;
-        ctx.fill();
+        const barCol = prog.completed ? '#00FF64' : theme.accent;
+        if (isSimpleTextures()) {
+          this._roundRect(ctx, barX, barY, fillW, barH, barR);
+          ctx.fillStyle = barCol;
+          ctx.fill();
+        } else {
+          ctx.save();
+          ctx.shadowColor = hexAlpha(barCol, 0.8);
+          ctx.shadowBlur = 8;
+          this._roundRect(ctx, barX, barY, fillW, barH, barR);
+          ctx.fillStyle = barCol;
+          ctx.fill();
+          ctx.restore();
+          ctx.save();
+          this._roundRect(ctx, barX, barY, fillW, barH, barR);
+          ctx.clip();
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.fillRect(barX, barY + 1, fillW, barH * 0.34);
+          ctx.restore();
+        }
+      }
+      if (!isSimpleTextures()) {
+        this._roundRect(ctx, barX + 0.5, barY + 0.5, barW - 1, barH - 1, barR);
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
       }
 
       // Stats
@@ -456,13 +512,7 @@ export class UI {
   drawStats(ctx, progress, diamonds = 0) {
     this.buttons = [];
 
-    // Background
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#0A0800');
-    grad.addColorStop(0.5, '#1A1000');
-    grad.addColorStop(1, '#2A1800');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#0A0800', '#1A1000', '#2A1800'], '#FFD700');
 
     this._drawMenuParticles(ctx);
 
@@ -693,19 +743,50 @@ export class UI {
     const barR = 4;
 
     if (!hideBar) {
+      const simple = isSimpleTextures();
+
+      // Track
       this._roundRect(ctx, barX, barY, barW, barH, barR);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillStyle = simple ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.55)';
       ctx.fill();
+      if (!simple) {
+        this._roundRect(ctx, barX + 0.5, barY + 0.5, barW - 1, barH - 1, barR);
+        ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
 
       if (progress > 0) {
         const fillW = Math.max(barH, barW * progress);
-        ctx.save();
-        ctx.shadowColor = '#00FF64';
-        ctx.shadowBlur = 6;
-        this._roundRect(ctx, barX, barY, fillW, barH, barR);
-        ctx.fillStyle = '#00FF64';
-        ctx.fill();
-        ctx.restore();
+        if (simple) {
+          this._roundRect(ctx, barX, barY, fillW, barH, barR);
+          ctx.fillStyle = '#00FF64';
+          ctx.fill();
+        } else {
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,255,100,0.75)';
+          ctx.shadowBlur = 10;
+          this._roundRect(ctx, barX, barY, fillW, barH, barR);
+          const fg = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+          fg.addColorStop(0, '#00C8FF');
+          fg.addColorStop(0.55, '#00FF9A');
+          fg.addColorStop(1, '#7CFF3C');
+          ctx.fillStyle = fg;
+          ctx.fill();
+          ctx.restore();
+
+          // Gloss along the top of the fill
+          ctx.save();
+          this._roundRect(ctx, barX, barY, fillW, barH, barR);
+          ctx.clip();
+          ctx.fillStyle = 'rgba(255,255,255,0.35)';
+          ctx.fillRect(barX, barY + 1, fillW, barH * 0.34);
+          ctx.restore();
+
+          // Bright leading edge
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.fillRect(barX + fillW - 1.5, barY + 1, 1.5, barH - 2);
+        }
       }
 
       // Progress percentage
@@ -893,14 +974,7 @@ export class UI {
   drawDeathScreen(ctx, progress, attempts, isNewBest = false) {
     this.buttons = [];
 
-    // Dark overlay with vignette
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-    const vig = ctx.createRadialGradient(SCREEN_WIDTH / 2, 300, 100, SCREEN_WIDTH / 2, 300, SCREEN_WIDTH * 0.7);
-    vig.addColorStop(0, 'rgba(0,0,0,0)');
-    vig.addColorStop(1, 'rgba(0,0,0,0.3)');
-    ctx.fillStyle = vig;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawOverlayScrim(ctx, 0.65, '#FF3333', 260);
 
     // Death text with red glow
     ctx.save();
@@ -942,15 +1016,7 @@ export class UI {
   drawCompleteScreen(ctx, attempts, theme, coins = null, isEditorLevel = false) {
     this.buttons = [];
 
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-
-    // Green glow vignette
-    const glow = ctx.createRadialGradient(SCREEN_WIDTH / 2, 230, 50, SCREEN_WIDTH / 2, 230, 400);
-    glow.addColorStop(0, 'rgba(0,255,100,0.08)');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawOverlayScrim(ctx, 0.6, '#00FF64', 230);
 
     // Complete text with neon glow
     ctx.save();
@@ -1009,8 +1075,7 @@ export class UI {
   drawPauseScreen(ctx, editorTesting = false, practiceMode = false, bestProgress = 0, coins = null, showHitboxes = false) {
     this.buttons = [];
 
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawOverlayScrim(ctx, 0.65, '#00C8FF', 300);
 
     // Settings gear button (top-right) — hidden when settings panel is open
     const gearS = S(36);
@@ -1033,13 +1098,7 @@ export class UI {
       const panelX = SCREEN_WIDTH / 2 - panelW / 2;
       const panelY = SCREEN_HEIGHT / 2 - panelH / 2;
 
-      ctx.fillStyle = 'rgba(20,25,40,0.95)';
-      ctx.beginPath();
-      ctx.roundRect(panelX, panelY, panelW, panelH, 12);
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      this._drawPanel(ctx, panelX, panelY, panelW, panelH, 14, '#00C8FF');
 
       ctx.fillStyle = '#FFF';
       ctx.font = `bold ${S(20)}px monospace`;
@@ -1171,12 +1230,21 @@ export class UI {
     ctx.textBaseline = 'middle';
     ctx.fillText(label, barX - 12, barY + barH / 2);
 
-    // Background bar
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    const simple = isSimpleTextures();
     const r = barH / 2;
+
+    // Track
     ctx.beginPath();
     ctx.roundRect(barX, barY, barW, barH, r);
+    ctx.fillStyle = simple ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.42)';
     ctx.fill();
+    if (!simple) {
+      ctx.beginPath();
+      ctx.roundRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1, r);
+      ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
 
     // Filled portion
     const fillW = value * barW;
@@ -1184,19 +1252,45 @@ export class UI {
       const grad = ctx.createLinearGradient(barX, barY, barX + barW, barY);
       grad.addColorStop(0, '#00C864');
       grad.addColorStop(1, '#00C8FF');
-      ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.roundRect(barX, barY, fillW, barH, r);
+      ctx.fillStyle = grad;
       ctx.fill();
+      if (!simple) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(barX, barY, fillW, barH, r);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.fillRect(barX, barY + 1, fillW, barH * 0.36);
+        ctx.restore();
+      }
     }
 
-    // Handle circle
+    // Handle
     const handleX = barX + fillW;
     const handleY = barY + barH / 2;
+    if (simple) {
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleR, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFF';
+      ctx.fill();
+    } else {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 2;
+      ctx.beginPath();
+      ctx.arc(handleX, handleY, handleR, 0, Math.PI * 2);
+      const hg = ctx.createLinearGradient(0, handleY - handleR, 0, handleY + handleR);
+      hg.addColorStop(0, '#FFFFFF');
+      hg.addColorStop(1, '#C5CEDA');
+      ctx.fillStyle = hg;
+      ctx.fill();
+      ctx.restore();
+    }
     ctx.beginPath();
     ctx.arc(handleX, handleY, handleR, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFF';
-    ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.3)';
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -1232,13 +1326,40 @@ export class UI {
     ctx.fillText(label, trackX - S(12), trackY + trackH / 2);
 
     // Track background — interpolate color
-    ctx.beginPath();
-    ctx.roundRect(trackX, trackY, trackW, trackH, trackR);
     const r = Math.round(255 * (1 - t) * 0.15 + 0 * t);
     const g = Math.round(255 * (1 - t) * 0.15 + 200 * t);
     const b = Math.round(255 * (1 - t) * 0.15 + 100 * t);
+    ctx.beginPath();
+    ctx.roundRect(trackX, trackY, trackW, trackH, trackR);
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fill();
+
+    if (!isSimpleTextures()) {
+      // Recessed track: dark lip at the top, lit lip at the bottom
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(trackX, trackY, trackW, trackH, trackR);
+      ctx.clip();
+      const inner = ctx.createLinearGradient(0, trackY, 0, trackY + trackH);
+      inner.addColorStop(0, 'rgba(0,0,0,0.32)');
+      inner.addColorStop(0.5, 'rgba(0,0,0,0)');
+      inner.addColorStop(1, 'rgba(255,255,255,0.16)');
+      ctx.fillStyle = inner;
+      ctx.fillRect(trackX, trackY, trackW, trackH);
+      ctx.restore();
+      if (t > 0.05) {
+        ctx.save();
+        ctx.globalAlpha = t * 0.5;
+        ctx.shadowColor = 'rgb(0,200,100)';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.roundRect(trackX, trackY, trackW, trackH, trackR);
+        ctx.strokeStyle = 'rgb(0,220,120)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
 
     // ON/OFF text on the empty side
     ctx.font = `bold ${S(9)}px monospace`;
@@ -1257,10 +1378,27 @@ export class UI {
     const onX = trackX + trackW - discR - 3;
     const discX = offX + (onX - offX) * t;
     const discY = trackY + trackH / 2;
+    if (isSimpleTextures()) {
+      ctx.beginPath();
+      ctx.arc(discX, discY, discR, 0, Math.PI * 2);
+      ctx.fillStyle = '#FFF';
+      ctx.fill();
+    } else {
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = 5;
+      ctx.shadowOffsetY = 1.5;
+      ctx.beginPath();
+      ctx.arc(discX, discY, discR, 0, Math.PI * 2);
+      const dg = ctx.createLinearGradient(0, discY - discR, 0, discY + discR);
+      dg.addColorStop(0, '#FFFFFF');
+      dg.addColorStop(1, '#C9D2DE');
+      ctx.fillStyle = dg;
+      ctx.fill();
+      ctx.restore();
+    }
     ctx.beginPath();
     ctx.arc(discX, discY, discR, 0, Math.PI * 2);
-    ctx.fillStyle = '#FFF';
-    ctx.fill();
     ctx.strokeStyle = 'rgba(0,0,0,0.2)';
     ctx.lineWidth = 1;
     ctx.stroke();
@@ -1312,13 +1450,7 @@ export class UI {
     // Diamond gem icon helper — delegates to shared method
     const _drawGem = (cx, cy, size) => this._drawGem(ctx, cx, cy, size);
 
-        // Background
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#080018');
-    grad.addColorStop(0.5, '#0A0020');
-    grad.addColorStop(1, '#1A0040');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#080018', '#0A0020', '#1A0040'], '#AA66FF');
 
     this._drawMenuParticles(ctx);
 
@@ -2244,56 +2376,190 @@ export class UI {
     ctx.closePath();
   }
 
+  // ====== SHARED SCREEN CHROME ======
+
+  /**
+   * Screen background shared by every menu. `stops` are the vertical gradient
+   * colours for this screen; `accent` tints the soft glow and grid.
+   * Modern adds baked glow blobs, a faint grid and a vignette in one blit.
+   */
+  _drawScreenBg(ctx, stops, accent) {
+    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
+    for (let i = 0; i < stops.length; i++) {
+      grad.addColorStop(i / (stops.length - 1), stops[i]);
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    if (isSimpleTextures()) return;
+    ctx.drawImage(getScreenOverlay(accent), 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  }
+
+  /**
+   * Dimming scrim over the paused/finished playfield. Modern adds a tinted
+   * radial focus; simple is a single flat fill.
+   */
+  _drawOverlayScrim(ctx, alpha, tint = null, focusY = 300) {
+    ctx.fillStyle = `rgba(0,0,0,${alpha})`;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    if (isSimpleTextures()) return;
+
+    const vig = ctx.createRadialGradient(
+      SCREEN_WIDTH / 2, focusY, 90,
+      SCREEN_WIDTH / 2, focusY, SCREEN_WIDTH * 0.7
+    );
+    vig.addColorStop(0, tint ? hexAlpha(tint, 0.10) : 'rgba(0,0,0,0)');
+    vig.addColorStop(0.45, 'rgba(0,0,0,0)');
+    vig.addColorStop(1, 'rgba(0,0,0,0.38)');
+    ctx.fillStyle = vig;
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  }
+
+  /** Card / dialog surface. Modern gets depth, simple gets a flat plate. */
+  _drawPanel(ctx, x, y, w, h, r = 12, accent = null) {
+    if (isSimpleTextures()) {
+      ctx.fillStyle = 'rgba(16,20,32,0.96)';
+      this._roundRect(ctx, x, y, w, h, r);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 2;
+      this._roundRect(ctx, x, y, w, h, r);
+      ctx.stroke();
+      return;
+    }
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 8;
+    ctx.fillStyle = 'rgba(18,22,36,0.97)';
+    this._roundRect(ctx, x, y, w, h, r);
+    ctx.fill();
+    ctx.restore();
+
+    // Vertical sheen so the plate reads as a lit surface
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, 'rgba(255,255,255,0.075)');
+    g.addColorStop(0.45, 'rgba(255,255,255,0.012)');
+    g.addColorStop(1, 'rgba(0,0,0,0.14)');
+    ctx.fillStyle = g;
+    this._roundRect(ctx, x, y, w, h, r);
+    ctx.fill();
+
+    // Bright hairline along the top edge
+    ctx.save();
+    this._roundRect(ctx, x, y, w, h, r);
+    ctx.clip();
+    ctx.fillStyle = accent ? hexAlpha(accent, 0.5) : 'rgba(255,255,255,0.30)';
+    ctx.fillRect(x + r * 0.6, y, w - r * 1.2, 1);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    ctx.lineWidth = 1;
+    this._roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, r);
+    ctx.stroke();
+  }
+
   _drawMenuParticles(ctx) {
+    const simple = isSimpleTextures();
+    ctx.save();
+    ctx.fillStyle = '#00C8FF';
     for (const p of this.menuParticles) {
       ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = '#00C8FF';
+      if (simple) {
+        ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+        continue;
+      }
+      // Soft mote: a small core inside a wider falloff
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
+      ctx.globalAlpha = p.alpha * 0.35;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 2.6, 0, Math.PI * 2);
+      ctx.fill();
     }
+    ctx.restore();
     ctx.globalAlpha = 1;
   }
 
   _drawButton(ctx, x, y, w, h, text, id, color, fontSize = 22) {
-    const r = 10;
+    const r = Math.min(12, h / 3);
 
-    // Shadow
+    if (isSimpleTextures()) {
+      // Flat plate, hard border, no shadow or gradient
+      this._roundRect(ctx, x, y, w, h, r);
+      ctx.fillStyle = color;
+      ctx.fill();
+      this._roundRect(ctx, x + 1, y + 1, w - 2, h - 2, r);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFF';
+      ctx.font = `bold ${fontSize}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, x + w / 2, y + h / 2);
+      ctx.textBaseline = 'alphabetic';
+      this.buttons.push({ id, x, y, w, h });
+      return;
+    }
+
+    // Drop shadow + a soft bloom in the button's own colour
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.4)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
+    ctx.shadowColor = hexAlpha(color, 0.45);
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 4;
     this._roundRect(ctx, x, y, w, h, r);
-    ctx.fillStyle = color;
+    ctx.fillStyle = darkenColor(color, 40);
     ctx.fill();
     ctx.restore();
 
-    // Main fill with gradient
-    const grad = ctx.createLinearGradient(x, y, x, y + h);
-    grad.addColorStop(0, lightenColor(color, 20));
-    grad.addColorStop(0.5, color);
-    grad.addColorStop(1, darkenColor(color, 20));
+    // Body: bright crown falling to a dark base
+    const grad = ctx.createLinearGradient(0, y, 0, y + h);
+    grad.addColorStop(0, lightenColor(color, 52));
+    grad.addColorStop(0.42, lightenColor(color, 10));
+    grad.addColorStop(0.52, darkenColor(color, 6));
+    grad.addColorStop(1, darkenColor(color, 34));
     this._roundRect(ctx, x, y, w, h, r);
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Top highlight
-    ctx.globalAlpha = 0.2;
-    this._roundRect(ctx, x, y, w, h / 2, r);
-    ctx.fillStyle = '#FFF';
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    // Subtle border
+    // Glass highlight over the top half
+    ctx.save();
     this._roundRect(ctx, x, y, w, h, r);
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.clip();
+    const gloss = ctx.createLinearGradient(0, y, 0, y + h * 0.55);
+    gloss.addColorStop(0, 'rgba(255,255,255,0.34)');
+    gloss.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gloss;
+    ctx.fillRect(x, y, w, h * 0.55);
+    ctx.restore();
+
+    // Bevel: lit top edge, shadowed base
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y + 1.5);
+    ctx.lineTo(x + w - r, y + 1.5);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
+    ctx.beginPath();
+    ctx.moveTo(x + r, y + h - 1.5);
+    ctx.lineTo(x + w - r, y + h - 1.5);
+    ctx.stroke();
+
+    // Outline
+    this._roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, r);
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Text with subtle shadow
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
     ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 1;
     ctx.fillStyle = '#FFF';
     ctx.font = `bold ${fontSize}px monospace`;
     ctx.textAlign = 'center';
@@ -2373,11 +2639,7 @@ export class UI {
   drawSecrets(ctx, secretsData, redeemedCodes) {
     this.buttons = [];
 
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#0A0010');
-    grad.addColorStop(1, '#1A0028');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#0A0010', '#10001C', '#1A0028'], '#FF0066');
 
     this._drawMenuParticles(ctx);
 
@@ -2458,11 +2720,7 @@ export class UI {
 
   drawCommunity(ctx, data) {
     this.buttons = [];
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#001A10');
-    grad.addColorStop(1, '#003820');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#001A10', '#002818', '#003820'], '#00AA88');
     this._drawMenuParticles(ctx);
 
     ctx.save();
@@ -2623,11 +2881,7 @@ export class UI {
 
   drawLeaderboard(ctx, data) {
     this.buttons = [];
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#1A1400');
-    grad.addColorStop(1, '#2A1800');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#1A1400', '#221600', '#2A1800'], '#FFD700');
 
     ctx.save();
     ctx.shadowColor = '#FFD700';
@@ -2717,13 +2971,7 @@ export class UI {
   drawFriends(ctx, friendsData) {
     this.buttons = [];
 
-    // Background
-    const grad = ctx.createLinearGradient(0, 0, 0, SCREEN_HEIGHT);
-    grad.addColorStop(0, '#000818');
-    grad.addColorStop(0.5, '#001030');
-    grad.addColorStop(1, '#001848');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    this._drawScreenBg(ctx, ['#000818', '#001030', '#001848'], '#0088CC');
     this._drawMenuParticles(ctx);
 
     const { tab, friends, requests, searchResults, searchQuery, messages, chatFriend, myLevels, shareTarget, notification, inputActive } = friendsData;
@@ -3507,4 +3755,110 @@ function darkenColor(hex, amt) {
   const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amt);
   const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amt);
   return `rgb(${r},${g},${b})`;
+}
+
+function hexAlpha(hex, a) {
+  if (!hex || hex[0] !== '#') return `rgba(255,255,255,${a})`;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/**
+ * Soft glow blobs + faint grid + vignette for a menu background, baked once per
+ * accent colour and screen size. Menus redraw every frame, so this has to be a
+ * single blit rather than a stack of live gradient fills.
+ *
+ * Baked at half resolution and scaled up: every element is a soft falloff or a
+ * 5%-alpha line, so the upscale is invisible, and it keeps eight screens' worth
+ * of overlays down to a few hundred KB each instead of ~3.4MB.
+ */
+const OVERLAY_SCALE = 0.5;
+const OVERLAY_CACHE_MAX = 4;
+const _screenOverlays = new Map();
+function getScreenOverlay(accent) {
+  const key = `${accent}|${SCREEN_WIDTH}x${SCREEN_HEIGHT}`;
+  const hit = _screenOverlays.get(key);
+  if (hit) {
+    // Refresh recency so the eviction below drops the least-visited screen
+    _screenOverlays.delete(key);
+    _screenOverlays.set(key, hit);
+    return hit;
+  }
+
+  const w = Math.ceil(SCREEN_WIDTH * OVERLAY_SCALE);
+  const h = Math.ceil(SCREEN_HEIGHT * OVERLAY_SCALE);
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const g = c.getContext('2d');
+
+  // Deterministic blob placement so the background is stable across redraws
+  let seed = 20240607;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  for (let i = 0; i < 5; i++) {
+    const x = rnd() * w;
+    const y = rnd() * h;
+    const r = (200 + rnd() * 280) * OVERLAY_SCALE;
+    const blob = g.createRadialGradient(x, y, 0, x, y, r);
+    blob.addColorStop(0, hexAlpha(accent, 0.13));
+    blob.addColorStop(0.55, hexAlpha(accent, 0.04));
+    blob.addColorStop(1, hexAlpha(accent, 0));
+    g.fillStyle = blob;
+    g.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+
+  // Faint grid for a sense of surface
+  const step = 60 * OVERLAY_SCALE;
+  g.strokeStyle = hexAlpha(accent, 0.05);
+  g.lineWidth = 1;
+  g.beginPath();
+  for (let x = step; x < w; x += step) {
+    g.moveTo(x + 0.5, 0);
+    g.lineTo(x + 0.5, h);
+  }
+  for (let y = step; y < h; y += step) {
+    g.moveTo(0, y + 0.5);
+    g.lineTo(w, y + 0.5);
+  }
+  g.stroke();
+
+  // Vignette to pull focus to the centre
+  const vig = g.createRadialGradient(
+    w / 2, h / 2, h * 0.32,
+    w / 2, h / 2, w * 0.72
+  );
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.42)');
+  g.fillStyle = vig;
+  g.fillRect(0, 0, w, h);
+
+  _screenOverlays.set(key, c);
+  while (_screenOverlays.size > OVERLAY_CACHE_MAX) {
+    _screenOverlays.delete(_screenOverlays.keys().next().value);
+  }
+  return c;
+}
+
+// Repeating 1-in-6 scanline, theme-independent so it is built exactly once.
+let _scanTile = null;
+const _scanPatterns = new WeakMap();
+function getScanlinePattern(ctx) {
+  if (_scanPatterns.has(ctx)) return _scanPatterns.get(ctx);
+  if (!_scanTile) {
+    _scanTile = document.createElement('canvas');
+    _scanTile.width = 1;
+    _scanTile.height = 6;
+    const t = _scanTile.getContext('2d');
+    t.fillStyle = 'rgba(255,255,255,0.028)';
+    t.fillRect(0, 4, 1, 1);
+  }
+  const pat = ctx.createPattern(_scanTile, 'repeat') || null;
+  _scanPatterns.set(ctx, pat);
+  return pat;
 }

@@ -1,6 +1,6 @@
 /** Level Editor - visual grid-based editor for creating levels */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES, SCROLL_SPEED, FPS } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, GRID, GROUND_Y, GROUND_H, PLAYER_X_OFFSET, THEMES, SCROLL_SPEED, FPS, isSimpleTextures } from './settings.js';
 import { createObstacle, COLOR_TRIGGER_THEMES } from './obstacles.js';
 import { LEVEL_DATA } from './level.js';
 import { syncEditorLevelToCloud, loadEditorLevelsFromCloud, deleteEditorLevelFromCloud, isConfigured, isAdmin, saveOfficialLevel, uploadLevelMusic, deleteLevelMusic, uploadOfficialMusic, publishLevel, getAuthUser } from './supabase.js';
@@ -1855,7 +1855,26 @@ export class Editor {
     const btnW = Math.min(64, Math.floor(catAvailW / catButtons.length));
 
     // Unified retro button renderer
+    const simpleFx = isSimpleTextures();
     const _drawRetroBtn = (x, y, w, h, color, label, active) => {
+      const fs = Math.min(11, Math.max(8, w / 5.5));
+
+      if (simpleFx) {
+        // Flat plate, hard border, no gradient or glow
+        this._editorRoundRect(ctx, x, y, w, h, r);
+        ctx.fillStyle = active ? color : 'rgba(24,24,40,0.95)';
+        ctx.fill();
+        this._editorRoundRect(ctx, x, y, w, h, r);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = active ? 2 : 1;
+        ctx.stroke();
+        ctx.fillStyle = active ? '#FFF' : color;
+        ctx.font = `bold ${fs}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x + w / 2, y + h / 2 + fs / 3);
+        return;
+      }
+
       const grad = ctx.createLinearGradient(x, y, x, y + h);
       if (active) {
         grad.addColorStop(0, color);
@@ -1885,7 +1904,6 @@ export class Editor {
       ctx.globalAlpha = 1;
       // Label
       ctx.fillStyle = active ? '#FFF' : color;
-      const fs = Math.min(11, Math.max(8, w / 5.5));
       ctx.font = `bold ${fs}px monospace`;
       ctx.textAlign = 'center';
       ctx.fillText(label, x + w / 2, y + h / 2 + fs / 3);
