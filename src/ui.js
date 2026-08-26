@@ -314,9 +314,13 @@ export class UI {
         ctx.strokeStyle = theme.accent;
         ctx.lineWidth = 2;
         ctx.stroke();
-        this._roundRect(ctx, x, y, cardW, 5, r);
+        // Accent header, clipped to the card so it follows the rounded top
+        ctx.save();
+        this._roundRect(ctx, x, y, cardW, cardH, r);
+        ctx.clip();
         ctx.fillStyle = theme.accent;
-        ctx.fill();
+        ctx.fillRect(x, y, cardW, 5);
+        ctx.restore();
       } else {
         // Card shadow
         ctx.save();
@@ -2363,6 +2367,10 @@ export class UI {
   }
 
   _roundRect(ctx, x, y, w, h, r) {
+    // Clamp the radius: a radius larger than half the width or height makes the
+    // corner curves overshoot the rect, and filling the resulting self-
+    // intersecting path grows spikes out of the corners.
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);

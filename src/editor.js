@@ -1806,6 +1806,10 @@ export class Editor {
   }
 
   _editorRoundRect(ctx, x, y, w, h, r) {
+    // Clamp the radius: a radius larger than half the width or height makes the
+    // corner curves overshoot the rect, and filling the resulting self-
+    // intersecting path grows spikes out of the corners.
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
     ctx.beginPath();
     ctx.moveTo(x + r, y);
     ctx.lineTo(x + w - r, y);
