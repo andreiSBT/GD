@@ -591,21 +591,62 @@ export class Player {
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
 
+    // Contact shadow beneath the body
+    if (!isLowDetail()) {
+      ctx.save();
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = '#000';
+      ctx.translate(1.5, 3);
+      this._fillShape(ctx, size, hs, shape);
+      ctx.restore();
+    }
+
     // Draw body shape
     this._drawShapeBody(ctx, size, hs, color, shape);
 
-    // Gradient overlay
-    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
-    grad.addColorStop(0, 'rgba(255,255,255,0.2)');
-    grad.addColorStop(0.5, 'rgba(255,255,255,0)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
+    // Volume: light from the top-left, shadow bottom-right
+    const grad = ctx.createLinearGradient(-hs, -hs, hs, hs);
+    grad.addColorStop(0, 'rgba(255,255,255,0.42)');
+    grad.addColorStop(0.42, 'rgba(255,255,255,0.06)');
+    grad.addColorStop(0.68, 'rgba(0,0,0,0.10)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.38)');
     ctx.fillStyle = grad;
     this._fillShape(ctx, size, hs, shape);
 
-    // Inner shape (lighter)
-    const m = 8;
-    ctx.fillStyle = lighten(color, 50);
+    // Inset face panel — a soft plate rather than a flat block of colour
+    const m = 7;
+    const panel = ctx.createLinearGradient(0, -hs + m, 0, hs - m);
+    panel.addColorStop(0, lighten(color, 70));
+    panel.addColorStop(0.55, lighten(color, 32));
+    panel.addColorStop(1, lighten(color, 4));
+    ctx.fillStyle = panel;
     this._fillInnerShape(ctx, size, hs, m, shape);
+
+    // Crisp rim light along the outline
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.5;
+    this._strokeShape(ctx, size, hs, shape);
+    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
+    ctx.lineWidth = 1;
+    ctx.save();
+    ctx.translate(0.8, 1.2);
+    this._strokeShape(ctx, size, hs, shape);
+    ctx.restore();
+    ctx.restore();
+
+    // Specular sheen sweeping the top-left corner
+    if (!isLowDetail()) {
+      ctx.save();
+      this._makeShapePath(ctx, size, hs, shape);
+      ctx.clip();
+      const sheen = ctx.createLinearGradient(-hs, -hs, 0, -hs * 0.1);
+      sheen.addColorStop(0, 'rgba(255,255,255,0.35)');
+      sheen.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = sheen;
+      ctx.fillRect(-hs, -hs, size, size);
+      ctx.restore();
+    }
 
     // Face/icon based on cubeIcon
     if (shape !== 'egg') {
@@ -778,7 +819,12 @@ export class Player {
   }
 
   _drawShapeBody(ctx, size, hs, color, shape) {
-    ctx.fillStyle = color;
+    // Base fill with a subtle depth gradient so the body isn't flat
+    const base = ctx.createRadialGradient(-hs * 0.35, -hs * 0.4, hs * 0.1, 0, 0, hs * 1.35);
+    base.addColorStop(0, lighten(color, 26));
+    base.addColorStop(0.55, color);
+    base.addColorStop(1, darken(color, 38));
+    ctx.fillStyle = base;
     this._makeShapePath(ctx, size, hs, shape);
     ctx.fill();
   }
@@ -1007,42 +1053,89 @@ export class Player {
   _drawShip(ctx, size, color) {
     const hs = size / 2;
 
-    // Ship body - triangle/arrow shape
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(hs, 0);
-    ctx.lineTo(-hs, -hs + 4);
-    ctx.lineTo(-hs + 10, 0);
-    ctx.lineTo(-hs, hs - 4);
-    ctx.closePath();
+    const hull = () => {
+      ctx.beginPath();
+      ctx.moveTo(hs, 0);
+      ctx.lineTo(-hs, -hs + 4);
+      ctx.lineTo(-hs + 10, 0);
+      ctx.lineTo(-hs, hs - 4);
+      ctx.closePath();
+    };
+
+    // Engine flame behind the hull so the hull edge stays crisp
+    if (this.mode !== MODE_WAVE) {
+      const flameLen = this.holding ? 16 + Math.random() * 8 : 7 + Math.random() * 4;
+      const flame = ctx.createLinearGradient(-hs + 10, 0, -hs - flameLen, 0);
+      flame.addColorStop(0, 'rgba(255,255,255,0.95)');
+      flame.addColorStop(0.3, this.holding ? '#FFD24A' : '#FFAA33');
+      flame.addColorStop(0.7, this.holding ? '#FF6600' : '#FF4400');
+      flame.addColorStop(1, 'rgba(255,40,0,0)');
+      ctx.save();
+      if (!isLowDetail()) {
+        ctx.shadowColor = '#FF6600';
+        ctx.shadowBlur = this.holding ? 18 : 8;
+      }
+      ctx.fillStyle = flame;
+      ctx.beginPath();
+      ctx.moveTo(-hs + 10, -5);
+      ctx.quadraticCurveTo(-hs - flameLen * 0.4, -2, -hs - flameLen, 0);
+      ctx.quadraticCurveTo(-hs - flameLen * 0.4, 2, -hs + 10, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Hull — brushed metal along the length
+    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
+    grad.addColorStop(0, lighten(color, 60));
+    grad.addColorStop(0.35, lighten(color, 18));
+    grad.addColorStop(0.55, color);
+    grad.addColorStop(1, darken(color, 45));
+    ctx.fillStyle = grad;
+    hull();
     ctx.fill();
 
-    // Gradient overlay
-    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
-    grad.addColorStop(0, 'rgba(255,255,255,0.25)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.15)');
-    ctx.fillStyle = grad;
+    // Nose highlight
+    const nose = ctx.createLinearGradient(hs, 0, 0, 0);
+    nose.addColorStop(0, 'rgba(255,255,255,0.5)');
+    nose.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = nose;
+    hull();
     ctx.fill();
 
     if (this.mode !== MODE_WAVE) {
-      // Cockpit
-      ctx.fillStyle = lighten(color, 60);
+      // Canopy glass
+      const canopy = ctx.createRadialGradient(3, -3, 1, 5, 0, 8);
+      canopy.addColorStop(0, 'rgba(255,255,255,0.95)');
+      canopy.addColorStop(0.6, lighten(color, 70));
+      canopy.addColorStop(1, darken(color, 20));
+      ctx.fillStyle = canopy;
       ctx.beginPath();
-      ctx.arc(5, 0, 7, 0, Math.PI * 2);
+      ctx.arc(5, 0, 7.5, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
-      // Eye in cockpit
+      // Pilot eye
       ctx.fillStyle = '#FFF';
       ctx.beginPath();
       ctx.arc(6, -1, 4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#111';
       ctx.beginPath();
-      ctx.arc(7, -1, 2, 0, Math.PI * 2);
+      ctx.arc(7, -1, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.arc(6.2, -2, 0.9, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      // Wave: inner lighter shape instead of cockpit
-      ctx.fillStyle = lighten(color, 50);
+      // Wave: inner lit blade instead of a cockpit
+      const inner = ctx.createLinearGradient(hs - 8, 0, -hs + 12, 0);
+      inner.addColorStop(0, '#FFFFFF');
+      inner.addColorStop(1, lighten(color, 45));
+      ctx.fillStyle = inner;
       ctx.beginPath();
       ctx.moveTo(hs - 8, 0);
       ctx.lineTo(-hs + 12, -hs + 12);
@@ -1052,108 +1145,153 @@ export class Player {
       ctx.fill();
     }
 
-    // Border
-    ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 2;
+    // Panel seam down the hull
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(hs, 0);
-    ctx.lineTo(-hs, -hs + 4);
-    ctx.lineTo(-hs + 10, 0);
-    ctx.lineTo(-hs, hs - 4);
-    ctx.closePath();
+    ctx.moveTo(hs - 4, 0);
+    ctx.lineTo(-hs + 8, 0);
     ctx.stroke();
 
-    if (this.mode !== MODE_WAVE) {
-      // Engine flame (ship only)
-      ctx.fillStyle = this.holding ? '#FF6600' : '#FF3300';
-      ctx.globalAlpha = 0.8 + Math.random() * 0.2;
-      const flameLen = this.holding ? 12 + Math.random() * 6 : 6 + Math.random() * 3;
-      ctx.beginPath();
-      ctx.moveTo(-hs + 10, -4);
-      ctx.lineTo(-hs - flameLen, 0);
-      ctx.lineTo(-hs + 10, 4);
-      ctx.closePath();
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
+    // Border
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    hull();
+    ctx.stroke();
   }
 
   _drawWave(ctx, size, color) {
     const hs = size / 2;
 
-    // Wave - diamond shape
-    ctx.fillStyle = color;
+    const diamond = (r) => {
+      ctx.beginPath();
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r, 0);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-r, 0);
+      ctx.closePath();
+    };
+
+    // Body with a cut-gem gradient
+    const grad = ctx.createLinearGradient(-hs, -hs, hs, hs);
+    grad.addColorStop(0, lighten(color, 65));
+    grad.addColorStop(0.45, color);
+    grad.addColorStop(1, darken(color, 50));
+    ctx.fillStyle = grad;
+    diamond(hs);
+    ctx.fill();
+
+    // Upper-left facet catches the light
+    ctx.save();
+    diamond(hs);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.30)';
     ctx.beginPath();
     ctx.moveTo(0, -hs);
     ctx.lineTo(hs, 0);
-    ctx.lineTo(0, hs);
+    ctx.lineTo(0, 0);
     ctx.lineTo(-hs, 0);
     ctx.closePath();
     ctx.fill();
-
-    // Gradient
-    const grad = ctx.createLinearGradient(0, -hs, 0, hs);
-    grad.addColorStop(0, 'rgba(255,255,255,0.3)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // Inner diamond
-    const m = 10;
-    ctx.fillStyle = lighten(color, 50);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
     ctx.beginPath();
-    ctx.moveTo(0, -hs + m);
-    ctx.lineTo(hs - m, 0);
-    ctx.lineTo(0, hs - m);
-    ctx.lineTo(-hs + m, 0);
+    ctx.moveTo(0, hs);
+    ctx.lineTo(hs, 0);
+    ctx.lineTo(0, 0);
     ctx.closePath();
     ctx.fill();
+    ctx.restore();
+
+    // Inner gem core
+    const m = 10;
+    const core = ctx.createLinearGradient(0, -hs + m, 0, hs - m);
+    core.addColorStop(0, '#FFFFFF');
+    core.addColorStop(0.5, lighten(color, 55));
+    core.addColorStop(1, lighten(color, 12));
+    ctx.fillStyle = core;
+    diamond(hs - m);
+    ctx.fill();
+
+    // Facet lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-hs + m, 0);
+    ctx.lineTo(hs - m, 0);
+    ctx.moveTo(0, -hs + m);
+    ctx.lineTo(0, hs - m);
+    ctx.stroke();
 
     // Border
-    ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, -hs);
-    ctx.lineTo(hs, 0);
-    ctx.lineTo(0, hs);
-    ctx.lineTo(-hs, 0);
-    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.8;
+    ctx.lineJoin = 'round';
+    diamond(hs);
     ctx.stroke();
   }
 
   _drawBall(ctx, size, color) {
     const hs = size / 2;
 
-    // Ball - circle shape
-    ctx.fillStyle = color;
+    // Sphere shading — key light upper-left, bounce light lower-right
+    const sphere = ctx.createRadialGradient(-hs * 0.35, -hs * 0.4, hs * 0.05, 0, 0, hs);
+    sphere.addColorStop(0, lighten(color, 85));
+    sphere.addColorStop(0.35, lighten(color, 25));
+    sphere.addColorStop(0.78, color);
+    sphere.addColorStop(1, darken(color, 55));
+    ctx.fillStyle = sphere;
     ctx.beginPath();
     ctx.arc(0, 0, hs, 0, Math.PI * 2);
     ctx.fill();
 
-    // Gradient overlay
-    const grad = ctx.createRadialGradient(-hs * 0.3, -hs * 0.3, 0, 0, 0, hs);
-    grad.addColorStop(0, 'rgba(255,255,255,0.3)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.2)');
-    ctx.fillStyle = grad;
+    const bounce = ctx.createRadialGradient(hs * 0.3, hs * 0.45, hs * 0.05, 0, 0, hs);
+    bounce.addColorStop(0, 'rgba(255,255,255,0.22)');
+    bounce.addColorStop(0.6, 'rgba(255,255,255,0)');
+    ctx.fillStyle = bounce;
+    ctx.beginPath();
+    ctx.arc(0, 0, hs, 0, Math.PI * 2);
     ctx.fill();
 
-    // Inner circle
-    ctx.fillStyle = lighten(color, 40);
+    // Recessed hub
+    const hub = ctx.createRadialGradient(-hs * 0.15, -hs * 0.18, 0, 0, 0, hs * 0.55);
+    hub.addColorStop(0, lighten(color, 75));
+    hub.addColorStop(1, lighten(color, 20));
+    ctx.fillStyle = hub;
     ctx.beginPath();
     ctx.arc(0, 0, hs * 0.55, 0, Math.PI * 2);
     ctx.fill();
-
-    // Direction indicator line (shows rotation)
-    ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(hs * 0.7, 0);
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.lineWidth = 1.5;
     ctx.stroke();
 
+    // Spokes make the rotation readable
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(hs * 0.72, 0);
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 1; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2;
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * hs * 0.72, Math.sin(a) * hs * 0.72);
+    }
+    ctx.stroke();
+
+    // Glossy highlight
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(-hs * 0.32, -hs * 0.42, hs * 0.26, hs * 0.16, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+
     // Border
-    ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    ctx.lineWidth = 1.8;
     ctx.beginPath();
     ctx.arc(0, 0, hs, 0, Math.PI * 2);
     ctx.stroke();
@@ -1208,14 +1346,35 @@ export class Player {
   }
 }
 
-export function lighten(hex, amount) {
+// Normalize any CSS colour (hsl for rainbow, named, rgb) to #rrggbb.
+// Gradient stops throw on invalid colours, so every shade helper goes through this.
+let _normCtx = null;
+const _normCache = new Map();
+function toHex(color) {
+  if (typeof color !== 'string') return '#FFFFFF';
+  if (color[0] === '#' && color.length === 7) return color;
+  const cached = _normCache.get(color);
+  if (cached) return cached;
+  if (!_normCtx) _normCtx = document.createElement('canvas').getContext('2d');
+  _normCtx.fillStyle = '#000000';
+  _normCtx.fillStyle = color;
+  let out = _normCtx.fillStyle;
+  if (typeof out !== 'string' || out[0] !== '#' || out.length !== 7) out = '#FFFFFF';
+  if (_normCache.size > 512) _normCache.clear();
+  _normCache.set(color, out);
+  return out;
+}
+
+export function lighten(color, amount) {
+  const hex = toHex(color);
   const r = Math.min(255, parseInt(hex.slice(1, 3), 16) + amount);
   const g = Math.min(255, parseInt(hex.slice(3, 5), 16) + amount);
   const b = Math.min(255, parseInt(hex.slice(5, 7), 16) + amount);
   return `rgb(${r},${g},${b})`;
 }
 
-export function darken(hex, amount) {
+export function darken(color, amount) {
+  const hex = toHex(color);
   const r = Math.max(0, parseInt(hex.slice(1, 3), 16) - amount);
   const g = Math.max(0, parseInt(hex.slice(3, 5), 16) - amount);
   const b = Math.max(0, parseInt(hex.slice(5, 7), 16) - amount);

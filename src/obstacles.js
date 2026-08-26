@@ -19,6 +19,233 @@ function clearGlow(ctx) {
   ctx.shadowBlur = 0;
 }
 
+// Mix two hex colors — t=0 gives a, t=1 gives b
+function mix(a, b, t) {
+  const pa = hexToRgbArr(a), pb = hexToRgbArr(b);
+  return `rgb(${Math.round(pa[0] + (pb[0] - pa[0]) * t)},${Math.round(pa[1] + (pb[1] - pa[1]) * t)},${Math.round(pa[2] + (pb[2] - pa[2]) * t)})`;
+}
+function hexToRgbArr(hex) {
+  if (!hex || hex[0] !== '#') return [255, 255, 255];
+  if (hex.length === 4) {
+    return [parseInt(hex[1] + hex[1], 16), parseInt(hex[2] + hex[2], 16), parseInt(hex[3] + hex[3], 16)];
+  }
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+}
+function rgba(hex, a) {
+  const p = hexToRgbArr(hex);
+  return `rgba(${p[0]},${p[1]},${p[2]},${a})`;
+}
+
+// Bevelled blade shape used by spikes — two lit facets, ridge, rim light, dark base.
+// Drawn centred at (0,0) in the current transform, pointing up.
+function drawBlade(c, halfW, halfH, sideInset, baseInset, theme, glow) {
+  const tipY = -halfH + 2;
+  const baseY = halfH - baseInset;
+  const lx = -halfW + sideInset;
+  const rx = halfW - sideInset;
+
+  const outline = () => {
+    c.beginPath();
+    c.moveTo(0, tipY);
+    c.lineTo(lx, baseY);
+    c.lineTo(rx, baseY);
+    c.closePath();
+  };
+
+  // Soft outer bloom
+  drawNeonGlow(c, theme.accent, glow);
+  c.fillStyle = mix(theme.accent, '#000000', 0.35);
+  outline();
+  c.fill();
+  clearGlow(c);
+
+  // Base body — vertical gradient, bright at the tip
+  const body = c.createLinearGradient(0, tipY, 0, baseY);
+  body.addColorStop(0, mix(theme.spike, '#FFFFFF', 0.55));
+  body.addColorStop(0.35, theme.spike);
+  body.addColorStop(0.8, theme.accent);
+  body.addColorStop(1, mix(theme.accent, '#000000', 0.45));
+  c.fillStyle = body;
+  outline();
+  c.fill();
+
+  // Right facet in shadow — reads as a bevelled edge
+  c.save();
+  outline();
+  c.clip();
+  const shade = c.createLinearGradient(0, 0, rx, 0);
+  shade.addColorStop(0, 'rgba(0,0,0,0)');
+  shade.addColorStop(1, 'rgba(0,0,0,0.38)');
+  c.fillStyle = shade;
+  c.fillRect(0, tipY, rx, baseY - tipY);
+
+  // Left facet catches the light
+  const lit = c.createLinearGradient(lx, 0, 0, 0);
+  lit.addColorStop(0, 'rgba(255,255,255,0.28)');
+  lit.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = lit;
+  c.fillRect(lx, tipY, -lx, baseY - tipY);
+
+  // Contact shadow where the blade meets the ground
+  const foot = c.createLinearGradient(0, baseY - halfH * 0.4, 0, baseY);
+  foot.addColorStop(0, 'rgba(0,0,0,0)');
+  foot.addColorStop(1, 'rgba(0,0,0,0.35)');
+  c.fillStyle = foot;
+  c.fillRect(lx, baseY - halfH * 0.4, rx - lx, halfH * 0.4);
+  c.restore();
+
+  // Central ridge highlight
+  const ridge = c.createLinearGradient(0, tipY, 0, baseY);
+  ridge.addColorStop(0, 'rgba(255,255,255,0.85)');
+  ridge.addColorStop(1, 'rgba(255,255,255,0)');
+  c.strokeStyle = ridge;
+  c.lineWidth = Math.max(1, halfW * 0.09);
+  c.lineCap = 'round';
+  c.beginPath();
+  c.moveTo(0, tipY + 2);
+  c.lineTo(0, baseY - 2);
+  c.stroke();
+
+  // Rim light along the left edge
+  c.strokeStyle = 'rgba(255,255,255,0.6)';
+  c.lineWidth = 1.2;
+  c.beginPath();
+  c.moveTo(0, tipY);
+  c.lineTo(lx, baseY);
+  c.stroke();
+
+  // Neon outline
+  c.strokeStyle = mix(theme.accent, '#FFFFFF', 0.25);
+  c.lineWidth = 1.4;
+  c.lineJoin = 'round';
+  outline();
+  c.stroke();
+
+  // Hot tip
+  drawNeonGlow(c, '#FFFFFF', 8);
+  c.fillStyle = 'rgba(255,255,255,0.95)';
+  c.beginPath();
+  c.arc(0, tipY + 2, Math.max(1, halfW * 0.09), 0, Math.PI * 2);
+  c.fill();
+  clearGlow(c);
+}
+
+// ---- Block surface painting (shared by Platform / PlatformGroup / Slope) ----
+
+const _blockTiles = new Map();
+function getBlockTile(theme) {
+  const key = theme.platform + theme.accent;
+  let tile = _blockTiles.get(key);
+  if (tile) return tile;
+  tile = document.createElement('canvas');
+  tile.width = 25;
+  tile.height = 25;
+  const t = tile.getContext('2d');
+  // Faint diagonal brushed lines
+  t.strokeStyle = 'rgba(255,255,255,0.045)';
+  t.lineWidth = 1;
+  for (let i = -25; i < 50; i += 8) {
+    t.beginPath();
+    t.moveTo(i, 0);
+    t.lineTo(i + 25, 25);
+    t.stroke();
+  }
+  // Rivet dot in the corner of each tile
+  t.fillStyle = 'rgba(0,0,0,0.16)';
+  t.beginPath();
+  t.arc(12.5, 12.5, 1.4, 0, Math.PI * 2);
+  t.fill();
+  t.fillStyle = 'rgba(255,255,255,0.10)';
+  t.beginPath();
+  t.arc(12.5, 11.7, 1.1, 0, Math.PI * 2);
+  t.fill();
+  _blockTiles.set(key, tile);
+  return tile;
+}
+
+// Pattern anchored to a given x so the texture rides with the world, not the screen
+function blockPattern(c, theme, offX) {
+  const pat = c.createPattern(getBlockTile(theme), 'repeat');
+  if (pat && offX) {
+    const o = ((offX % 25) + 25) % 25;
+    if (typeof DOMMatrix !== 'undefined') pat.setTransform(new DOMMatrix().translateSelf(o, 0));
+  }
+  return pat;
+}
+
+// Base fill: depth gradient + brushed texture + top gloss + bottom occlusion
+function paintBlockBody(c, x, y, w, h, theme, patOffX = 0) {
+  const grad = c.createLinearGradient(0, y, 0, y + h);
+  grad.addColorStop(0, lighten(theme.platform, 34));
+  grad.addColorStop(0.14, lighten(theme.platform, 14));
+  grad.addColorStop(0.62, theme.platform);
+  grad.addColorStop(1, darken(theme.platform, 34));
+  c.fillStyle = grad;
+  c.fillRect(x, y, w, h);
+
+  if (!localStorage.getItem('gd_low_detail')) {
+    const pat = blockPattern(c, theme, patOffX);
+    if (pat) {
+      c.fillStyle = pat;
+      c.fillRect(x, y, w, h);
+    }
+  }
+
+  // Glossy sheen across the top band
+  const gloss = c.createLinearGradient(0, y, 0, y + Math.min(h * 0.5, 18));
+  gloss.addColorStop(0, 'rgba(255,255,255,0.20)');
+  gloss.addColorStop(1, 'rgba(255,255,255,0)');
+  c.fillStyle = gloss;
+  c.fillRect(x, y, w, Math.min(h * 0.5, 18));
+
+  // Ambient occlusion along the bottom
+  const ao = c.createLinearGradient(0, y + h - Math.min(h * 0.5, 14), 0, y + h);
+  ao.addColorStop(0, 'rgba(0,0,0,0)');
+  ao.addColorStop(1, 'rgba(0,0,0,0.30)');
+  c.fillStyle = ao;
+  c.fillRect(x, y + h - Math.min(h * 0.5, 14), w, Math.min(h * 0.5, 14));
+}
+
+// Inner bevel: light on top/left, shadow on bottom/right
+function paintBlockBevel(c, x, y, w, h, theme, he) {
+  c.save();
+  c.lineWidth = 2;
+  c.strokeStyle = 'rgba(255,255,255,0.22)';
+  c.beginPath();
+  if (!he.has('top')) { c.moveTo(x + 1, y + 2); c.lineTo(x + w - 1, y + 2); }
+  if (!he.has('left')) { c.moveTo(x + 2, y + 1); c.lineTo(x + 2, y + h - 1); }
+  c.stroke();
+
+  c.strokeStyle = 'rgba(0,0,0,0.28)';
+  c.beginPath();
+  if (!he.has('bottom')) { c.moveTo(x + 1, y + h - 2); c.lineTo(x + w - 1, y + h - 2); }
+  if (!he.has('right')) { c.moveTo(x + w - 2, y + 1); c.lineTo(x + w - 2, y + h - 1); }
+  c.stroke();
+  c.restore();
+}
+
+// Neon top strip + crisp accent border on exposed edges
+function paintBlockEdges(c, x, y, w, h, theme, he) {
+  if (!he.has('top')) {
+    drawNeonGlow(c, theme.accent, 10);
+    const bar = c.createLinearGradient(0, y, 0, y + 4);
+    bar.addColorStop(0, mix(theme.accent, '#FFFFFF', 0.55));
+    bar.addColorStop(1, theme.accent);
+    c.fillStyle = bar;
+    c.fillRect(x, y, w, 3);
+    clearGlow(c);
+  }
+
+  c.strokeStyle = rgba(theme.accent, 0.85);
+  c.lineWidth = 1;
+  c.beginPath();
+  if (!he.has('top')) { c.moveTo(x, y + 0.5); c.lineTo(x + w, y + 0.5); }
+  if (!he.has('right')) { c.moveTo(x + w - 0.5, y); c.lineTo(x + w - 0.5, y + h); }
+  if (!he.has('bottom')) { c.moveTo(x + w, y + h - 0.5); c.lineTo(x, y + h - 0.5); }
+  if (!he.has('left')) { c.moveTo(x + 0.5, y + h); c.lineTo(x + 0.5, y); }
+  c.stroke();
+}
+
 // Offscreen canvas sprite cache — render once, blit every frame
 const _spriteCache = new Map();
 function getCachedSprite(key, w, h, drawFn) {
@@ -39,6 +266,7 @@ function getCachedSprite(key, w, h, drawFn) {
 // Clear cache when theme changes (called from Level)
 export function clearSpriteCache() {
   _spriteCache.clear();
+  _blockTiles.clear();
 }
 
 // ============================================================
@@ -87,36 +315,7 @@ export class Spike {
       const halfG = GRID / 2;
       c.translate(GRID / 2, GRID / 2);
       c.rotate((this.rot * Math.PI) / 180);
-
-      drawNeonGlow(c, theme.accent, 12);
-      const grad = c.createLinearGradient(0, -halfG, 0, halfG);
-      grad.addColorStop(0, theme.spike);
-      grad.addColorStop(1, theme.accent);
-      c.fillStyle = grad;
-      c.beginPath();
-      c.moveTo(0, -halfG + 2);
-      c.lineTo(-halfG + 4, halfG - 2);
-      c.lineTo(halfG - 4, halfG - 2);
-      c.closePath();
-      c.fill();
-
-      c.fillStyle = 'rgba(255,255,255,0.15)';
-      c.beginPath();
-      c.moveTo(0, -halfG + 10);
-      c.lineTo(-halfG + 14, halfG - 6);
-      c.lineTo(halfG - 14, halfG - 6);
-      c.closePath();
-      c.fill();
-
-      clearGlow(c);
-      c.strokeStyle = theme.accent;
-      c.lineWidth = 2;
-      c.beginPath();
-      c.moveTo(0, -halfG + 2);
-      c.lineTo(-halfG + 4, halfG - 2);
-      c.lineTo(halfG - 4, halfG - 2);
-      c.closePath();
-      c.stroke();
+      drawBlade(c, halfG, halfG, 4, 2, theme, 12);
     });
     ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
@@ -170,36 +369,7 @@ export class MiniSpike {
       const halfH = spriteH / 2;
       c.translate(halfW, halfH);
       c.rotate((this.rot * Math.PI) / 180);
-
-      drawNeonGlow(c, theme.accent, 8);
-      const grad = c.createLinearGradient(0, -halfH, 0, halfH);
-      grad.addColorStop(0, theme.spike);
-      grad.addColorStop(1, theme.accent);
-      c.fillStyle = grad;
-      c.beginPath();
-      c.moveTo(0, -halfH + 2);
-      c.lineTo(-halfW + 6, halfH - 1);
-      c.lineTo(halfW - 6, halfH - 1);
-      c.closePath();
-      c.fill();
-
-      c.fillStyle = 'rgba(255,255,255,0.15)';
-      c.beginPath();
-      c.moveTo(0, -halfH + 8);
-      c.lineTo(-halfW + 14, halfH - 3);
-      c.lineTo(halfW - 14, halfH - 3);
-      c.closePath();
-      c.fill();
-
-      clearGlow(c);
-      c.strokeStyle = theme.accent;
-      c.lineWidth = 1.5;
-      c.beginPath();
-      c.moveTo(0, -halfH + 2);
-      c.lineTo(-halfW + 6, halfH - 1);
-      c.lineTo(halfW - 6, halfH - 1);
-      c.closePath();
-      c.stroke();
+      drawBlade(c, halfW, halfH, 6, 1, theme, 8);
     });
     ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
@@ -287,30 +457,9 @@ export class Platform {
 
     const key = `plat_${drawW}_${drawH}_${theme.platform}_${theme.accent}_${edgeKey}`;
     const sprite = getCachedSprite(key, drawW, drawH, (c) => {
-      // Main fill with gradient
-      const grad = c.createLinearGradient(0, 0, 0, drawH);
-      grad.addColorStop(0, lighten(theme.platform, 20));
-      grad.addColorStop(1, theme.platform);
-      c.fillStyle = grad;
-      c.fillRect(0, 0, drawW, drawH);
-
-      // Neon top edge (only if top not hidden)
-      if (!he.has('top')) {
-        drawNeonGlow(c, theme.accent, 8);
-        c.fillStyle = theme.accent;
-        c.fillRect(0, 0, drawW, 3);
-        clearGlow(c);
-      }
-
-      // Border — only on non-hidden edges
-      c.strokeStyle = theme.accent;
-      c.lineWidth = 1;
-      c.beginPath();
-      if (!he.has('top')) { c.moveTo(0, 0); c.lineTo(drawW, 0); }
-      if (!he.has('right')) { c.moveTo(drawW, 0); c.lineTo(drawW, drawH); }
-      if (!he.has('bottom')) { c.moveTo(drawW, drawH); c.lineTo(0, drawH); }
-      if (!he.has('left')) { c.moveTo(0, drawH); c.lineTo(0, 0); }
-      c.stroke();
+      paintBlockBody(c, 0, 0, drawW, drawH, theme);
+      paintBlockBevel(c, 0, 0, drawW, drawH, theme, he);
+      paintBlockEdges(c, 0, 0, drawW, drawH, theme, he);
     });
     ctx.drawImage(sprite.canvas, sx - sprite.pad, sy - sprite.pad);
   }
@@ -386,34 +535,51 @@ export class PlatformGroup {
     }
     ctx.clip();
 
-    // Single gradient over the whole group
-    const grad = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
-    grad.addColorStop(0, lighten(theme.platform, 20));
-    grad.addColorStop(1, theme.platform);
-    ctx.fillStyle = grad;
-    ctx.fillRect(sx, this.y, this.w, this.h);
+    // Single shaded body over the whole group so merged blocks read as one slab.
+    // Texture anchored to world space so it doesn't swim as the camera scrolls.
+    const worldOff = PLAYER_X_OFFSET - cameraX;
+    paintBlockBody(ctx, sx, this.y, this.w, this.h, theme, worldOff);
 
-    // Neon top edge on exposed platform tops
-    drawNeonGlow(ctx, theme.accent, 8);
-    ctx.fillStyle = theme.accent;
+    // Per-piece top lighting: neon strip + bevel highlight on exposed tops
     for (const p of this.pieces) {
       if (p.type === 'slope' || p.type === 'mini_slope') continue; // slopes get diagonal glow below
       const hasAbove = this.pieces.some(q =>
         q !== p && Math.abs(q.y + q.h - p.y) < 2 && q.x < p.x + p.w && q.x + q.w > p.x
       );
-      if (!hasAbove) {
-        const px = p.x - cameraX + PLAYER_X_OFFSET;
-        ctx.fillRect(px, p.y, p.w, 3);
-      }
+      if (hasAbove) continue;
+      const px = p.x - cameraX + PLAYER_X_OFFSET;
+
+      // Local gloss so each exposed surface catches the light
+      const gloss = ctx.createLinearGradient(0, p.y, 0, p.y + 16);
+      gloss.addColorStop(0, 'rgba(255,255,255,0.18)');
+      gloss.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gloss;
+      ctx.fillRect(px, p.y, p.w, 16);
+
+      drawNeonGlow(ctx, theme.accent, 10);
+      const bar = ctx.createLinearGradient(0, p.y, 0, p.y + 4);
+      bar.addColorStop(0, mix(theme.accent, '#FFFFFF', 0.55));
+      bar.addColorStop(1, theme.accent);
+      ctx.fillStyle = bar;
+      ctx.fillRect(px, p.y, p.w, 3);
+      clearGlow(ctx);
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(px, p.y + 4.5);
+      ctx.lineTo(px + p.w, p.y + 4.5);
+      ctx.stroke();
     }
-    clearGlow(ctx);
 
     ctx.restore();
 
     // Redraw slopes as filled triangles outside clip to cover antialiasing seams
     const seamGrad = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
-    seamGrad.addColorStop(0, lighten(theme.platform, 20));
-    seamGrad.addColorStop(1, theme.platform);
+    seamGrad.addColorStop(0, lighten(theme.platform, 34));
+    seamGrad.addColorStop(0.14, lighten(theme.platform, 14));
+    seamGrad.addColorStop(0.62, theme.platform);
+    seamGrad.addColorStop(1, darken(theme.platform, 34));
     for (const p of this.pieces) {
       if (p.type !== 'slope') continue;
       const px = p.x - cameraX + PLAYER_X_OFFSET;
@@ -430,6 +596,11 @@ export class PlatformGroup {
       }
       ctx.closePath();
       ctx.fill();
+      // Restore the brushed texture the flat fill just covered
+      if (!localStorage.getItem('gd_low_detail')) {
+        const pat = blockPattern(ctx, theme, PLAYER_X_OFFSET - cameraX);
+        if (pat) { ctx.fillStyle = pat; ctx.fill(); }
+      }
     }
 
     // Slope diagonal glow (drawn outside clip)
@@ -437,20 +608,25 @@ export class PlatformGroup {
       if (p.type !== 'slope') continue;
       const px = p.x - cameraX + PLAYER_X_OFFSET;
       ctx.save();
-      drawNeonGlow(ctx, theme.accent, 8);
+      ctx.lineCap = 'round';
+      drawNeonGlow(ctx, theme.accent, 10);
       ctx.strokeStyle = theme.accent;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 3;
       ctx.beginPath();
       if (p.direction === 'up') { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y); }
       else { ctx.moveTo(px, p.y); ctx.lineTo(px + p.w, p.y + p.h); }
       ctx.stroke();
       clearGlow(ctx);
+      // Bright core along the ramp
+      ctx.strokeStyle = mix(theme.accent, '#FFFFFF', 0.7);
+      ctx.lineWidth = 1;
+      ctx.stroke();
       ctx.restore();
     }
 
     // Border — outer edges only
     ctx.save();
-    ctx.strokeStyle = theme.accent;
+    ctx.strokeStyle = rgba(theme.accent, 0.85);
     ctx.lineWidth = 1;
     for (const p of this.pieces) {
       const px = p.x - cameraX + PLAYER_X_OFFSET;
@@ -509,32 +685,48 @@ export class MovingPlatform extends Platform {
     if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
     const sy = this.y;
 
-    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-    grad.addColorStop(0, lighten(theme.platform, 30));
-    grad.addColorStop(1, theme.platform);
-    ctx.fillStyle = grad;
-    ctx.fillRect(sx, sy, this.w, this.h);
+    ctx.save();
 
-    // Arrow indicators inside
-    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    // Shaded body with rounded corners
+    const rr = Math.min(6, this.h / 2);
+    ctx.beginPath();
+    ctx.roundRect(sx, sy, this.w, this.h, rr);
+    ctx.save();
+    ctx.clip();
+    paintBlockBody(ctx, sx, sy, this.w, this.h, theme, sx);
+
+    // Hazard chevrons drifting along the platform
     const mid = sy + this.h / 2;
-    for (let ax = sx + 10; ax < sx + this.w - 10; ax += 20) {
+    const drift = (this.t * 60) % 22;
+    ctx.fillStyle = 'rgba(255,255,255,0.13)';
+    for (let ax = sx - 22 + drift; ax < sx + this.w; ax += 22) {
       ctx.beginPath();
-      ctx.moveTo(ax, mid - 5);
-      ctx.lineTo(ax + 8, mid);
-      ctx.lineTo(ax, mid + 5);
+      ctx.moveTo(ax, mid - 6);
+      ctx.lineTo(ax + 9, mid);
+      ctx.lineTo(ax, mid + 6);
+      ctx.lineTo(ax + 4, mid);
       ctx.closePath();
       ctx.fill();
     }
+    ctx.restore();
 
-    // Neon border dashed
-    drawNeonGlow(ctx, theme.accent, 6);
-    ctx.strokeStyle = theme.accent;
+    // Neon top edge + rounded outline
+    drawNeonGlow(ctx, theme.accent, 10);
+    ctx.strokeStyle = mix(theme.accent, '#FFFFFF', 0.3);
     ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(sx, sy, this.w, this.h);
-    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.roundRect(sx + 1, sy + 1, this.w - 2, this.h - 2, rr);
+    ctx.stroke();
     clearGlow(ctx);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx + rr, sy + 3);
+    ctx.lineTo(sx + this.w - rr, sy + 3);
+    ctx.stroke();
+
+    ctx.restore();
   }
 }
 
@@ -674,34 +866,83 @@ export class TransportPlatform extends Platform {
     if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
     const sy = this.y;
 
-    // Fill with distinct color
+    // Distinct colour: idle blue, engaged green
     const color = this.active ? '#44FF88' : '#44AAFF';
-    const grad = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-    grad.addColorStop(0, lighten(color, 30));
-    grad.addColorStop(1, color);
+    const rr = Math.min(7, this.h / 2);
+    const mid = sy + this.h / 2;
+
+    ctx.save();
+
+    // Under-glow so it reads as hovering
+    if (!localStorage.getItem('gd_low_detail')) {
+      const under = ctx.createLinearGradient(0, sy + this.h, 0, sy + this.h + 16);
+      under.addColorStop(0, rgba(color, 0.35));
+      under.addColorStop(1, rgba(color, 0));
+      ctx.fillStyle = under;
+      ctx.fillRect(sx, sy + this.h, this.w, 16);
+    }
+
+    ctx.beginPath();
+    ctx.roundRect(sx, sy, this.w, this.h, rr);
+    ctx.save();
+    ctx.clip();
+
+    // Metallic body
+    const grad = ctx.createLinearGradient(0, sy, 0, sy + this.h);
+    grad.addColorStop(0, mix(color, '#FFFFFF', 0.6));
+    grad.addColorStop(0.2, mix(color, '#FFFFFF', 0.25));
+    grad.addColorStop(0.65, color);
+    grad.addColorStop(1, darken(color, 45));
     ctx.fillStyle = grad;
     ctx.fillRect(sx, sy, this.w, this.h);
 
-    // Transport arrows (double chevrons)
-    ctx.fillStyle = 'rgba(255,255,255,0.15)';
-    const mid = sy + this.h / 2;
-    for (let ax = sx + 8; ax < sx + this.w - 8; ax += 16) {
+    // Travelling double chevrons show the direction of transport
+    const flow = this.active ? (this.progress * this.totalFrames * 1.6) % 18 : 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    for (let ax = sx - 18 + flow; ax < sx + this.w; ax += 18) {
       ctx.beginPath();
       ctx.moveTo(ax, mid - 5);
       ctx.lineTo(ax + 5, mid);
       ctx.lineTo(ax, mid + 5);
-      ctx.moveTo(ax + 6, mid - 5);
-      ctx.lineTo(ax + 11, mid);
-      ctx.lineTo(ax + 6, mid + 5);
+      ctx.lineTo(ax + 2, mid);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(ax + 7, mid - 5);
+      ctx.lineTo(ax + 12, mid);
+      ctx.lineTo(ax + 7, mid + 5);
+      ctx.lineTo(ax + 9, mid);
+      ctx.closePath();
       ctx.fill();
     }
 
-    // Neon border solid
-    drawNeonGlow(ctx, '#44FF88', 6);
-    ctx.strokeStyle = '#44FF88';
+    // Top gloss
+    const gloss = ctx.createLinearGradient(0, sy, 0, sy + this.h * 0.5);
+    gloss.addColorStop(0, 'rgba(255,255,255,0.30)');
+    gloss.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gloss;
+    ctx.fillRect(sx, sy, this.w, this.h * 0.5);
+    ctx.restore();
+
+    // Neon outline
+    drawNeonGlow(ctx, color, this.active ? 14 : 8);
+    ctx.strokeStyle = mix(color, '#FFFFFF', 0.35);
     ctx.lineWidth = 2;
-    ctx.strokeRect(sx, sy, this.w, this.h);
+    ctx.beginPath();
+    ctx.roundRect(sx + 1, sy + 1, this.w - 2, this.h - 2, rr);
+    ctx.stroke();
     clearGlow(ctx);
+
+    // Corner rivets
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    for (const [rx, ry] of [[sx + 6, sy + 5], [sx + this.w - 6, sy + 5],
+                            [sx + 6, sy + this.h - 5], [sx + this.w - 6, sy + this.h - 5]]) {
+      ctx.beginPath();
+      ctx.arc(rx, ry, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 }
 
@@ -760,32 +1001,75 @@ export class JumpOrb {
     ctx.save();
     ctx.globalAlpha = this.activated ? 0.2 : 1;
 
-    // Outer glow ring — expands on beat
-    const glowSize = 15 + beat * 12;
-    drawNeonGlow(ctx, color, glowSize);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius + 6 + beat * 4, 0, Math.PI * 2);
-    ctx.stroke();
+    // Soft ambient halo behind the orb
+    if (!localStorage.getItem('gd_low_detail')) {
+      const halo = ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, radius * 3);
+      halo.addColorStop(0, rgba(color, 0.35 + beat * 0.2));
+      halo.addColorStop(0.5, rgba(color, 0.10));
+      halo.addColorStop(1, rgba(color, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    // Main orb
-    const grad = ctx.createRadialGradient(cx - 2, cy - 2, 1, cx, cy, radius);
-    grad.addColorStop(0, '#FFF');
-    grad.addColorStop(0.3 + beat * 0.1, color);
-    grad.addColorStop(1, darken(color, 40));
+    // Rotating dashed capture ring — reads as "interactive"
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.pulseTimer * 0.6);
+    drawNeonGlow(ctx, color, 12 + beat * 10);
+    ctx.strokeStyle = mix(color, '#FFFFFF', 0.35);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.setLineDash([6, 7]);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius + 7 + beat * 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    clearGlow(ctx);
+    ctx.restore();
+
+    // Glass sphere body
+    drawNeonGlow(ctx, color, 14 + beat * 10);
+    const grad = ctx.createRadialGradient(
+      cx - radius * 0.35, cy - radius * 0.4, radius * 0.05,
+      cx, cy, radius
+    );
+    grad.addColorStop(0, '#FFFFFF');
+    grad.addColorStop(0.22 + beat * 0.08, mix(color, '#FFFFFF', 0.45));
+    grad.addColorStop(0.62, color);
+    grad.addColorStop(1, darken(color, 55));
     ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+    clearGlow(ctx);
+
+    // Bottom rim bounce-light
+    const rim = ctx.createRadialGradient(
+      cx + radius * 0.2, cy + radius * 0.5, radius * 0.1,
+      cx, cy, radius
+    );
+    rim.addColorStop(0, rgba(color, 0));
+    rim.addColorStop(0.75, rgba(color, 0));
+    rim.addColorStop(1, 'rgba(255,255,255,0.5)');
+    ctx.fillStyle = rim;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
 
     // Specular highlight
-    ctx.fillStyle = `rgba(255,255,255,${0.4 + beat * 0.3})`;
+    ctx.fillStyle = `rgba(255,255,255,${0.55 + beat * 0.3})`;
     ctx.beginPath();
-    ctx.arc(cx - 2, cy - 3, radius * 0.35, 0, Math.PI * 2);
+    ctx.ellipse(cx - radius * 0.3, cy - radius * 0.38, radius * 0.3, radius * 0.22, -0.5, 0, Math.PI * 2);
     ctx.fill();
 
-    clearGlow(ctx);
+    // Tiny secondary sparkle
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.arc(cx + radius * 0.35, cy + radius * 0.3, radius * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+
     ctx.restore();
   }
 }
@@ -841,33 +1125,68 @@ export class JumpPad {
     const halfW = GRID * 0.38;
     const height = this.h * 0.45;
 
-    // Flat rounded bump
-    drawNeonGlow(ctx, color, flash ? 20 : 8);
-    ctx.fillStyle = flash ? '#FFF' : color;
+    // Ground pool of light beneath the pad
+    if (!localStorage.getItem('gd_low_detail')) {
+      const pool = ctx.createRadialGradient(cx, baseY, 2, cx, baseY, halfW * 2);
+      pool.addColorStop(0, rgba(color, flash ? 0.7 : 0.4));
+      pool.addColorStop(1, rgba(color, 0));
+      ctx.fillStyle = pool;
+      ctx.fillRect(cx - halfW * 2, baseY - halfW * 1.2, halfW * 4, halfW * 2.4);
+    }
+
+    // Dark mounting plate for contrast against the floor
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.beginPath();
+    ctx.roundRect(cx - halfW - 2, baseY - 3, (halfW + 2) * 2, 5, 2.5);
+    ctx.fill();
+
+    // Emitter dome
+    drawNeonGlow(ctx, color, flash ? 24 : 12);
+    const dome = ctx.createLinearGradient(0, baseY - height * 2, 0, baseY);
+    dome.addColorStop(0, flash ? '#FFFFFF' : mix(color, '#FFFFFF', 0.65));
+    dome.addColorStop(0.55, flash ? '#FFFFFF' : color);
+    dome.addColorStop(1, flash ? mix(color, '#FFFFFF', 0.4) : darken(color, 45));
+    ctx.fillStyle = dome;
     ctx.beginPath();
     ctx.moveTo(cx - halfW, baseY);
-    ctx.quadraticCurveTo(cx, baseY - height * 2, cx + halfW, baseY);
+    ctx.quadraticCurveTo(cx, baseY - height * 2.4, cx + halfW, baseY);
+    ctx.closePath();
+    ctx.fill();
+    clearGlow(ctx);
+
+    // Glass highlight across the dome
+    ctx.fillStyle = flash ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.32)';
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW * 0.62, baseY - 2);
+    ctx.quadraticCurveTo(cx - halfW * 0.1, baseY - height * 2, cx + halfW * 0.15, baseY - 2);
     ctx.closePath();
     ctx.fill();
 
-    // Inner highlight
-    const ihW = halfW * 0.6;
-    const ihH = height * 0.6;
-    ctx.fillStyle = flash ? 'rgba(255,255,255,0.6)' : lighten(color, 50);
+    // Bright emitter slit along the crown
+    drawNeonGlow(ctx, '#FFFFFF', flash ? 14 : 6);
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(cx - ihW, baseY - 1);
-    ctx.quadraticCurveTo(cx, baseY - ihH * 2 - 1, cx + ihW, baseY - 1);
-    ctx.closePath();
-    ctx.fill();
+    ctx.moveTo(cx - halfW * 0.35, baseY - height * 1.15);
+    ctx.lineTo(cx + halfW * 0.35, baseY - height * 1.15);
+    ctx.stroke();
+    clearGlow(ctx);
 
-    // Small arrow
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(cx, baseY - height * 1.2);
-    ctx.lineTo(cx - 3, baseY - height * 0.5);
-    ctx.lineTo(cx + 3, baseY - height * 0.5);
-    ctx.closePath();
-    ctx.fill();
+    // Stacked chevrons pointing up
+    ctx.strokeStyle = flash ? '#FFFFFF' : 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    for (let i = 0; i < 2; i++) {
+      const yOff = baseY - height * (2.6 + i * 0.8) - (flash ? 6 : 0);
+      ctx.globalAlpha = (1 - i * 0.45) * (flash ? 1 : 0.8);
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, yOff + 5);
+      ctx.lineTo(cx, yOff);
+      ctx.lineTo(cx + 6, yOff + 5);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
 
     clearGlow(ctx);
 
@@ -966,54 +1285,99 @@ export class Portal {
     const barW = 8;
     const barInset = 6;
 
-    ctx.save();
-    ctx.globalAlpha = this.activated ? 0.15 : 1;
-
-    // Outer glow
-    drawNeonGlow(ctx, color1, 18);
-
-    // Outer frame — pill-shaped outline
-    const frameGrad = ctx.createLinearGradient(0, frameY, 0, frameY + frameH);
-    frameGrad.addColorStop(0, color1);
-    frameGrad.addColorStop(0.5, color2);
-    frameGrad.addColorStop(1, color1);
-    ctx.fillStyle = frameGrad;
-    ctx.beginPath();
-    ctx.roundRect(frameX, frameY, frameW, frameH, frameR);
-    ctx.fill();
-
-    // Inner cutout (dark center)
     const innerW = frameW - barW * 2 - 2;
     const innerH = frameH - barInset * 2;
     const innerX = cx - innerW / 2;
     const innerY = frameY + barInset;
-    ctx.fillStyle = 'rgba(0,0,10,0.7)';
+    const low = localStorage.getItem('gd_low_detail');
+
+    ctx.save();
+    ctx.globalAlpha = this.activated ? 0.15 : 1;
+
+    // Ambient light spill onto the surroundings
+    if (!low) {
+      const spill = ctx.createRadialGradient(cx, cy, 4, cx, cy, frameH * 0.7);
+      spill.addColorStop(0, rgba(color1, 0.28));
+      spill.addColorStop(1, rgba(color1, 0));
+      ctx.fillStyle = spill;
+      ctx.fillRect(cx - frameH * 0.7, cy - frameH * 0.7, frameH * 1.4, frameH * 1.4);
+    }
+
+    // Outer frame — brushed metal pill with a coloured core
+    drawNeonGlow(ctx, color1, 18);
+    const frameGrad = ctx.createLinearGradient(frameX, 0, frameX + frameW, 0);
+    frameGrad.addColorStop(0, mix(color2, '#000000', 0.35));
+    frameGrad.addColorStop(0.22, mix(color1, '#FFFFFF', 0.45));
+    frameGrad.addColorStop(0.5, color1);
+    frameGrad.addColorStop(0.78, color2);
+    frameGrad.addColorStop(1, mix(color2, '#000000', 0.45));
+    ctx.fillStyle = frameGrad;
+    ctx.beginPath();
+    ctx.roundRect(frameX, frameY, frameW, frameH, frameR);
+    ctx.fill();
+    clearGlow(ctx);
+
+    // Bevelled outline
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(frameX + 0.5, frameY + 0.5, frameW - 1, frameH - 1, frameR);
+    ctx.stroke();
+
+    // Cap rings at the top and bottom of the pill
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(frameX + 5, frameY + frameR * 0.9);
+    ctx.lineTo(frameX + frameW - 5, frameY + frameR * 0.9);
+    ctx.moveTo(frameX + 5, frameY + frameH - frameR * 0.9);
+    ctx.lineTo(frameX + frameW - 5, frameY + frameH - frameR * 0.9);
+    ctx.stroke();
+
+    // Inner void
+    ctx.fillStyle = 'rgba(2,2,14,0.86)';
     ctx.beginPath();
     ctx.roundRect(innerX, innerY, innerW, innerH, innerW / 2);
     ctx.fill();
 
-    clearGlow(ctx);
-
-    // Subtle inner edge shine (blended into frame)
-    ctx.globalAlpha = 0.12;
-    ctx.fillStyle = '#FFF';
+    // Energy field inside the void
+    ctx.save();
     ctx.beginPath();
-    ctx.roundRect(frameX + 1, frameY + 6, 2, frameH - 12, 1);
-    ctx.fill();
-    ctx.globalAlpha = this.activated ? 0.15 : 1;
+    ctx.roundRect(innerX, innerY, innerW, innerH, innerW / 2);
+    ctx.clip();
 
-    // Animated energy particles inside
+    const flow = ctx.createLinearGradient(0, innerY, 0, innerY + innerH);
+    flow.addColorStop(0, rgba(color1, 0.55));
+    flow.addColorStop(0.5, rgba(color2, 0.12));
+    flow.addColorStop(1, rgba(color1, 0.55));
+    ctx.fillStyle = flow;
+    ctx.fillRect(innerX, innerY, innerW, innerH);
+
+    // Scrolling scanlines
+    if (!low) {
+      ctx.globalAlpha = this.activated ? 0.1 : 0.35;
+      ctx.fillStyle = mix(color1, '#FFFFFF', 0.6);
+      const period = 14;
+      const off = ((this.animTimer * 26) % period + period) % period;
+      for (let y = innerY - period + off; y < innerY + innerH; y += period) {
+        ctx.fillRect(innerX, y, innerW, 2);
+      }
+      ctx.globalAlpha = this.activated ? 0.15 : 1;
+    }
+
+    // Energy motes riding the field
     for (let i = 0; i < 4; i++) {
       const t = (this.animTimer * 1.5 + i * 0.25) % 1;
       const py = innerY + t * innerH;
       const px = cx + Math.sin(this.animTimer * 3 + i * 1.5) * (innerW / 2 - 3);
-      const alpha = (this.activated ? 0.1 : 0.6) * (1 - Math.abs(t - 0.5) * 2);
+      const alpha = (this.activated ? 0.1 : 0.85) * (1 - Math.abs(t - 0.5) * 2);
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = color1;
+      ctx.fillStyle = '#FFFFFF';
       ctx.beginPath();
-      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.arc(px, py, 2, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
     ctx.globalAlpha = this.activated ? 0.15 : 1;
 
     // Icon in center
@@ -1024,20 +1388,26 @@ export class Portal {
       mini: '\u25BC', big: '\u25B2', reverse: '\u21D0', forward: '\u21D2',
     };
     const icon = icons[this.portalType] || '?';
-    // Icon background circle
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    // Icon disc — frosted glass with a lit rim
+    const discR = 13;
+    const disc = ctx.createRadialGradient(cx - 4, cy - 5, 1, cx, cy, discR);
+    disc.addColorStop(0, 'rgba(46,46,62,0.95)');
+    disc.addColorStop(1, 'rgba(0,0,0,0.92)');
+    ctx.fillStyle = disc;
     ctx.beginPath();
-    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+    ctx.arc(cx, cy, discR, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = color1;
+    drawNeonGlow(ctx, color1, 8);
+    ctx.strokeStyle = mix(color1, '#FFFFFF', 0.4);
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    clearGlow(ctx);
     // Icon text
     ctx.fillStyle = '#FFF';
-    ctx.font = 'bold 13px monospace';
+    ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(icon, cx, cy);
+    ctx.fillText(icon, cx, cy + 0.5);
 
     ctx.restore();
   }
@@ -1074,26 +1444,66 @@ export class Checkpoint {
     if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
+    const on = this.activated;
+    const tint = on ? '#00FF7F' : '#7A8290';
+    this._anim = (this._anim || 0) + 0.05;
+
     ctx.save();
 
-    // Pole with glow
-    const poleColor = this.activated ? '#00FF00' : '#888';
-    drawNeonGlow(ctx, poleColor, this.activated ? 10 : 0);
-    ctx.fillStyle = poleColor;
-    ctx.fillRect(sx, sy, 4, this.h);
+    // Light column when active
+    if (on && !localStorage.getItem('gd_low_detail')) {
+      const col = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
+      col.addColorStop(0, rgba(tint, 0.30));
+      col.addColorStop(1, rgba(tint, 0));
+      ctx.fillStyle = col;
+      ctx.fillRect(sx - 12, sy, 28, this.h);
+    }
 
-    // Flag
-    const flagColor = this.activated ? '#00FF44' : '#006600';
-    drawNeonGlow(ctx, flagColor, this.activated ? 15 : 4);
-    ctx.fillStyle = flagColor;
+    // Base plate
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.beginPath();
-    ctx.moveTo(sx + 4, sy);
-    ctx.lineTo(sx + 28, sy + 14);
-    ctx.lineTo(sx + 4, sy + 28);
-    ctx.closePath();
+    ctx.roundRect(sx - 7, sy + this.h - 6, 20, 6, 3);
     ctx.fill();
 
+    // Metal pole with a specular seam
+    drawNeonGlow(ctx, tint, on ? 12 : 0);
+    const pole = ctx.createLinearGradient(sx, 0, sx + 5, 0);
+    pole.addColorStop(0, darken(tint, 55));
+    pole.addColorStop(0.4, mix(tint, '#FFFFFF', 0.55));
+    pole.addColorStop(1, darken(tint, 35));
+    ctx.fillStyle = pole;
+    ctx.fillRect(sx, sy, 5, this.h);
     clearGlow(ctx);
+
+    // Pole cap
+    ctx.fillStyle = mix(tint, '#FFFFFF', 0.5);
+    ctx.beginPath();
+    ctx.arc(sx + 2.5, sy, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pennant — subtle wave so it feels alive
+    const wave = on ? Math.sin(this._anim * 2) * 2.5 : 0;
+    drawNeonGlow(ctx, tint, on ? 16 : 4);
+    const flagGrad = ctx.createLinearGradient(sx + 5, sy, sx + 32, sy + 28);
+    flagGrad.addColorStop(0, on ? mix(tint, '#FFFFFF', 0.4) : '#4A5560');
+    flagGrad.addColorStop(1, on ? darken(tint, 40) : '#2A323C');
+    ctx.fillStyle = flagGrad;
+    ctx.beginPath();
+    ctx.moveTo(sx + 4, sy + 2);
+    ctx.quadraticCurveTo(sx + 20, sy + 4 + wave, sx + 32, sy + 15 + wave);
+    ctx.quadraticCurveTo(sx + 20, sy + 24 - wave, sx + 4, sy + 30);
+    ctx.closePath();
+    ctx.fill();
+    clearGlow(ctx);
+
+    // Fold highlight down the pennant
+    ctx.strokeStyle = on ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(sx + 5, sy + 3);
+    ctx.quadraticCurveTo(sx + 19, sy + 5 + wave, sx + 30, sy + 15 + wave);
+    ctx.stroke();
+
     ctx.restore();
   }
 }
@@ -1122,38 +1532,69 @@ export class EndMarker {
 
     this.animTimer += 0.03;
 
+    const cx = sx + GRID / 2;
+    const pulse = 0.5 + Math.sin(this.animTimer * 2) * 0.5;
+
     ctx.save();
 
-    // Pulsing glow column
-    const alpha = 0.15 + Math.sin(this.animTimer) * 0.1;
-    ctx.fillStyle = theme.accent;
-    ctx.globalAlpha = alpha;
-    ctx.fillRect(sx, 0, GRID, GROUND_Y);
+    // Soft light gate spreading either side of the beam
+    const spread = ctx.createLinearGradient(cx - GRID * 1.6, 0, cx + GRID * 1.6, 0);
+    spread.addColorStop(0, rgba(theme.accent, 0));
+    spread.addColorStop(0.5, rgba(theme.accent, 0.20 + pulse * 0.12));
+    spread.addColorStop(1, rgba(theme.accent, 0));
+    ctx.fillStyle = spread;
+    ctx.fillRect(cx - GRID * 1.6, 0, GRID * 3.2, GROUND_Y);
 
-    // Neon stripes
-    ctx.globalAlpha = 0.7;
-    drawNeonGlow(ctx, theme.accent, 12);
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 3;
-    const stripeH = 20;
-    for (let y = (this.animTimer * 50) % (stripeH * 2) - stripeH; y < GROUND_Y; y += stripeH * 2) {
-      ctx.fillStyle = theme.accent;
-      ctx.globalAlpha = 0.3;
-      ctx.fillRect(sx, y, GRID, stripeH);
+    // Rising energy bands inside the gate
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(sx, 0, GRID, GROUND_Y);
+    ctx.clip();
+    const bandH = 26;
+    const off = ((-this.animTimer * 70) % (bandH * 2) + bandH * 2) % (bandH * 2);
+    for (let y = off - bandH * 2; y < GROUND_Y; y += bandH * 2) {
+      const g = ctx.createLinearGradient(0, y, 0, y + bandH);
+      g.addColorStop(0, rgba(theme.accent, 0));
+      g.addColorStop(0.5, rgba(theme.accent, 0.35));
+      g.addColorStop(1, rgba(theme.accent, 0));
+      ctx.fillStyle = g;
+      ctx.fillRect(sx, y, GRID, bandH);
+    }
+    ctx.restore();
+
+    // Twin neon rails framing the gate
+    drawNeonGlow(ctx, theme.accent, 16);
+    for (const rx of [sx + 3, sx + GRID - 5]) {
+      const rail = ctx.createLinearGradient(rx, 0, rx + 2, 0);
+      rail.addColorStop(0, theme.accent);
+      rail.addColorStop(1, mix(theme.accent, '#FFFFFF', 0.7));
+      ctx.fillStyle = rail;
+      ctx.fillRect(rx, 0, 2.5, GROUND_Y);
+    }
+    clearGlow(ctx);
+
+    // Bright pulsing core beam
+    drawNeonGlow(ctx, '#FFFFFF', 10 + pulse * 12);
+    ctx.globalAlpha = 0.55 + pulse * 0.35;
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillRect(cx - 1, 0, 2, GROUND_Y);
+    ctx.globalAlpha = 1;
+    clearGlow(ctx);
+
+    // Chevron markers climbing the beam
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    const chevGap = 70;
+    const chevOff = ((-this.animTimer * 70) % chevGap + chevGap) % chevGap;
+    for (let y = chevOff - chevGap; y < GROUND_Y; y += chevGap) {
+      ctx.beginPath();
+      ctx.moveTo(cx - 8, y + 7);
+      ctx.lineTo(cx, y);
+      ctx.lineTo(cx + 8, y + 7);
+      ctx.stroke();
     }
 
-    // Center line
-    ctx.globalAlpha = 0.8;
-    ctx.strokeStyle = '#FFF';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([8, 8]);
-    ctx.beginPath();
-    ctx.moveTo(sx + GRID / 2, 0);
-    ctx.lineTo(sx + GRID / 2, GROUND_Y);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    clearGlow(ctx);
     ctx.restore();
   }
 }
@@ -1269,28 +1710,58 @@ export class Coin {
     ctx.globalAlpha = 1;
     ctx.shadowBlur = 0;
 
-    // Rim / edge (dark gold border)
+    // Milled rim — vertical metal gradient so the edge reads as a thick band
+    const rimGrad = ctx.createLinearGradient(0, -r, 0, r);
+    rimGrad.addColorStop(0, '#8C6508');
+    rimGrad.addColorStop(0.35, '#E5B93C');
+    rimGrad.addColorStop(0.6, '#B8860B');
+    rimGrad.addColorStop(1, '#6E4E06');
     ctx.beginPath();
     ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = '#B8860B';
+    ctx.fillStyle = rimGrad;
     ctx.fill();
 
+    // Reeded edge notches
+    ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < 20; i++) {
+      const a = (i / 20) * Math.PI * 2;
+      ctx.moveTo(Math.cos(a) * r * 0.93, Math.sin(a) * r * 0.93);
+      ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.stroke();
+
     // Main coin face gradient
-    const faceGrad = ctx.createRadialGradient(-r * 0.25, -r * 0.25, 0, 0, 0, r * 0.9);
+    const faceGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.32, 0, 0, 0, r * 0.95);
     if (isFront) {
-      faceGrad.addColorStop(0, '#FFF0A0');
-      faceGrad.addColorStop(0.4, '#FFD700');
-      faceGrad.addColorStop(0.85, '#DAA520');
-      faceGrad.addColorStop(1, '#B8860B');
+      faceGrad.addColorStop(0, '#FFFBE0');
+      faceGrad.addColorStop(0.28, '#FFE873');
+      faceGrad.addColorStop(0.6, '#FFC93C');
+      faceGrad.addColorStop(0.88, '#D9A116');
+      faceGrad.addColorStop(1, '#A8770C');
     } else {
-      faceGrad.addColorStop(0, '#E8C840');
+      faceGrad.addColorStop(0, '#EFD46A');
       faceGrad.addColorStop(0.5, '#C8A020');
-      faceGrad.addColorStop(1, '#A08018');
+      faceGrad.addColorStop(1, '#8E7014');
     }
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
     ctx.fillStyle = faceGrad;
     ctx.fill();
+
+    // Sweeping specular arc across the face
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.9, 0, Math.PI * 2);
+    ctx.clip();
+    const sheen = ctx.createLinearGradient(-r, -r, r * 0.4, r);
+    sheen.addColorStop(0, 'rgba(255,255,255,0)');
+    sheen.addColorStop(0.42, 'rgba(255,255,255,0.42)');
+    sheen.addColorStop(0.55, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(-r, -r, r * 2, r * 2);
+    ctx.restore();
 
     // Inner ring
     ctx.beginPath();
@@ -1526,62 +1997,97 @@ export class SawBlade {
     const teeth = Math.max(8, Math.round(this.radius * 10));
     const color = theme.spike;
 
+    const low = localStorage.getItem('gd_low_detail');
+
     ctx.save();
 
-    // Neon glow
-    drawNeonGlow(ctx, theme.accent, 14);
+    // Motion-blur halo — the blade reads as spinning fast
+    if (!low) {
+      const halo = ctx.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 1.5);
+      halo.addColorStop(0, rgba(theme.accent, 0.30));
+      halo.addColorStop(1, rgba(theme.accent, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.translate(cx, cy);
     ctx.rotate(this.animTimer);
 
-    // Draw saw body with jagged teeth
-    ctx.beginPath();
-    for (let i = 0; i < teeth; i++) {
-      const angle = (i / teeth) * Math.PI * 2;
-      const nextAngle = ((i + 0.5) / teeth) * Math.PI * 2;
-      const outerR = r;
-      const innerR = r * 0.7;
+    // Blade silhouette with swept-back teeth
+    const bladePath = () => {
+      ctx.beginPath();
+      for (let i = 0; i < teeth; i++) {
+        const a0 = (i / teeth) * Math.PI * 2;
+        const a1 = ((i + 0.35) / teeth) * Math.PI * 2;
+        const a2 = ((i + 0.72) / teeth) * Math.PI * 2;
+        const innerR = r * 0.74;
+        if (i === 0) ctx.moveTo(Math.cos(a0) * innerR, Math.sin(a0) * innerR);
+        else ctx.lineTo(Math.cos(a0) * innerR, Math.sin(a0) * innerR);
+        ctx.lineTo(Math.cos(a1) * r, Math.sin(a1) * r);
+        ctx.lineTo(Math.cos(a2) * innerR, Math.sin(a2) * innerR);
+      }
+      ctx.closePath();
+    };
 
-      const ox = Math.cos(angle) * outerR;
-      const oy = Math.sin(angle) * outerR;
-      const ix = Math.cos(nextAngle) * innerR;
-      const iy = Math.sin(nextAngle) * innerR;
-
-      if (i === 0) ctx.moveTo(ox, oy);
-      else ctx.lineTo(ox, oy);
-      ctx.lineTo(ix, iy);
-    }
-    ctx.closePath();
-
-    // Gradient fill
-    const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-    grad.addColorStop(0, '#FFF');
-    grad.addColorStop(0.3, color);
-    grad.addColorStop(1, darken(color, 40));
+    drawNeonGlow(ctx, theme.accent, 14);
+    bladePath();
+    // Brushed-steel gradient across the disc
+    const grad = ctx.createLinearGradient(-r, -r, r, r);
+    grad.addColorStop(0, mix(color, '#FFFFFF', 0.75));
+    grad.addColorStop(0.35, color);
+    grad.addColorStop(0.6, darken(color, 25));
+    grad.addColorStop(1, darken(color, 55));
     ctx.fillStyle = grad;
     ctx.fill();
-
-    // Outline
     clearGlow(ctx);
-    ctx.strokeStyle = theme.accent;
-    ctx.lineWidth = 1.5;
+
+    // Cutting edge highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1.2;
+    bladePath();
     ctx.stroke();
 
-    // Center hub
-    drawNeonGlow(ctx, theme.accent, 6);
-    ctx.fillStyle = theme.accent;
+    // Recessed disc face
+    const face = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.05, 0, 0, r * 0.72);
+    face.addColorStop(0, mix(color, '#FFFFFF', 0.5));
+    face.addColorStop(0.65, darken(color, 20));
+    face.addColorStop(1, darken(color, 50));
+    ctx.fillStyle = face;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lightening holes around the hub
+    ctx.fillStyle = 'rgba(0,0,0,0.42)';
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * r * 0.45, Math.sin(a) * r * 0.45, r * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Machined rings
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 0.62, 0, Math.PI * 2);
+    ctx.moveTo(r * 0.28, 0);
+    ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Glowing center hub
+    drawNeonGlow(ctx, theme.accent, 8);
+    const hub = ctx.createRadialGradient(-r * 0.05, -r * 0.06, 0, 0, 0, r * 0.2);
+    hub.addColorStop(0, '#FFFFFF');
+    hub.addColorStop(1, theme.accent);
+    ctx.fillStyle = hub;
     ctx.beginPath();
     ctx.arc(0, 0, r * 0.2, 0, Math.PI * 2);
     ctx.fill();
-
-    // Inner ring
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(0, 0, r * 0.45, 0, Math.PI * 2);
-    ctx.stroke();
-
     clearGlow(ctx);
+
     ctx.restore();
   }
 }
@@ -1685,30 +2191,33 @@ export class Slope {
 
     const key = `slope_${this.w}_${this.h}_${this.direction}_${theme.platform}_${theme.accent}_${edgeKey}`;
     const sprite = getCachedSprite(key, this.w, this.h, (c) => {
-      // Gradient fill
-      const grad = c.createLinearGradient(0, 0, 0, this.h);
-      grad.addColorStop(0, lighten(theme.platform, 20));
-      grad.addColorStop(1, theme.platform);
-      c.fillStyle = grad;
+      const tri = () => {
+        c.beginPath();
+        if (this.direction === 'up') {
+          c.moveTo(0, this.h);
+          c.lineTo(this.w, this.h);
+          c.lineTo(this.w, 0);
+        } else {
+          c.moveTo(0, 0);
+          c.lineTo(0, this.h);
+          c.lineTo(this.w, this.h);
+        }
+        c.closePath();
+      };
 
-      // Draw filled triangle
-      c.beginPath();
-      if (this.direction === 'up') {
-        c.moveTo(0, this.h);
-        c.lineTo(this.w, this.h);
-        c.lineTo(this.w, 0);
-      } else {
-        c.moveTo(0, 0);
-        c.lineTo(0, this.h);
-        c.lineTo(this.w, this.h);
-      }
-      c.closePath();
-      c.fill();
+      // Shaded, textured body clipped to the ramp
+      c.save();
+      tri();
+      c.clip();
+      paintBlockBody(c, 0, 0, this.w, this.h, theme);
+      c.restore();
 
       // Neon edge along the slope diagonal (always visible)
-      drawNeonGlow(c, theme.accent, 8);
+      c.save();
+      c.lineCap = 'round';
+      drawNeonGlow(c, theme.accent, 10);
       c.strokeStyle = theme.accent;
-      c.lineWidth = 2;
+      c.lineWidth = 3;
       c.beginPath();
       if (this.direction === 'up') {
         c.moveTo(0, this.h);
@@ -1719,9 +2228,13 @@ export class Slope {
       }
       c.stroke();
       clearGlow(c);
+      c.strokeStyle = mix(theme.accent, '#FFFFFF', 0.7);
+      c.lineWidth = 1;
+      c.stroke();
+      c.restore();
 
       // Border — only on non-hidden edges
-      c.strokeStyle = theme.accent;
+      c.strokeStyle = rgba(theme.accent, 0.85);
       c.lineWidth = 1;
       c.beginPath();
       if (this.direction === 'up') {
