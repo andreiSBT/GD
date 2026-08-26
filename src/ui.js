@@ -1,6 +1,6 @@
 /** UI screens: menu, level select, HUD, death screen, complete screen */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE, UI_SCALE } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, THEMES, GROUND_Y, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, PLAYER_SIZE, IS_MOBILE, UI_SCALE, isSimpleTextures } from './settings.js';
 import { getLevelCount, LEVEL_DATA } from './level.js';
 import { lighten } from './player.js';
 import { getUsername } from './supabase.js';
@@ -1075,6 +1075,8 @@ export class UI {
       ];
       const togglesR = [
         { label: 'SHAKE', on: !localStorage.getItem('gd_no_shake'), id: 'toggle_shake' },
+        // On = modern layered textures, off = the flat simple set
+        { label: 'MODERN FX', on: !isSimpleTextures(), id: 'toggle_textures' },
         { label: 'LOW DETAIL', on: !!localStorage.getItem('gd_low_detail'), id: 'toggle_low_detail' },
         { label: 'SHOW BAR', on: !localStorage.getItem('gd_hide_bar'), id: 'toggle_show_bar' },
       ];

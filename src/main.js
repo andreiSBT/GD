@@ -1,6 +1,6 @@
 /** Main game - loop, state machine, collision, everything wired together */
 
-import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, SCROLL_SPEED, FPS } from './settings.js';
+import { SCREEN_WIDTH, SCREEN_HEIGHT, PLAYER_SIZE, PLAYER_X_OFFSET, GROUND_Y, GRID, THEMES, PLAYER_COLORS, PLAYER_TRAIL_COLORS, PLAYER_TRAIL_STYLES, CUBE_ICONS, CUBE_SHAPES, setScreenWidth, IS_MOBILE, SCROLL_SPEED, FPS, isSimpleTextures, refreshDisplaySettings } from './settings.js';
 import { Player, MODE_CUBE, MODE_SHIP, MODE_WAVE, MODE_BALL } from './player.js';
 import { Level, Camera, getLevelCount, LEVEL_DATA, createLevelFromData } from './level.js';
 import { clearSpriteCache } from './obstacles.js';
@@ -704,9 +704,16 @@ class Game {
     } else if (action === 'toggle_particles') {
       if (localStorage.getItem('gd_no_particles')) localStorage.removeItem('gd_no_particles');
       else localStorage.setItem('gd_no_particles', '1');
+      refreshDisplaySettings();
+    } else if (action === 'toggle_textures') {
+      if (isSimpleTextures()) localStorage.removeItem('gd_textures');
+      else localStorage.setItem('gd_textures', 'simple');
+      refreshDisplaySettings();
+      clearSpriteCache();
     } else if (action === 'toggle_low_detail') {
       if (localStorage.getItem('gd_low_detail')) localStorage.removeItem('gd_low_detail');
       else localStorage.setItem('gd_low_detail', '1');
+      refreshDisplaySettings();
       clearSpriteCache();
     } else if (action === 'toggle_auto_retry') {
       if (localStorage.getItem('gd_auto_retry')) localStorage.removeItem('gd_auto_retry');
@@ -1896,9 +1903,6 @@ class Game {
       // Transition complete - set final theme
       this.theme = { ...t.to };
       this._colorTransition = null;
-      // Force renderer to re-cache gradients
-      this.renderer._bgTheme = null;
-      this.renderer._gndTheme = null;
       return;
     }
     // Interpolate all color properties
@@ -1910,10 +1914,9 @@ class Game {
         blended[k] = t.to[k];
       }
     }
+    // The renderer keys its cached gradients on the colours themselves, so a
+    // lerped theme invalidates them automatically — no manual busting needed.
     this.theme = blended;
-    // Force renderer to re-cache gradients each frame during transition
-    this.renderer._bgTheme = null;
-    this.renderer._gndTheme = null;
   }
 
   _startLoop() {

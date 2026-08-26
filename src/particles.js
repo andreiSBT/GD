@@ -1,6 +1,6 @@
 /** Particle system for visual effects */
 
-import { MAX_PARTICLES, SCREEN_WIDTH, isLowDetail } from './settings.js';
+import { MAX_PARTICLES, SCREEN_WIDTH, isFancy, isSimpleTextures } from './settings.js';
 
 class Particle {
   constructor(x, y, vx, vy, color, size = 4, lifetime = 0.5, gravity = 0, shape = null) {
@@ -43,6 +43,15 @@ class Particle {
 
     if (sx < -20 || sx > SCREEN_WIDTH + 20) return;
 
+    if (isSimpleTextures()) {
+      // Flat square, no transform or state stack — cheapest possible particle
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = this.color;
+      ctx.fillRect(sx, sy, size, size);
+      ctx.globalAlpha = 1;
+      return;
+    }
+
     ctx.save();
     ctx.globalAlpha = alpha;
     ctx.fillStyle = this.color;
@@ -62,7 +71,7 @@ class Particle {
       // Streak stretched along the direction of travel
       const speed = Math.hypot(this.vx, this.vy);
       // Blur is costly at burst counts — only the bigger sparks get it
-      if (size >= 3 && !isLowDetail()) {
+      if (size >= 3 && isFancy()) {
         ctx.shadowColor = this.color;
         ctx.shadowBlur = size * 2.5;
       }
@@ -82,7 +91,7 @@ class Particle {
       // Tumbling shard with a lit leading edge
       ctx.translate(sx, sy);
       ctx.rotate(this.rot);
-      if (!isLowDetail()) {
+      if (isFancy()) {
         ctx.shadowColor = this.color;
         ctx.shadowBlur = size;
       }

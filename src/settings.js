@@ -7,8 +7,35 @@ export const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userA
 export const UI_SCALE = IS_MOBILE ? 1.25 : 1;
 
 export function setScreenWidth(w) { SCREEN_WIDTH = w; }
-export function isLowDetail() { return !!localStorage.getItem('gd_low_detail'); }
 export const FPS = 60;
+
+// ---- Display settings ----
+// Read once and cached: these are queried hundreds of times per frame by the
+// draw code, and localStorage.getItem in a hot loop is measurably slow.
+export const TEXTURE_MODERN = 'modern';
+export const TEXTURE_SIMPLE = 'simple';
+
+let _lowDetail = false;
+let _noParticles = false;
+let _textureStyle = TEXTURE_MODERN;
+
+export function refreshDisplaySettings() {
+  try {
+    _lowDetail = !!localStorage.getItem('gd_low_detail');
+    _noParticles = !!localStorage.getItem('gd_no_particles');
+    _textureStyle = localStorage.getItem('gd_textures') === TEXTURE_SIMPLE
+      ? TEXTURE_SIMPLE : TEXTURE_MODERN;
+  } catch {}
+}
+refreshDisplaySettings();
+
+export function isLowDetail() { return _lowDetail; }
+export function noParticles() { return _noParticles; }
+export function getTextureStyle() { return _textureStyle; }
+export function isSimpleTextures() { return _textureStyle === TEXTURE_SIMPLE; }
+// Heavy embellishments (textures, multi-pass shading, blur) are modern-only
+// and are also dropped whenever low detail is on.
+export function isFancy() { return _textureStyle === TEXTURE_MODERN && !_lowDetail; }
 
 // Grid
 export const GRID = 50; // pixels per grid unit

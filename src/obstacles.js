@@ -1,17 +1,38 @@
 /** Obstacle types with neon glow visuals and new GD mechanics */
 
-import { GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH, THEMES } from './settings.js';
+import {
+  GRID, PLAYER_SIZE, GROUND_Y, PLAYER_X_OFFSET, SCREEN_WIDTH, THEMES,
+  isLowDetail, isSimpleTextures, isFancy, noParticles,
+} from './settings.js';
 import { lighten, darken } from './player.js';
 import { getBeatIntensity } from './sound.js';
+
+const EMPTY_EDGES = new Set();
+
+// Five-pointed star centred on the current origin
+function fillStar(ctx, outerR) {
+  const innerR = outerR * 0.42;
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const oa = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+    const ia = oa + Math.PI / 5;
+    if (i === 0) ctx.moveTo(Math.cos(oa) * outerR, Math.sin(oa) * outerR);
+    else ctx.lineTo(Math.cos(oa) * outerR, Math.sin(oa) * outerR);
+    ctx.lineTo(Math.cos(ia) * innerR, Math.sin(ia) * innerR);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
 
 // AABB collision check
 function rectsOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-// Shared neon glow helper
+// Shared neon glow helper. Blur is the single most expensive canvas operation
+// here, so the simple style and low detail both skip it entirely.
 function drawNeonGlow(ctx, color, blur = 10) {
-  if (localStorage.getItem('gd_low_detail')) return;
+  if (!isFancy()) return;
   ctx.shadowColor = color;
   ctx.shadowBlur = blur;
 }
@@ -51,6 +72,19 @@ function drawBlade(c, halfW, halfH, sideInset, baseInset, theme, glow) {
     c.lineTo(rx, baseY);
     c.closePath();
   };
+
+  // Simple style: one flat triangle and an accent outline
+  if (isSimpleTextures()) {
+    c.fillStyle = theme.spike;
+    outline();
+    c.fill();
+    c.strokeStyle = theme.accent;
+    c.lineWidth = 2;
+    c.lineJoin = 'round';
+    outline();
+    c.stroke();
+    return;
+  }
 
   // Soft outer bloom
   drawNeonGlow(c, theme.accent, glow);
@@ -96,7 +130,7 @@ function drawBlade(c, halfW, halfH, sideInset, baseInset, theme, glow) {
 
   // Central ridge highlight
   const ridge = c.createLinearGradient(0, tipY, 0, baseY);
-  ridge.addColorStop(0, 'rgba(255,255,255,0.85)');
+  ridge.addColorStop(0, 'rgba(255,255,255,0.6)');
   ridge.addColorStop(1, 'rgba(255,255,255,0)');
   c.strokeStyle = ridge;
   c.lineWidth = Math.max(1, halfW * 0.09);
@@ -107,7 +141,7 @@ function drawBlade(c, halfW, halfH, sideInset, baseInset, theme, glow) {
   c.stroke();
 
   // Rim light along the left edge
-  c.strokeStyle = 'rgba(255,255,255,0.6)';
+  c.strokeStyle = 'rgba(255,255,255,0.42)';
   c.lineWidth = 1.2;
   c.beginPath();
   c.moveTo(0, tipY);
@@ -123,7 +157,7 @@ function drawBlade(c, halfW, halfH, sideInset, baseInset, theme, glow) {
 
   // Hot tip
   drawNeonGlow(c, '#FFFFFF', 8);
-  c.fillStyle = 'rgba(255,255,255,0.95)';
+  c.fillStyle = 'rgba(255,255,255,0.8)';
   c.beginPath();
   c.arc(0, tipY + 2, Math.max(1, halfW * 0.09), 0, Math.PI * 2);
   c.fill();
@@ -132,10 +166,10 @@ function drawBlade(c, halfW, halfH, sideInset, baseInset, theme, glow) {
 
 // ---- Block surface painting (shared by Platform / PlatformGroup / Slope) ----
 
+// The tile is theme-independent (pure white/black overlays), so it is built once.
 const _blockTiles = new Map();
-function getBlockTile(theme) {
-  const key = theme.platform + theme.accent;
-  let tile = _blockTiles.get(key);
+function getBlockTile() {
+  let tile = _blockTiles.get('tile');
   if (tile) return tile;
   tile = document.createElement('canvas');
   tile.width = 25;
@@ -159,55 +193,97 @@ function getBlockTile(theme) {
   t.beginPath();
   t.arc(12.5, 11.7, 1.1, 0, Math.PI * 2);
   t.fill();
-  _blockTiles.set(key, tile);
+  _blockTiles.set('tile', tile);
   return tile;
 }
 
 // Pattern anchored to a given x so the texture rides with the world, not the screen
-function blockPattern(c, theme, offX) {
-  const pat = c.createPattern(getBlockTile(theme), 'repeat');
-  if (pat && offX) {
-    const o = ((offX % 25) + 25) % 25;
-    if (typeof DOMMatrix !== 'undefined') pat.setTransform(new DOMMatrix().translateSelf(o, 0));
+const _blockPatterns = new WeakMap();
+function blockPattern(c, offX) {
+  let pat = _blockPatterns.get(c);
+  if (pat === undefined) {
+    pat = c.createPattern(getBlockTile(), 'repeat') || null;
+    _blockPatterns.set(c, pat);
+  }
+  if (pat && typeof DOMMatrix !== 'undefined' && pat.setTransform) {
+    pat.setTransform(new DOMMatrix().translateSelf(((offX % 25) + 25) % 25, 0));
   }
   return pat;
 }
 
+// Gradient caches are scoped per context: sprite bakes run in a translated
+// offscreen context, so a gradient cached there would sit at the wrong offset
+// if it were reused on the live canvas.
+const _gradCaches = new WeakMap();
+function gradCache(c) {
+  let m = _gradCaches.get(c);
+  if (!m) { m = new Map(); _gradCaches.set(c, m); }
+  else if (m.size > 200) m.clear();
+  return m;
+}
+
+// The theme lerps every frame during a colour trigger, so this is keyed on the
+// quantised colour plus the band the gradient spans.
+function bodyGradient(c, y, h, theme) {
+  const cache = gradCache(c);
+  const key = `body|${themeSpriteKey(theme)}|${Math.round(y)}|${Math.round(h)}`;
+  let g = cache.get(key);
+  if (g) return g;
+  g = c.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, lighten(theme.platform, 34));
+  g.addColorStop(0.14, lighten(theme.platform, 14));
+  g.addColorStop(0.62, theme.platform);
+  g.addColorStop(1, darken(theme.platform, 34));
+  cache.set(key, g);
+  return g;
+}
+
+// Reusable white/black falloffs — independent of theme, keyed on their band
+function shadeGradient(c, id, y0, y1, from, to) {
+  const cache = gradCache(c);
+  const key = `${id}|${Math.round(y0)}|${Math.round(y1)}`;
+  let g = cache.get(key);
+  if (g) return g;
+  g = c.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, from);
+  g.addColorStop(1, to);
+  cache.set(key, g);
+  return g;
+}
+
 // Base fill: depth gradient + brushed texture + top gloss + bottom occlusion
 function paintBlockBody(c, x, y, w, h, theme, patOffX = 0) {
-  const grad = c.createLinearGradient(0, y, 0, y + h);
-  grad.addColorStop(0, lighten(theme.platform, 34));
-  grad.addColorStop(0.14, lighten(theme.platform, 14));
-  grad.addColorStop(0.62, theme.platform);
-  grad.addColorStop(1, darken(theme.platform, 34));
-  c.fillStyle = grad;
+  if (isSimpleTextures()) {
+    c.fillStyle = theme.platform;
+    c.fillRect(x, y, w, h);
+    return;
+  }
+
+  c.fillStyle = bodyGradient(c, y, h, theme);
   c.fillRect(x, y, w, h);
 
-  if (!localStorage.getItem('gd_low_detail')) {
-    const pat = blockPattern(c, theme, patOffX);
+  if (isFancy()) {
+    const pat = blockPattern(c, patOffX);
     if (pat) {
       c.fillStyle = pat;
       c.fillRect(x, y, w, h);
     }
+
+    // Glossy sheen across the top band
+    const gh = Math.min(h * 0.5, 18);
+    c.fillStyle = shadeGradient(c, 'gloss', y, y + gh, 'rgba(255,255,255,0.20)', 'rgba(255,255,255,0)');
+    c.fillRect(x, y, w, gh);
+
+    // Ambient occlusion along the bottom
+    const ah = Math.min(h * 0.5, 14);
+    c.fillStyle = shadeGradient(c, 'ao', y + h - ah, y + h, 'rgba(0,0,0,0)', 'rgba(0,0,0,0.30)');
+    c.fillRect(x, y + h - ah, w, ah);
   }
-
-  // Glossy sheen across the top band
-  const gloss = c.createLinearGradient(0, y, 0, y + Math.min(h * 0.5, 18));
-  gloss.addColorStop(0, 'rgba(255,255,255,0.20)');
-  gloss.addColorStop(1, 'rgba(255,255,255,0)');
-  c.fillStyle = gloss;
-  c.fillRect(x, y, w, Math.min(h * 0.5, 18));
-
-  // Ambient occlusion along the bottom
-  const ao = c.createLinearGradient(0, y + h - Math.min(h * 0.5, 14), 0, y + h);
-  ao.addColorStop(0, 'rgba(0,0,0,0)');
-  ao.addColorStop(1, 'rgba(0,0,0,0.30)');
-  c.fillStyle = ao;
-  c.fillRect(x, y + h - Math.min(h * 0.5, 14), w, Math.min(h * 0.5, 14));
 }
 
 // Inner bevel: light on top/left, shadow on bottom/right
 function paintBlockBevel(c, x, y, w, h, theme, he) {
+  if (isSimpleTextures()) return;
   c.save();
   c.lineWidth = 2;
   c.strokeStyle = 'rgba(255,255,255,0.22)';
@@ -228,10 +304,7 @@ function paintBlockBevel(c, x, y, w, h, theme, he) {
 function paintBlockEdges(c, x, y, w, h, theme, he) {
   if (!he.has('top')) {
     drawNeonGlow(c, theme.accent, 10);
-    const bar = c.createLinearGradient(0, y, 0, y + 4);
-    bar.addColorStop(0, mix(theme.accent, '#FFFFFF', 0.55));
-    bar.addColorStop(1, theme.accent);
-    c.fillStyle = bar;
+    c.fillStyle = isSimpleTextures() ? theme.accent : mix(theme.accent, '#FFFFFF', 0.35);
     c.fillRect(x, y, w, 3);
     clearGlow(c);
   }
@@ -246,11 +319,29 @@ function paintBlockEdges(c, x, y, w, h, theme, he) {
   c.stroke();
 }
 
+// Sprite keys must not use exact theme colours: a colour trigger re-interpolates
+// the theme every frame, which would re-bake every visible sprite 60x a second.
+// Quantising to 8-value buckets makes a whole transition cost a few dozen bakes,
+// and the colour stepping is imperceptible at that granularity.
+export function themeSpriteKey(theme) {
+  const q = (hex) => {
+    if (!hex || hex[0] !== '#') return 'x';
+    return `${parseInt(hex.slice(1, 3), 16) >> 3}.${parseInt(hex.slice(3, 5), 16) >> 3}.${parseInt(hex.slice(5, 7), 16) >> 3}`;
+  };
+  return `${q(theme.platform)}|${q(theme.accent)}|${q(theme.spike)}|${isSimpleTextures() ? 's' : 'm'}${isLowDetail() ? 'l' : ''}`;
+}
+
 // Offscreen canvas sprite cache — render once, blit every frame
+const SPRITE_CACHE_MAX = 400;
 const _spriteCache = new Map();
 function getCachedSprite(key, w, h, drawFn) {
-  let entry = _spriteCache.get(key);
-  if (entry) return entry;
+  const entry = _spriteCache.get(key);
+  if (entry) {
+    // Refresh recency so the eviction below drops genuinely stale sprites
+    _spriteCache.delete(key);
+    _spriteCache.set(key, entry);
+    return entry;
+  }
   const canvas = document.createElement('canvas');
   // Extra padding for glow/shadow overflow
   const pad = 24;
@@ -259,11 +350,17 @@ function getCachedSprite(key, w, h, drawFn) {
   const offCtx = canvas.getContext('2d');
   offCtx.translate(pad, pad);
   drawFn(offCtx);
-  entry = { canvas, pad };
-  _spriteCache.set(key, entry);
-  return entry;
+  const fresh = { canvas, pad };
+  _spriteCache.set(key, fresh);
+  // Evict least-recently-used so a long level with many colour triggers can't
+  // grow the cache without bound
+  while (_spriteCache.size > SPRITE_CACHE_MAX) {
+    const oldest = _spriteCache.keys().next().value;
+    _spriteCache.delete(oldest);
+  }
+  return fresh;
 }
-// Clear cache when theme changes (called from Level)
+// Clear cache when theme or display settings change
 export function clearSpriteCache() {
   _spriteCache.clear();
   _blockTiles.clear();
@@ -310,7 +407,7 @@ export class Spike {
     if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
-    const key = `spike_${this.rot}_${theme.spike}_${theme.accent}`;
+    const key = `spike_${this.rot}_${themeSpriteKey(theme)}`;
     const sprite = getCachedSprite(key, GRID, GRID, (c) => {
       const halfG = GRID / 2;
       c.translate(GRID / 2, GRID / 2);
@@ -362,7 +459,7 @@ export class MiniSpike {
     if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
     const sy = this.y;
 
-    const key = `minispike_${this.rot}_${theme.spike}_${theme.accent}`;
+    const key = `minispike_${this.rot}_${themeSpriteKey(theme)}`;
     const spriteH = this.h;
     const sprite = getCachedSprite(key, GRID, spriteH, (c) => {
       const halfW = GRID / 2;
@@ -455,7 +552,7 @@ export class Platform {
     const sy = drawY;
     const edgeKey = [...he].sort().join('');
 
-    const key = `plat_${drawW}_${drawH}_${theme.platform}_${theme.accent}_${edgeKey}`;
+    const key = `plat_${drawW}_${drawH}_${edgeKey}_${themeSpriteKey(theme)}`;
     const sprite = getCachedSprite(key, drawW, drawH, (c) => {
       paintBlockBody(c, 0, 0, drawW, drawH, theme);
       paintBlockBevel(c, 0, 0, drawW, drawH, theme, he);
@@ -502,152 +599,155 @@ export class PlatformGroup {
     return null;
   }
 
+  // Geometry never changes, so the clip, border, slope and top-edge shapes are
+  // built once in local space (x relative to this.x, y absolute) and reused every
+  // frame under a single translate. Previously this rebuilt every path per frame
+  // and ran an O(pieces^2) scan for exposed tops.
+  _buildPaths() {
+    if (this._paths) return this._paths;
+    const ox = this.x;
+    const clip = new Path2D();
+    const border = new Path2D();
+    const slopeFill = new Path2D();
+    const slopeEdge = new Path2D();
+    const tops = [];
+    let hasSlope = false;
+
+    for (const p of this.pieces) {
+      const px = p.x - ox;
+      const isSlope = p.type === 'slope' || p.type === 'mini_slope';
+      const he = p.hiddenEdges || EMPTY_EDGES;
+
+      if (isSlope) {
+        if (p.direction === 'up') {
+          clip.moveTo(px, p.y + p.h);
+          clip.lineTo(px + p.w, p.y + p.h);
+          clip.lineTo(px + p.w, p.y);
+          clip.closePath();
+        } else {
+          clip.moveTo(px, p.y);
+          clip.lineTo(px, p.y + p.h);
+          clip.lineTo(px + p.w, p.y + p.h);
+          clip.closePath();
+        }
+        if (p.type === 'slope') {
+          hasSlope = true;
+          if (p.direction === 'up') {
+            slopeFill.moveTo(px, p.y + p.h);
+            slopeFill.lineTo(px + p.w, p.y + p.h);
+            slopeFill.lineTo(px + p.w, p.y);
+            slopeEdge.moveTo(px, p.y + p.h);
+            slopeEdge.lineTo(px + p.w, p.y);
+          } else {
+            slopeFill.moveTo(px, p.y);
+            slopeFill.lineTo(px, p.y + p.h);
+            slopeFill.lineTo(px + p.w, p.y + p.h);
+            slopeEdge.moveTo(px, p.y);
+            slopeEdge.lineTo(px + p.w, p.y + p.h);
+          }
+          slopeFill.closePath();
+        }
+        if (p.direction === 'up') {
+          if (!he.has('bottom')) { border.moveTo(px, p.y + p.h); border.lineTo(px + p.w, p.y + p.h); }
+          if (!he.has('right')) { border.moveTo(px + p.w, p.y + p.h); border.lineTo(px + p.w, p.y); }
+        } else {
+          if (!he.has('left')) { border.moveTo(px, p.y); border.lineTo(px, p.y + p.h); }
+          if (!he.has('bottom')) { border.moveTo(px, p.y + p.h); border.lineTo(px + p.w, p.y + p.h); }
+        }
+        continue;
+      }
+
+      const el = he.has('left') ? 1 : 0;
+      const er = he.has('right') ? 1 : 0;
+      const et = he.has('top') ? 1 : 0;
+      const eb = he.has('bottom') ? 1 : 0;
+      clip.rect(px - el, p.y - et, p.w + el + er, p.h + et + eb);
+
+      if (!he.has('top')) { border.moveTo(px, p.y); border.lineTo(px + p.w, p.y); }
+      if (!he.has('right')) { border.moveTo(px + p.w, p.y); border.lineTo(px + p.w, p.y + p.h); }
+      if (!he.has('bottom')) { border.moveTo(px + p.w, p.y + p.h); border.lineTo(px, p.y + p.h); }
+      if (!he.has('left')) { border.moveTo(px, p.y + p.h); border.lineTo(px, p.y); }
+
+      const covered = this.pieces.some(q =>
+        q !== p && Math.abs(q.y + q.h - p.y) < 2 && q.x < p.x + p.w && q.x + q.w > p.x
+      );
+      if (!covered) tops.push({ x: px, y: p.y, w: p.w });
+    }
+
+    this._paths = { clip, border, slopeFill, slopeEdge, tops, hasSlope };
+    return this._paths;
+  }
+
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -this.w - 50 || sx > SCREEN_WIDTH + 50) return;
 
-    ctx.save();
+    const paths = this._buildPaths();
+    const simple = isSimpleTextures();
+    const fancy = isFancy();
 
-    // Build clip path from all pieces, extending hidden edges by 1px to prevent seams
-    ctx.beginPath();
-    for (const p of this.pieces) {
-      const px = p.x - cameraX + PLAYER_X_OFFSET;
-      if (p.type === 'slope' || p.type === 'mini_slope') {
-        if (p.direction === 'up') {
-          ctx.moveTo(px, p.y + p.h);
-          ctx.lineTo(px + p.w, p.y + p.h);
-          ctx.lineTo(px + p.w, p.y);
-          ctx.closePath();
-        } else {
-          ctx.moveTo(px, p.y);
-          ctx.lineTo(px, p.y + p.h);
-          ctx.lineTo(px + p.w, p.y + p.h);
-          ctx.closePath();
+    ctx.save();
+    ctx.translate(sx, 0); // everything below is in local space
+
+    ctx.save();
+    ctx.clip(paths.clip);
+    paintBlockBody(ctx, 0, this.y, this.w, this.h, theme);
+
+    // Exposed tops catch the light. Glow state is set once for the whole run —
+    // toggling shadowBlur per piece was the single most expensive thing here.
+    if (paths.tops.length) {
+      if (fancy) {
+        for (const t of paths.tops) {
+          ctx.fillStyle = shadeGradient(ctx, 'topgloss', t.y, t.y + 16, 'rgba(255,255,255,0.18)', 'rgba(255,255,255,0)');
+          ctx.fillRect(t.x, t.y, t.w, 16);
         }
-      } else {
-        const he = p.hiddenEdges || new Set();
-        const el = he.has('left') ? 1 : 0;
-        const er = he.has('right') ? 1 : 0;
-        const et = he.has('top') ? 1 : 0;
-        const eb = he.has('bottom') ? 1 : 0;
-        ctx.rect(px - el, p.y - et, p.w + el + er, p.h + et + eb);
+      }
+      drawNeonGlow(ctx, theme.accent, 10);
+      ctx.fillStyle = simple ? theme.accent : mix(theme.accent, '#FFFFFF', 0.35);
+      for (const t of paths.tops) ctx.fillRect(t.x, t.y, t.w, 3);
+      clearGlow(ctx);
+      if (!simple) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (const t of paths.tops) {
+          ctx.moveTo(t.x, t.y + 4.5);
+          ctx.lineTo(t.x + t.w, t.y + 4.5);
+        }
+        ctx.stroke();
       }
     }
-    ctx.clip();
-
-    // Single shaded body over the whole group so merged blocks read as one slab.
-    // Texture anchored to world space so it doesn't swim as the camera scrolls.
-    const worldOff = PLAYER_X_OFFSET - cameraX;
-    paintBlockBody(ctx, sx, this.y, this.w, this.h, theme, worldOff);
-
-    // Per-piece top lighting: neon strip + bevel highlight on exposed tops
-    for (const p of this.pieces) {
-      if (p.type === 'slope' || p.type === 'mini_slope') continue; // slopes get diagonal glow below
-      const hasAbove = this.pieces.some(q =>
-        q !== p && Math.abs(q.y + q.h - p.y) < 2 && q.x < p.x + p.w && q.x + q.w > p.x
-      );
-      if (hasAbove) continue;
-      const px = p.x - cameraX + PLAYER_X_OFFSET;
-
-      // Local gloss so each exposed surface catches the light
-      const gloss = ctx.createLinearGradient(0, p.y, 0, p.y + 16);
-      gloss.addColorStop(0, 'rgba(255,255,255,0.18)');
-      gloss.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = gloss;
-      ctx.fillRect(px, p.y, p.w, 16);
-
-      drawNeonGlow(ctx, theme.accent, 10);
-      const bar = ctx.createLinearGradient(0, p.y, 0, p.y + 4);
-      bar.addColorStop(0, mix(theme.accent, '#FFFFFF', 0.55));
-      bar.addColorStop(1, theme.accent);
-      ctx.fillStyle = bar;
-      ctx.fillRect(px, p.y, p.w, 3);
-      clearGlow(ctx);
-
-      ctx.strokeStyle = 'rgba(255,255,255,0.20)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(px, p.y + 4.5);
-      ctx.lineTo(px + p.w, p.y + 4.5);
-      ctx.stroke();
-    }
-
     ctx.restore();
 
-    // Redraw slopes as filled triangles outside clip to cover antialiasing seams
-    const seamGrad = ctx.createLinearGradient(0, this.y, 0, this.y + this.h);
-    seamGrad.addColorStop(0, lighten(theme.platform, 34));
-    seamGrad.addColorStop(0.14, lighten(theme.platform, 14));
-    seamGrad.addColorStop(0.62, theme.platform);
-    seamGrad.addColorStop(1, darken(theme.platform, 34));
-    for (const p of this.pieces) {
-      if (p.type !== 'slope') continue;
-      const px = p.x - cameraX + PLAYER_X_OFFSET;
-      ctx.fillStyle = seamGrad;
-      ctx.beginPath();
-      if (p.direction === 'up') {
-        ctx.moveTo(px, p.y + p.h);
-        ctx.lineTo(px + p.w, p.y + p.h);
-        ctx.lineTo(px + p.w, p.y);
-      } else {
-        ctx.moveTo(px, p.y);
-        ctx.lineTo(px, p.y + p.h);
-        ctx.lineTo(px + p.w, p.y + p.h);
+    if (paths.hasSlope) {
+      // Refill slopes outside the clip to cover antialiasing seams
+      ctx.fillStyle = simple ? theme.platform : bodyGradient(ctx, this.y, this.h, theme);
+      ctx.fill(paths.slopeFill);
+      if (fancy) {
+        const pat = blockPattern(ctx, 0);
+        if (pat) { ctx.fillStyle = pat; ctx.fill(paths.slopeFill); }
       }
-      ctx.closePath();
-      ctx.fill();
-      // Restore the brushed texture the flat fill just covered
-      if (!localStorage.getItem('gd_low_detail')) {
-        const pat = blockPattern(ctx, theme, PLAYER_X_OFFSET - cameraX);
-        if (pat) { ctx.fillStyle = pat; ctx.fill(); }
-      }
-    }
 
-    // Slope diagonal glow (drawn outside clip)
-    for (const p of this.pieces) {
-      if (p.type !== 'slope') continue;
-      const px = p.x - cameraX + PLAYER_X_OFFSET;
       ctx.save();
       ctx.lineCap = 'round';
       drawNeonGlow(ctx, theme.accent, 10);
       ctx.strokeStyle = theme.accent;
       ctx.lineWidth = 3;
-      ctx.beginPath();
-      if (p.direction === 'up') { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y); }
-      else { ctx.moveTo(px, p.y); ctx.lineTo(px + p.w, p.y + p.h); }
-      ctx.stroke();
+      ctx.stroke(paths.slopeEdge);
       clearGlow(ctx);
-      // Bright core along the ramp
-      ctx.strokeStyle = mix(theme.accent, '#FFFFFF', 0.7);
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      if (!simple) {
+        ctx.strokeStyle = mix(theme.accent, '#FFFFFF', 0.7);
+        ctx.lineWidth = 1;
+        ctx.stroke(paths.slopeEdge);
+      }
       ctx.restore();
     }
 
-    // Border — outer edges only
-    ctx.save();
+    // Border — outer edges only, one stroke for the whole group
     ctx.strokeStyle = rgba(theme.accent, 0.85);
     ctx.lineWidth = 1;
-    for (const p of this.pieces) {
-      const px = p.x - cameraX + PLAYER_X_OFFSET;
-      const he = p.hiddenEdges || new Set();
-      ctx.beginPath();
-      if (p.type === 'slope' || p.type === 'mini_slope') {
-        if (p.direction === 'up') {
-          if (!he.has('bottom')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y + p.h); }
-          if (!he.has('right')) { ctx.moveTo(px + p.w, p.y + p.h); ctx.lineTo(px + p.w, p.y); }
-        } else {
-          if (!he.has('left')) { ctx.moveTo(px, p.y); ctx.lineTo(px, p.y + p.h); }
-          if (!he.has('bottom')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px + p.w, p.y + p.h); }
-        }
-      } else {
-        if (!he.has('top')) { ctx.moveTo(px, p.y); ctx.lineTo(px + p.w, p.y); }
-        if (!he.has('right')) { ctx.moveTo(px + p.w, p.y); ctx.lineTo(px + p.w, p.y + p.h); }
-        if (!he.has('bottom')) { ctx.moveTo(px + p.w, p.y + p.h); ctx.lineTo(px, p.y + p.h); }
-        if (!he.has('left')) { ctx.moveTo(px, p.y + p.h); ctx.lineTo(px, p.y); }
-      }
-      ctx.stroke();
-    }
+    ctx.stroke(paths.border);
+
     ctx.restore();
   }
 
@@ -684,6 +784,17 @@ export class MovingPlatform extends Platform {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -this.w - 200 || sx > SCREEN_WIDTH + 200) return;
     const sy = this.y;
+
+    if (isSimpleTextures()) {
+      ctx.fillStyle = theme.platform;
+      ctx.fillRect(sx, sy, this.w, this.h);
+      ctx.strokeStyle = theme.accent;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.strokeRect(sx, sy, this.w, this.h);
+      ctx.setLineDash([]);
+      return;
+    }
 
     ctx.save();
 
@@ -868,13 +979,23 @@ export class TransportPlatform extends Platform {
 
     // Distinct colour: idle blue, engaged green
     const color = this.active ? '#44FF88' : '#44AAFF';
+
+    if (isSimpleTextures()) {
+      ctx.fillStyle = color;
+      ctx.fillRect(sx, sy, this.w, this.h);
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sx, sy, this.w, this.h);
+      return;
+    }
+
     const rr = Math.min(7, this.h / 2);
     const mid = sy + this.h / 2;
 
     ctx.save();
 
     // Under-glow so it reads as hovering
-    if (!localStorage.getItem('gd_low_detail')) {
+    if (isFancy()) {
       const under = ctx.createLinearGradient(0, sy + this.h, 0, sy + this.h + 16);
       under.addColorStop(0, rgba(color, 0.35));
       under.addColorStop(1, rgba(color, 0));
@@ -1001,8 +1122,22 @@ export class JumpOrb {
     ctx.save();
     ctx.globalAlpha = this.activated ? 0.2 : 1;
 
+    if (isSimpleTextures()) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
     // Soft ambient halo behind the orb
-    if (!localStorage.getItem('gd_low_detail')) {
+    if (isFancy()) {
       const halo = ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, radius * 3);
       halo.addColorStop(0, rgba(color, 0.35 + beat * 0.2));
       halo.addColorStop(0.5, rgba(color, 0.10));
@@ -1125,8 +1260,19 @@ export class JumpPad {
     const halfW = GRID * 0.38;
     const height = this.h * 0.45;
 
+    if (isSimpleTextures()) {
+      ctx.fillStyle = flash ? '#FFFFFF' : color;
+      ctx.beginPath();
+      ctx.moveTo(cx - halfW, baseY);
+      ctx.quadraticCurveTo(cx, baseY - height * 2.4, cx + halfW, baseY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
     // Ground pool of light beneath the pad
-    if (!localStorage.getItem('gd_low_detail')) {
+    if (isFancy()) {
       const pool = ctx.createRadialGradient(cx, baseY, 2, cx, baseY, halfW * 2);
       pool.addColorStop(0, rgba(color, flash ? 0.7 : 0.4));
       pool.addColorStop(1, rgba(color, 0));
@@ -1191,8 +1337,8 @@ export class JumpPad {
     clearGlow(ctx);
 
     // Ambient particles (world coords, converted to screen at draw)
-    const noParticles = localStorage.getItem('gd_no_particles') || localStorage.getItem('gd_low_detail');
-    if (!noParticles) {
+    const skipParticles = noParticles() || !isFancy();
+    if (!skipParticles) {
       const worldCx = this.x + GRID / 2;
       const worldBaseY = this.y + this.h;
       if (Math.random() < 0.15) {
@@ -1228,6 +1374,12 @@ export class JumpPad {
 // ============================================================
 // PORTAL - gravity, speed, ship mode, wave mode
 // ============================================================
+const PORTAL_ICONS = {
+  gravity: '↕', speed_up: '▶▶', speed_down: '▶',
+  ship: '✈', wave: '∿', cube: '■', ball: '●',
+  mini: '▼', big: '▲', reverse: '⇐', forward: '⇒',
+};
+
 export class Portal {
   constructor(gx, gy, portalType = 'gravity') {
     this.type = 'portal';
@@ -1289,10 +1441,28 @@ export class Portal {
     const innerH = frameH - barInset * 2;
     const innerX = cx - innerW / 2;
     const innerY = frameY + barInset;
-    const low = localStorage.getItem('gd_low_detail');
+    const low = !isFancy();
 
     ctx.save();
     ctx.globalAlpha = this.activated ? 0.15 : 1;
+
+    if (isSimpleTextures()) {
+      ctx.fillStyle = color1;
+      ctx.beginPath();
+      ctx.roundRect(frameX, frameY, frameW, frameH, frameR);
+      ctx.fill();
+      ctx.fillStyle = color2;
+      ctx.beginPath();
+      ctx.roundRect(innerX, innerY, innerW, innerH, innerW / 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFF';
+      ctx.font = 'bold 13px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(PORTAL_ICONS[this.portalType] || '?', cx, cy + 0.5);
+      ctx.restore();
+      return;
+    }
 
     // Ambient light spill onto the surroundings
     if (!low) {
@@ -1382,12 +1552,7 @@ export class Portal {
 
     // Icon in center
     clearGlow(ctx);
-    const icons = {
-      gravity: '\u2195', speed_up: '\u25B6\u25B6', speed_down: '\u25B6',
-      ship: '\u2708', wave: '\u223F', cube: '\u25A0', ball: '\u25CF',
-      mini: '\u25BC', big: '\u25B2', reverse: '\u21D0', forward: '\u21D2',
-    };
-    const icon = icons[this.portalType] || '?';
+    const icon = PORTAL_ICONS[this.portalType] || '?';
     // Icon disc — frosted glass with a lit rim
     const discR = 13;
     const disc = ctx.createRadialGradient(cx - 4, cy - 5, 1, cx, cy, discR);
@@ -1450,8 +1615,22 @@ export class Checkpoint {
 
     ctx.save();
 
+    if (isSimpleTextures()) {
+      ctx.fillStyle = tint;
+      ctx.fillRect(sx, sy, 4, this.h);
+      ctx.fillStyle = on ? '#00CC55' : '#3A424C';
+      ctx.beginPath();
+      ctx.moveTo(sx + 4, sy);
+      ctx.lineTo(sx + 28, sy + 14);
+      ctx.lineTo(sx + 4, sy + 28);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
+
     // Light column when active
-    if (on && !localStorage.getItem('gd_low_detail')) {
+    if (on && isFancy()) {
       const col = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
       col.addColorStop(0, rgba(tint, 0.30));
       col.addColorStop(1, rgba(tint, 0));
@@ -1536,6 +1715,16 @@ export class EndMarker {
     const pulse = 0.5 + Math.sin(this.animTimer * 2) * 0.5;
 
     ctx.save();
+
+    if (isSimpleTextures()) {
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = theme.accent;
+      ctx.fillRect(sx, 0, GRID, GROUND_Y);
+      ctx.globalAlpha = 1;
+      ctx.fillRect(cx - 1.5, 0, 3, GROUND_Y);
+      ctx.restore();
+      return;
+    }
 
     // Soft light gate spreading either side of the beam
     const spread = ctx.createLinearGradient(cx - GRID * 1.6, 0, cx + GRID * 1.6, 0);
@@ -1698,6 +1887,23 @@ export class Coin {
       return;
     }
 
+    if (isSimpleTextures()) {
+      ctx.fillStyle = '#B8860B';
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = isFront ? '#FFD700' : '#C8A020';
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.82, 0, Math.PI * 2);
+      ctx.fill();
+      if (isFront) {
+        ctx.fillStyle = '#FFF8DC';
+        fillStar(ctx, r * 0.38);
+      }
+      ctx.restore();
+      return;
+    }
+
     // Outer glow pulse
     const glowPulse = 0.4 + Math.sin(this.animTimer * 1.5) * 0.15;
     ctx.shadowColor = '#FFD700';
@@ -1772,24 +1978,9 @@ export class Coin {
 
     if (isFront) {
       // Draw star shape instead of text
-      const sr = r * 0.38;
-      const ir = sr * 0.42;
-      ctx.beginPath();
-      for (let i = 0; i < 5; i++) {
-        const outerAngle = -Math.PI / 2 + (i * Math.PI * 2) / 5;
-        const innerAngle = outerAngle + Math.PI / 5;
-        const ox = Math.cos(outerAngle) * sr;
-        const oy = Math.sin(outerAngle) * sr;
-        const ix = Math.cos(innerAngle) * ir;
-        const iy = Math.sin(innerAngle) * ir;
-        if (i === 0) ctx.moveTo(ox, oy);
-        else ctx.lineTo(ox, oy);
-        ctx.lineTo(ix, iy);
-      }
-      ctx.closePath();
       ctx.fillStyle = '#FFF8DC';
       ctx.globalAlpha = 0.9;
-      ctx.fill();
+      fillStar(ctx, r * 0.38);
       ctx.globalAlpha = 1;
 
       // Top-left highlight
@@ -1997,9 +2188,31 @@ export class SawBlade {
     const teeth = Math.max(8, Math.round(this.radius * 10));
     const color = theme.spike;
 
-    const low = localStorage.getItem('gd_low_detail');
+    const low = !isFancy();
 
     ctx.save();
+
+    if (isSimpleTextures()) {
+      ctx.translate(cx, cy);
+      ctx.rotate(this.animTimer);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < teeth; i++) {
+        const a0 = (i / teeth) * Math.PI * 2;
+        const a1 = ((i + 0.5) / teeth) * Math.PI * 2;
+        if (i === 0) ctx.moveTo(Math.cos(a0) * r, Math.sin(a0) * r);
+        else ctx.lineTo(Math.cos(a0) * r, Math.sin(a0) * r);
+        ctx.lineTo(Math.cos(a1) * r * 0.7, Math.sin(a1) * r * 0.7);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = theme.accent;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    }
 
     // Motion-blur halo — the blade reads as spinning fast
     if (!low) {
@@ -2189,7 +2402,7 @@ export class Slope {
     const he = this.hiddenEdges || new Set();
     const edgeKey = [...he].sort().join('');
 
-    const key = `slope_${this.w}_${this.h}_${this.direction}_${theme.platform}_${theme.accent}_${edgeKey}`;
+    const key = `slope_${this.w}_${this.h}_${this.direction}_${edgeKey}_${themeSpriteKey(theme)}`;
     const sprite = getCachedSprite(key, this.w, this.h, (c) => {
       const tri = () => {
         c.beginPath();

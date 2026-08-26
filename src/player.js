@@ -3,7 +3,7 @@
 import {
   PLAYER_SIZE, SCROLL_SPEED, GRAVITY, JUMP_VEL,
   GROUND_Y, PLAYER_X_OFFSET, SCREEN_HEIGHT,
-  PLAYER_COLORS, CUBE_SHAPES, isLowDetail
+  PLAYER_COLORS, CUBE_SHAPES, isSimpleTextures, isFancy
 } from './settings.js';
 import { getAuthUser } from './supabase.js';
 
@@ -496,7 +496,7 @@ export class Player {
       trailColor = `hsl(${hue}, 100%, 60%)`;
     }
     ctx.save();
-    if (!isLowDetail()) {
+    if (isFancy()) {
       ctx.shadowColor = trailColor;
       ctx.shadowBlur = 8;
     }
@@ -591,61 +591,66 @@ export class Player {
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
 
-    // Contact shadow beneath the body
-    if (!isLowDetail()) {
-      ctx.save();
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle = '#000';
-      ctx.translate(1.5, 3);
+    if (isSimpleTextures()) {
+      // Flat body, flat inner plate, outline — nothing per-pixel
+      ctx.fillStyle = color;
       this._fillShape(ctx, size, hs, shape);
-      ctx.restore();
-    }
+      ctx.fillStyle = lighten(color, 45);
+      this._fillInnerShape(ctx, size, hs, 8, shape);
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.lineWidth = 2;
+      this._strokeShape(ctx, size, hs, shape);
+    } else {
+      // Contact shadow beneath the body
+      if (isFancy()) {
+        ctx.save();
+        ctx.globalAlpha = 0.28;
+        ctx.fillStyle = '#000';
+        ctx.translate(1.5, 3);
+        this._fillShape(ctx, size, hs, shape);
+        ctx.restore();
+      }
 
-    // Draw body shape
-    this._drawShapeBody(ctx, size, hs, color, shape);
+      // Draw body shape
+      this._drawShapeBody(ctx, size, hs, color, shape);
 
-    // Volume: light from the top-left, shadow bottom-right
-    const grad = ctx.createLinearGradient(-hs, -hs, hs, hs);
-    grad.addColorStop(0, 'rgba(255,255,255,0.42)');
-    grad.addColorStop(0.42, 'rgba(255,255,255,0.06)');
-    grad.addColorStop(0.68, 'rgba(0,0,0,0.10)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.38)');
-    ctx.fillStyle = grad;
-    this._fillShape(ctx, size, hs, shape);
+      // Volume: light from the top-left, shadow bottom-right
+      const grad = ctx.createLinearGradient(-hs, -hs, hs, hs);
+      grad.addColorStop(0, 'rgba(255,255,255,0.42)');
+      grad.addColorStop(0.42, 'rgba(255,255,255,0.06)');
+      grad.addColorStop(0.68, 'rgba(0,0,0,0.10)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.38)');
+      ctx.fillStyle = grad;
+      this._fillShape(ctx, size, hs, shape);
 
-    // Inset face panel — a soft plate rather than a flat block of colour
-    const m = 7;
-    const panel = ctx.createLinearGradient(0, -hs + m, 0, hs - m);
-    panel.addColorStop(0, lighten(color, 70));
-    panel.addColorStop(0.55, lighten(color, 32));
-    panel.addColorStop(1, lighten(color, 4));
-    ctx.fillStyle = panel;
-    this._fillInnerShape(ctx, size, hs, m, shape);
+      // Inset face panel — a soft plate rather than a flat block of colour
+      const m = 7;
+      const panel = ctx.createLinearGradient(0, -hs + m, 0, hs - m);
+      panel.addColorStop(0, lighten(color, 70));
+      panel.addColorStop(0.55, lighten(color, 32));
+      panel.addColorStop(1, lighten(color, 4));
+      ctx.fillStyle = panel;
+      this._fillInnerShape(ctx, size, hs, m, shape);
 
-    // Crisp rim light along the outline
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth = 1.5;
-    this._strokeShape(ctx, size, hs, shape);
-    ctx.strokeStyle = 'rgba(0,0,0,0.30)';
-    ctx.lineWidth = 1;
-    ctx.save();
-    ctx.translate(0.8, 1.2);
-    this._strokeShape(ctx, size, hs, shape);
-    ctx.restore();
-    ctx.restore();
-
-    // Specular sheen sweeping the top-left corner
-    if (!isLowDetail()) {
+      // Crisp rim light along the outline
       ctx.save();
-      this._makeShapePath(ctx, size, hs, shape);
-      ctx.clip();
-      const sheen = ctx.createLinearGradient(-hs, -hs, 0, -hs * 0.1);
-      sheen.addColorStop(0, 'rgba(255,255,255,0.35)');
-      sheen.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.fillStyle = sheen;
-      ctx.fillRect(-hs, -hs, size, size);
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.lineWidth = 1.5;
+      this._strokeShape(ctx, size, hs, shape);
       ctx.restore();
+
+      // Specular sheen sweeping the top-left corner
+      if (isFancy()) {
+        ctx.save();
+        this._makeShapePath(ctx, size, hs, shape);
+        ctx.clip();
+        const sheen = ctx.createLinearGradient(-hs, -hs, 0, -hs * 0.1);
+        sheen.addColorStop(0, 'rgba(255,255,255,0.35)');
+        sheen.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = sheen;
+        ctx.fillRect(-hs, -hs, size, size);
+        ctx.restore();
+      }
     }
 
     // Face/icon based on cubeIcon
@@ -819,6 +824,12 @@ export class Player {
   }
 
   _drawShapeBody(ctx, size, hs, color, shape) {
+    if (isSimpleTextures()) {
+      ctx.fillStyle = color;
+      this._makeShapePath(ctx, size, hs, shape);
+      ctx.fill();
+      return;
+    }
     // Base fill with a subtle depth gradient so the body isn't flat
     const base = ctx.createRadialGradient(-hs * 0.35, -hs * 0.4, hs * 0.1, 0, 0, hs * 1.35);
     base.addColorStop(0, lighten(color, 26));
@@ -1071,7 +1082,7 @@ export class Player {
       flame.addColorStop(0.7, this.holding ? '#FF6600' : '#FF4400');
       flame.addColorStop(1, 'rgba(255,40,0,0)');
       ctx.save();
-      if (!isLowDetail()) {
+      if (isFancy()) {
         ctx.shadowColor = '#FF6600';
         ctx.shadowBlur = this.holding ? 18 : 8;
       }
@@ -1298,7 +1309,7 @@ export class Player {
   }
 
   _drawGlow(ctx, size, color) {
-    if (isLowDetail()) return;
+    if (!isFancy()) return;
     const hs = size / 2;
     const shape = this.cubeShape || 'square';
     ctx.save();
