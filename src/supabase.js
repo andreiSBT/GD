@@ -126,6 +126,75 @@ function getClient() {
   return supabase;
 }
 
+// === NETWORK ERROR HANDLING ===
+
+const NOT_CONFIGURED = 'Online accounts are not set up for this build.';
+const UNREACHABLE = 'Can\'t reach the server. Check your connection and try again — your progress is still saved on this device.';
+const TIMED_OUT = 'The server took too long to respond. Your progress is still saved on this device.';
+
+// supabase-js surfaces a failed fetch with the browser's raw wording
+// ("NetworkError when attempting to fetch resource", "Failed to fetch",
+// "Load failed"), which is meaningless to a player. Detect that class of
+// failure so callers can show something actionable instead.
+function isNetworkError(err) {
+  if (!err) return false;
+  const name = err.name || '';
+  const msg = (err.message || String(err)).toLowerCase();
+  if (name === 'AuthRetryableFetchError' || name === 'TypeError') return true;
+  return msg.includes('networkerror')
+    || msg.includes('failed to fetch')
+    || msg.includes('fetch failed')
+    || msg.includes('load failed')
+    || msg.includes('network request failed')
+    || msg.includes('err_name_not_resolved')
+    || msg.includes('could not resolve');
+}
+
+// Track reachability so the rest of the UI can tell "offline" from "wrong password"
+let _backendReachable = null; // null = unknown yet
+export function isBackendReachable() { return _backendReachable; }
+
+/**
+ * Runs an auth call with a hard timeout, and converts thrown or returned
+ * network failures into a message a player can act on.
+ * Always resolves to { error: string|null, data?: any }.
+ */
+async function authCall(fn, timeoutMs = 15000) {
+  const client = getClient();
+  if (!client) return { error: NOT_CONFIGURED };
+
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve({ __timedOut: true }), timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([fn(client), timeout]);
+    if (result && result.__timedOut) {
+      _backendReachable = false;
+      return { error: TIMED_OUT };
+    }
+    if (result && result.error) {
+      if (isNetworkError(result.error)) {
+        _backendReachable = false;
+        return { error: UNREACHABLE };
+      }
+      _backendReachable = true;
+      return { error: result.error.message || String(result.error) };
+    }
+    _backendReachable = true;
+    return { error: null, data: result ? result.data : null };
+  } catch (e) {
+    if (isNetworkError(e)) {
+      _backendReachable = false;
+      return { error: UNREACHABLE };
+    }
+    return { error: e.message || String(e) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // Get or create a simple anonymous user id
 function getUserId() {
   // If logged in via Supabase Auth, use that ID
@@ -164,7 +233,13 @@ export async function initAuth() {
   }
 
   try {
-    const { data, error } = await client.auth.getSession();
+    // Cap the wait: a dead or unreachable backend must not stall startup
+    const { data, error } = await Promise.race([
+      client.auth.getSession(),
+      new Promise((resolve) => setTimeout(
+        () => resolve({ data: {}, error: new Error('getSession timed out') }), 8000
+      )),
+    ]);
     if (error) {
       console.warn('[Auth] getSession error:', error.message);
     } else if (data.session?.user) {
@@ -185,17 +260,15 @@ export async function initAuth() {
 }
 
 export async function signUp(username, password) {
-  const client = getClient();
-  if (!client) return { error: 'Supabase not configured' };
-
   const email = username.toLowerCase().trim() + '@gdgame.com';
-  const { data, error } = await client.auth.signUp({
+  const { error, data } = await authCall((client) => client.auth.signUp({
     email,
     password,
     options: { data: { username: username.trim() } }
-  });
+  }));
 
-  if (error) return { error: error.message };
+  if (error) return { error };
+  if (!data || !data.user) return { error: UNREACHABLE };
 
   currentAuthUser = data.user;
 
@@ -207,16 +280,16 @@ export async function signUp(username, password) {
 }
 
 export async function signIn(usernameOrEmail, password) {
-  const client = getClient();
-  if (!client) return { error: 'Supabase not configured' };
-
-  // If it contains @, treat as email; otherwise append @gd.game
+  // If it contains @, treat as email; otherwise append @gdgame.com
   const email = usernameOrEmail.includes('@')
     ? usernameOrEmail.toLowerCase().trim()
     : usernameOrEmail.toLowerCase().trim() + '@gdgame.com';
-  const { data, error } = await client.auth.signInWithPassword({ email, password });
+  const { error, data } = await authCall(
+    (client) => client.auth.signInWithPassword({ email, password })
+  );
 
-  if (error) return { error: error.message };
+  if (error) return { error };
+  if (!data || !data.user) return { error: UNREACHABLE };
 
   currentAuthUser = data.user;
   if (onAuthChangeCallback) onAuthChangeCallback(currentAuthUser);
@@ -227,7 +300,13 @@ export async function signOut() {
   const client = getClient();
   if (!client) return;
 
-  await client.auth.signOut({ scope: 'local' });
+  // A local sign-out must succeed even when the server is unreachable,
+  // otherwise a dead backend traps the player in a signed-in state.
+  try {
+    await client.auth.signOut({ scope: 'local' });
+  } catch (e) {
+    console.warn('[Auth] Sign out request failed, clearing locally:', e.message);
+  }
   currentAuthUser = null;
   _isAdmin = false;
   if (onAuthChangeCallback) onAuthChangeCallback(null);

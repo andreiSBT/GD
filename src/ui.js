@@ -319,7 +319,7 @@ export class UI {
         this._roundRect(ctx, x, y, cardW, cardH, r);
         ctx.clip();
         ctx.fillStyle = theme.accent;
-        ctx.fillRect(x, y, cardW, 5);
+        ctx.fillRect(x, y, cardW, 3);
         ctx.restore();
       } else {
         // Card shadow

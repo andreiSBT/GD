@@ -1607,7 +1607,10 @@ export class Checkpoint {
   draw(ctx, cameraX, theme) {
     const sx = this.x - cameraX + PLAYER_X_OFFSET;
     if (sx < -GRID || sx > SCREEN_WIDTH + GRID) return;
-    const sy = this.y;
+    // The model is one grid shorter than the hitbox: the flag sits a tile lower
+    // while collision still uses the full height set in the constructor.
+    const sy = this.y + GRID;
+    const vh = this.h - GRID;
 
     const on = this.activated;
     const tint = on ? '#00FF7F' : '#7A8290';
@@ -1617,7 +1620,7 @@ export class Checkpoint {
 
     if (isSimpleTextures()) {
       ctx.fillStyle = tint;
-      ctx.fillRect(sx, sy, 4, this.h);
+      ctx.fillRect(sx, sy, 4, vh);
       ctx.fillStyle = on ? '#00CC55' : '#3A424C';
       ctx.beginPath();
       ctx.moveTo(sx + 4, sy);
@@ -1629,19 +1632,10 @@ export class Checkpoint {
       return;
     }
 
-    // Light column when active
-    if (on && isFancy()) {
-      const col = ctx.createLinearGradient(sx, sy, sx, sy + this.h);
-      col.addColorStop(0, rgba(tint, 0.30));
-      col.addColorStop(1, rgba(tint, 0));
-      ctx.fillStyle = col;
-      ctx.fillRect(sx - 12, sy, 28, this.h);
-    }
-
     // Base plate
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.beginPath();
-    ctx.roundRect(sx - 7, sy + this.h - 6, 20, 6, 3);
+    ctx.roundRect(sx - 7, sy + vh - 6, 20, 6, 3);
     ctx.fill();
 
     // Metal pole with a specular seam
@@ -1651,7 +1645,7 @@ export class Checkpoint {
     pole.addColorStop(0.4, mix(tint, '#FFFFFF', 0.55));
     pole.addColorStop(1, darken(tint, 35));
     ctx.fillStyle = pole;
-    ctx.fillRect(sx, sy, 5, this.h);
+    ctx.fillRect(sx, sy, 5, vh);
     clearGlow(ctx);
 
     // Pole cap

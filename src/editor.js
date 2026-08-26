@@ -8,6 +8,9 @@ import { loadCustomMusic, removeCustomMusic, hasCustomMusic, getRawMusicFromDB, 
 import { customPrompt, showMusicPicker } from './dialogs.js';
 
 const TOOLBAR_H = 56;
+// How far the editor can pan upward, in pixels. Twelve grids clears the tallest
+// stack anyone can reasonably build above ground level.
+const MAX_CAM_Y = GRID * 12;
 const PANEL_W = 180;
 const NAV_BAR_H = 24;
 const NAV_BAR_PAD = 8;
@@ -92,6 +95,7 @@ export class Editor {
     this.renderer = renderer;
 
     this.cameraX = 0;
+    this.cameraY = 0; // vertical pan, 0 = ground at its normal place
     this.objects = [];
     this.liveObstacles = [];
     this.selectedTool = 'spike';
@@ -175,6 +179,7 @@ export class Editor {
 
     // Navigation bar drag state
     this.navDragging = false;
+    this.vScrollDragging = false;
 
     // Custom color trigger state
     this._customColorData = {
@@ -616,6 +621,14 @@ export class Editor {
       return;
     }
 
+    // Vertical scroll rail
+    const vsBtn = this.buttons.find(b => b.id === 'vscroll');
+    if (vsBtn && x >= vsBtn.x && x <= vsBtn.x + vsBtn.w && y >= vsBtn.y && y <= vsBtn.y + vsBtn.h) {
+      this.vScrollDragging = true;
+      this._vScrollSeek(y);
+      return;
+    }
+
     // buttons are populated during draw() — just check them
     // Check toolbar buttons
     for (const btn of this.buttons) {
@@ -726,6 +739,10 @@ export class Editor {
       this._navBarSeek(x);
       return;
     }
+    if (this.vScrollDragging) {
+      this._vScrollSeek(y);
+      return;
+    }
 
     const grid = this._screenToGrid(x, y);
     this.hoverGx = grid.gx;
@@ -775,6 +792,10 @@ export class Editor {
   }
 
   handleMouseUp(x, y) {
+    if (this.vScrollDragging) {
+      this.vScrollDragging = false;
+      return;
+    }
     if (this.navDragging) {
       this.navDragging = false;
       return;
@@ -886,6 +907,9 @@ export class Editor {
 
     if (e.key === 'ArrowLeft') { this.cameraX = Math.max(0, this.cameraX - GRID * 4); return true; }
     if (e.key === 'ArrowRight') { this.cameraX += GRID * 4; return true; }
+    if (e.key === 'ArrowUp') { this.scrollVertical(GRID * 2); return true; }
+    if (e.key === 'ArrowDown') { this.scrollVertical(-GRID * 2); return true; }
+    if (e.key === 'Home') { this.cameraY = 0; return true; }
 
     if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
       this._undo();
@@ -919,6 +943,7 @@ export class Editor {
     this.touchStartX = x;
     this.touchStartY = y;
     this.touchStartCamX = this.cameraX;
+    this.touchStartCamY = this.cameraY;
     this.isTouchScrolling = false;
     this.touchMoved = false;
 
@@ -935,6 +960,14 @@ export class Editor {
     if (navBtn && x >= navBtn.x && x <= navBtn.x + navBtn.w && y >= navBtn.y && y <= navBtn.y + navBtn.h) {
       this.navDragging = true;
       this._navBarSeek(x);
+      return;
+    }
+
+    // Vertical scroll rail touch
+    const vsBtn = this.buttons.find(b => b.id === 'vscroll');
+    if (vsBtn && x >= vsBtn.x && x <= vsBtn.x + vsBtn.w && y >= vsBtn.y && y <= vsBtn.y + vsBtn.h) {
+      this.vScrollDragging = true;
+      this._vScrollSeek(y);
       return;
     }
 
@@ -997,6 +1030,10 @@ export class Editor {
     // Nav bar dragging
     if (this.navDragging) {
       this._navBarSeek(x);
+      return;
+    }
+    if (this.vScrollDragging) {
+      this._vScrollSeek(y);
       return;
     }
 
@@ -1075,6 +1112,7 @@ export class Editor {
       const newCamX = Math.max(0, this.touchStartCamX - dx);
       this.scrollVelocity = newCamX - this.cameraX;
       this.cameraX = newCamX;
+      this.cameraY = this._clampCamY(this.touchStartCamY + dy);
     }
   }
 
@@ -1086,6 +1124,11 @@ export class Editor {
       if (!this._browseTouchMoved) {
         this._handleBrowseClick(this.touchStartX, this.touchStartY);
       }
+      return;
+    }
+
+    if (this.vScrollDragging) {
+      this.vScrollDragging = false;
       return;
     }
 
@@ -1143,6 +1186,11 @@ export class Editor {
       this.browseScroll = Math.max(0, this.browseScroll + (e.deltaY || 0));
       return;
     }
+    // Plain wheel keeps panning along the level; shift pans vertically
+    if (e.shiftKey) {
+      this.scrollVertical(-(e.deltaY || e.deltaX));
+      return;
+    }
     this.cameraX = Math.max(0, this.cameraX + (e.deltaX || e.deltaY));
   }
 
@@ -1166,6 +1214,16 @@ export class Editor {
       this._drawBrowse(ctx);
       return;
     }
+    // Sky above the panned background, so scrolling up doesn't reveal a gap
+    if (this.cameraY > 0) {
+      ctx.fillStyle = this.theme.bgTop;
+      ctx.fillRect(0, 0, SCREEN_WIDTH, this.cameraY + 1);
+    }
+
+    // Everything from here to the toolbar is world space and pans vertically
+    ctx.save();
+    ctx.translate(0, this.cameraY);
+
     // Background + ground
     this.renderer.drawBackground(ctx, this.cameraX, this.theme);
     this.renderer.drawGround(ctx, this.cameraX, this.theme);
@@ -1300,6 +1358,8 @@ export class Editor {
       this._drawHoverPreview(ctx);
     }
 
+    ctx.restore(); // end world space
+
     // Toolbar
     this._drawToolbar(ctx);
 
@@ -1310,6 +1370,9 @@ export class Editor {
 
     // Navigation bar (minimap)
     this._drawNavBar(ctx);
+
+    // Vertical scroll rail
+    this._drawVScroll(ctx);
 
     // Bottom bar
     this._drawBottomBar(ctx);
@@ -1365,23 +1428,37 @@ export class Editor {
 
   _screenToGrid(sx, sy) {
     const worldX = sx + this.cameraX;
+    const worldY = sy - this.cameraY;
     const gx = Math.floor(worldX / GRID);
-    const gy = Math.floor((GROUND_Y - sy) / GRID);
+    const gy = Math.floor((GROUND_Y - worldY) / GRID);
     return { gx, gy };
   }
 
   _screenToHalfGrid(sx, sy) {
     const worldX = sx + this.cameraX;
+    const worldY = sy - this.cameraY;
     const half = GRID / 2;
     const gx = Math.round(worldX / half) * 0.5;
-    const gy = Math.round((GROUND_Y - sy) / half) * 0.5;
+    const gy = Math.round((GROUND_Y - worldY) / half) * 0.5;
     return { gx, gy };
   }
 
+  // Returns world-space screen coords; the caller draws inside the vertical
+  // pan transform applied in draw(), so cameraY is deliberately not applied here.
   _gridToScreen(gx, gy) {
     const sx = gx * GRID - this.cameraX;
     const sy = GROUND_Y - (gy + 1) * GRID;
     return { sx, sy };
+  }
+
+  // Clamp the vertical pan: never below ground level, and no further up than
+  // the tallest thing anyone can place.
+  _clampCamY(v) {
+    return Math.max(0, Math.min(MAX_CAM_Y, v));
+  }
+
+  scrollVertical(dy) {
+    this.cameraY = this._clampCamY(this.cameraY + dy);
   }
 
   // === OBJECT MANAGEMENT ===
@@ -1432,7 +1509,7 @@ export class Editor {
     // Mini block/slope: detect top/bottom half of grid cell
     if (this.selectedTool === 'mini_block' || this.selectedTool === 'mini_slope') {
       const cellTopY = GROUND_Y - (gy + 1) * GRID;
-      const mouseInCell = this.mouseY - cellTopY;
+      const mouseInCell = (this.mouseY - this.cameraY) - cellTopY;
       if (mouseInCell < GRID / 2) {
         obj.halfTop = true;
       }
@@ -1661,6 +1738,7 @@ export class Editor {
       this.historyIndex = -1;
       this.currentSlot = slotId;
       this.cameraX = 0;
+      this.cameraY = 0;
       return true;
     } catch { return false; }
   }
@@ -1686,6 +1764,7 @@ export class Editor {
     this.history = [];
     this.historyIndex = -1;
     this.cameraX = 0;
+    this.cameraY = 0;
     this.browsing = false;
   }
 
@@ -1742,6 +1821,7 @@ export class Editor {
     this.history = [];
     this.historyIndex = -1;
     this.cameraX = 0;
+    this.cameraY = 0;
   }
 
   exportJSON() {
@@ -1768,7 +1848,10 @@ export class Editor {
   _drawGrid(ctx) {
     const startGx = Math.floor(this.cameraX / GRID);
     const endGx = startGx + Math.ceil(SCREEN_WIDTH / GRID) + 1;
-    const maxGy = Math.floor((GROUND_Y) / GRID);
+    // Visible band in world space, shifted by the vertical pan
+    const topY = TOOLBAR_H - this.cameraY;
+    const botY = SCREEN_HEIGHT - this.cameraY;
+    const maxGy = Math.ceil((GROUND_Y - topY) / GRID);
 
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
@@ -1777,16 +1860,16 @@ export class Editor {
     for (let gx = startGx; gx <= endGx; gx++) {
       const sx = gx * GRID - this.cameraX;
       ctx.beginPath();
-      ctx.moveTo(sx, TOOLBAR_H);
-      ctx.lineTo(sx, SCREEN_HEIGHT);
+      ctx.moveTo(sx, topY);
+      ctx.lineTo(sx, botY);
       ctx.stroke();
     }
 
     // Horizontal lines (above and below ground)
     for (let gy = -5; gy <= maxGy; gy++) {
       const sy = GROUND_Y - gy * GRID;
-      if (sy < TOOLBAR_H) break;
-      if (sy > SCREEN_HEIGHT) continue;
+      if (sy < topY) break;
+      if (sy > botY) continue;
       ctx.beginPath();
       ctx.moveTo(0, sy);
       ctx.lineTo(SCREEN_WIDTH, sy);
@@ -2121,6 +2204,62 @@ export class Editor {
     this.buttons.push({ id: 'navbar', x: barX, y: barY, w: barW, h: NAV_BAR_H });
   }
 
+  // Vertical scroll rail on the right edge — mirrors the horizontal nav bar
+  _getVScrollMetrics() {
+    const w = 10;
+    // Sit clear of the side panel when one is open
+    const rightEdge = SCREEN_WIDTH - (this._hasSidePanel() ? PANEL_W : 0);
+    const x = rightEdge - w - 6;
+    const top = TOOLBAR_H + 10;
+    // Stop above the minimap and bottom bar
+    const bottom = SCREEN_HEIGHT - 42 - NAV_BAR_H - NAV_BAR_PAD - 8;
+    const h = Math.max(40, bottom - top);
+    const thumbH = Math.max(28, h * 0.22);
+    return { x, w, top, h, thumbH };
+  }
+
+  _vScrollSeek(y) {
+    const { top, h, thumbH } = this._getVScrollMetrics();
+    const travel = h - thumbH;
+    if (travel <= 0) return;
+    // Rail runs top = fully panned up, bottom = ground level
+    const frac = 1 - (y - top - thumbH / 2) / travel;
+    this.cameraY = this._clampCamY(frac * MAX_CAM_Y);
+  }
+
+  _drawVScroll(ctx) {
+    const { x, w, top, h, thumbH } = this._getVScrollMetrics();
+    const frac = MAX_CAM_Y > 0 ? this.cameraY / MAX_CAM_Y : 0;
+    const thumbY = top + (1 - frac) * (h - thumbH);
+    const active = this.cameraY > 0 || this.vScrollDragging;
+
+    // Track
+    this._editorRoundRect(ctx, x, top, w, h, w / 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill();
+
+    // Ground-level tick at the bottom of the rail
+    ctx.fillStyle = 'rgba(0,200,255,0.35)';
+    ctx.fillRect(x, top + h - 1, w, 1);
+
+    // Thumb
+    this._editorRoundRect(ctx, x + 1, thumbY, w - 2, thumbH, (w - 2) / 2);
+    ctx.fillStyle = active ? 'rgba(0,200,255,0.85)' : 'rgba(255,255,255,0.28)';
+    ctx.fill();
+
+    // Height readout while panned up
+    if (this.cameraY > 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,200,255,0.9)';
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(`+${Math.round(this.cameraY / GRID)}`, x - 4, thumbY + thumbH / 2 + 3);
+      ctx.restore();
+    }
+
+    this.buttons.push({ id: 'vscroll', x: x - 6, y: top, w: w + 12, h });
+  }
+
   _navBarSeek(x) {
     const { barX, barW, totalWorldW, thumbW } = this._getNavBarMetrics();
     const maxScroll = totalWorldW - SCREEN_WIDTH;
@@ -2241,12 +2380,12 @@ export class Editor {
     } else if (this.selectedTool === 'mini_block') {
       ctx.fillStyle = '#6699FF';
       const cellTopY = GROUND_Y - (this.hoverGy + 1) * GRID;
-      const inTop = this.mouseY - cellTopY < GRID / 2;
+      const inTop = (this.mouseY - this.cameraY) - cellTopY < GRID / 2;
       ctx.fillRect(sx, inTop ? sy : sy + GRID * 0.5, GRID, GRID * 0.5);
     } else if (this.selectedTool === 'mini_slope') {
       ctx.fillStyle = '#AADDFF';
       const cellTopY2 = GROUND_Y - (this.hoverGy + 1) * GRID;
-      const inTop2 = this.mouseY - cellTopY2 < GRID / 2;
+      const inTop2 = (this.mouseY - this.cameraY) - cellTopY2 < GRID / 2;
       const msy = inTop2 ? sy : sy + GRID * 0.5;
       const msh = GRID * 0.5;
       const dir = this.subType || 'up';
@@ -3003,6 +3142,9 @@ export class Editor {
       'Left Click    - Place object',
       'Right Click   - Delete object',
       'Scroll / Drag - Navigate level',
+      'Shift+Scroll  - Pan up / down',
+      'Up / Down     - Pan up / down',
+      'Home          - Back to ground level',
       'Ctrl+Z / Y    - Undo / Redo',
       'Ctrl+S        - Quick save',
     ]);
